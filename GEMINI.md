@@ -3,9 +3,12 @@
 For UI, copy, people, mobile layout, or code comments work, load the antislop skill for the task:
 - Core filter, always on: `antislop`
 - UI / visual: `antislop-ui`
+- Copy & text: `antislop-copywriting`
 - Mobile / responsive: `antislop-layoutmobile`
 - Code comments: `antislop-code`
 - People: `antislop-human`
+- UI Catalog & Components: `watermelon-ui`
+- UI Polish & Motion Details: `make-interfaces-feel-better`
 Before starting, ask the user when antislop applies: during the work, or after it is done.
 To update antislop later: `npx antislop-ai --update`, or run `npx antislop-ai` and pick Overwrite them.
 <!-- antislop:end -->
