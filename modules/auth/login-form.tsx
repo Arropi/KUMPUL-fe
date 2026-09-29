@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toast } from "@/components/ui/toast";
@@ -9,8 +11,13 @@ import { RoleSwitcher } from "@/modules/auth/role-switcher";
 import { ForgotPasswordModal } from "@/modules/auth/forgot-password-modal";
 import { UserRole, AUTH_ROLE_CONFIGS, DEFAULT_ROLE } from "@/constants/auth";
 
-export function LoginForm() {
-  const [role, setRole] = React.useState<UserRole>(DEFAULT_ROLE);
+function LoginFormInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const roleFromUrl = searchParams.get("role");
+  const initialRole: UserRole = roleFromUrl === "supplier" ? "supplier" : DEFAULT_ROLE;
+  const [role, setRole] = React.useState<UserRole>(initialRole);
   const [identifier, setIdentifier] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [rememberMe, setRememberMe] = React.useState(false);
@@ -18,6 +25,7 @@ export function LoginForm() {
 
   const [errors, setErrors] = React.useState<{ identifier?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isOAuthLoading, setIsOAuthLoading] = React.useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = React.useState(false);
 
   const [toast, setToast] = React.useState<{
@@ -34,6 +42,38 @@ export function LoginForm() {
 
   const currentConfig = AUTH_ROLE_CONFIGS[role];
 
+  // Mendengarkan respon callback dari OAuth
+  React.useEffect(() => {
+    const isSuccess = searchParams.get("oauth_success");
+    const oauthError = searchParams.get("oauth_error");
+    const oauthRole = searchParams.get("role") as UserRole | null;
+    const email = searchParams.get("email");
+    const name = searchParams.get("name");
+
+    if (isSuccess === "true") {
+      const roleLabel = oauthRole === "supplier" ? "Mitra Supplier" : "Pelaku UMKM";
+      const timer = setTimeout(() => {
+        setToast({
+          isOpen: true,
+          title: "Login Google Berhasil",
+          message: `Selamat datang kembali, ${name || "Pengguna"}. Masuk sebagai ${roleLabel} (${email || "Google"}).`,
+          type: "success",
+        });
+      }, 0);
+      return () => clearTimeout(timer);
+    } else if (oauthError) {
+      const timer = setTimeout(() => {
+        setToast({
+          isOpen: true,
+          title: "Gagal Masuk Google",
+          message: decodeURIComponent(oauthError),
+          type: "error",
+        });
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
+
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
     setErrors({});
@@ -45,6 +85,64 @@ export function LoginForm() {
     setIdentifier(targetConfig.defaultEmail);
     setPassword("kumpul2026");
     setErrors({});
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsOAuthLoading(true);
+    try {
+      const supabase = createClient();
+      const redirectTo = `${window.location.origin}/api/auth/callback?role=${role}`;
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: "offline",
+            prompt: "select_account",
+          },
+        },
+      });
+
+      if (error) {
+        setIsOAuthLoading(false);
+        if (
+          error.message.includes("provider is not enabled") ||
+          error.message.includes("validation_failed")
+        ) {
+          setToast({
+            isOpen: true,
+            title: "Provider Google Belum Aktif",
+            message:
+              "Provider Google belum diaktifkan di Dashboard Supabase. Buka Authentication > Providers > Google dan masukkan Client ID & Secret.",
+            type: "error",
+          });
+        } else {
+          setToast({
+            isOpen: true,
+            title: "Gagal Masuk Google",
+            message: error.message,
+            type: "error",
+          });
+        }
+        return;
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: unknown) {
+      setIsOAuthLoading(false);
+      setToast({
+        isOpen: true,
+        title: "Gagal Masuk Google",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Terjadi kendala saat menghubungkan ke Supabase.",
+        type: "error",
+      });
+    }
   };
 
   const validate = () => {
@@ -84,9 +182,16 @@ export function LoginForm() {
       setToast({
         isOpen: true,
         title: "Login Berhasil",
-        message: `Selamat datang kembali, ${roleLabel} (${identifier}).`,
+        message: `Selamat datang kembali, ${roleLabel}. Mengalihkan ke beranda...`,
         type: "success",
       });
+
+      const extractedName = identifier.includes("@") ? identifier.split("@")[0] : identifier;
+      setTimeout(() => {
+        router.push(
+          `/home?login_success=true&role=${encodeURIComponent(role)}&name=${encodeURIComponent(extractedName)}&email=${encodeURIComponent(identifier)}`
+        );
+      }, 700);
     }, 600);
   };
 
@@ -114,7 +219,7 @@ export function LoginForm() {
           </div>
         </CardHeader>
 
-        <CardContent className="pb-8">
+        <CardContent className="pb-8 flex flex-col gap-4">
           <form
             onSubmit={handleSubmit}
             className="flex flex-col gap-4"
@@ -230,26 +335,81 @@ export function LoginForm() {
                 {isSubmitting ? "Memverifikasi..." : currentConfig.submitButtonText}
               </Button>
             </div>
-
-            <div className="pt-3 flex items-center justify-center gap-3 text-xs text-neutral-500">
-              <span className="text-[11px] text-neutral-400">Akun demo:</span>
-              <button
-                type="button"
-                onClick={() => handleQuickFill("umkm")}
-                className="font-medium text-neutral-700 hover:text-[#0D3B2E] transition-colors cursor-pointer hover:underline"
-              >
-                UMKM
-              </button>
-              <span className="text-neutral-300">&bull;</span>
-              <button
-                type="button"
-                onClick={() => handleQuickFill("supplier")}
-                className="font-medium text-neutral-700 hover:text-[#0D3B2E] transition-colors cursor-pointer hover:underline"
-              >
-                Supplier
-              </button>
-            </div>
           </form>
+
+          {/* Pemisah Garis Halus */}
+          <div className="relative flex items-center justify-center my-0.5">
+            <div className="w-full border-t border-neutral-200" aria-hidden="true" />
+            <span className="relative bg-white px-3 text-[11px] text-neutral-400 font-sans uppercase tracking-wider">
+              atau
+            </span>
+          </div>
+
+          {/* Tombol Masuk dengan Google OAuth (Supabase) */}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isOAuthLoading || isSubmitting}
+            className={`w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-neutral-200/90 bg-white hover:bg-neutral-50 active:scale-[0.96] text-neutral-800 text-sm font-medium transition-all duration-150 flex items-center justify-center gap-3 shadow-xs hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D3B2E] ${
+              isOAuthLoading || isSubmitting
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
+            aria-label="Masuk dengan akun Google via Supabase"
+          >
+            {isOAuthLoading ? (
+              <svg
+                className="animate-spin h-4 w-4 text-neutral-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+            )}
+            <span>Masuk dengan Google</span>
+          </button>
+
+          {/* Baris Akun Demo untuk Pengujian Cepat */}
+          <div className="pt-1 flex items-center justify-center gap-3 text-xs text-neutral-500">
+            <span className="text-[11px] text-neutral-400">Akun demo:</span>
+            <button
+              type="button"
+              onClick={() => handleQuickFill("umkm")}
+              className="font-medium text-neutral-700 hover:text-[#0D3B2E] transition-colors cursor-pointer hover:underline"
+            >
+              UMKM
+            </button>
+            <span className="text-neutral-300">&bull;</span>
+            <button
+              type="button"
+              onClick={() => handleQuickFill("supplier")}
+              className="font-medium text-neutral-700 hover:text-[#0D3B2E] transition-colors cursor-pointer hover:underline"
+            >
+              Supplier
+            </button>
+          </div>
         </CardContent>
       </Card>
 
@@ -267,5 +427,13 @@ export function LoginForm() {
         }
       />
     </>
+  );
+}
+
+export function LoginForm() {
+  return (
+    <React.Suspense fallback={<div className="w-full max-w-md h-[400px] mx-auto bg-white rounded-2xl shadow-sm animate-pulse" />}>
+      <LoginFormInner />
+    </React.Suspense>
   );
 }
