@@ -9,6 +9,6 @@ For UI, copy, people, mobile layout, or code comments work, load the antislop sk
 - People: `antislop-human`
 - UI Catalog & Components: `watermelon-ui`
 - UI Polish & Motion Details: `make-interfaces-feel-better`
-Before starting, ask the user when antislop applies: during the work, or after it is done.
+Mode: Always apply antislop DURING the work (Mode 1: planning & execution). Do not ask the user again.
 To update antislop later: `npx antislop-ai --update`, or run `npx antislop-ai` and pick Overwrite them.
 <!-- antislop:end -->
