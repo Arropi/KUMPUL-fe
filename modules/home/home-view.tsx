@@ -173,13 +173,12 @@ export function HomeView({ initialSession }: HomeViewProps) {
                     Tinjau pesanan kolektif dari kelompok UMKM yang telah memenuhi kuota minimum pemesanan (MOQ).
                   </p>
                   <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul pemrosesan pesanan pooling sedang dipersiapkan.", type: "info" })}
-                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer"
+                    <Link
+                      href="/supplier/pesanan"
+                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer flex items-center gap-1"
                     >
                       Buka Pesanan Masuk &rarr;
-                    </button>
+                    </Link>
                   </div>
                 </div>
 
@@ -192,13 +191,12 @@ export function HomeView({ initialSession }: HomeViewProps) {
                     Perbarui harga grosir, stok ketersediaan, serta kapasitas pengiriman armada distribusi Anda.
                   </p>
                   <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul katalog komoditas sedang dipersiapkan.", type: "info" })}
-                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer"
+                    <Link
+                      href="/supplier/katalog"
+                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer flex items-center gap-1"
                     >
                       Perbarui Pasokan &rarr;
-                    </button>
+                    </Link>
                   </div>
                 </div>
 
@@ -206,18 +204,17 @@ export function HomeView({ initialSession }: HomeViewProps) {
                   <div className="w-10 h-10 rounded-xl bg-[#EBF5F0] text-[#0D3B2E] flex items-center justify-center font-bold text-sm">
                     03
                   </div>
-                  <h3 className="font-semibold text-sm text-[#0F172A]">Paspor Mutu & Kepatuhan</h3>
+                  <h3 className="font-semibold text-sm text-[#0F172A]">Paspor Mutu &amp; Kepatuhan</h3>
                   <p className="text-xs text-neutral-500 leading-relaxed">
                     Unggah bukti uji kelayakan, sertifikasi halal, dan transparansi rantai pasok komoditas.
                   </p>
                   <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul sertifikasi paspor mutu sedang dipersiapkan.", type: "info" })}
-                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer"
+                    <Link
+                      href="/supplier/katalog"
+                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer flex items-center gap-1"
                     >
                       Verifikasi Standar &rarr;
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </>

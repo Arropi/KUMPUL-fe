@@ -188,9 +188,13 @@ function LoginFormInner() {
 
       const extractedName = identifier.includes("@") ? identifier.split("@")[0] : identifier;
       setTimeout(() => {
-        router.push(
-          `/home?login_success=true&role=${encodeURIComponent(role)}&name=${encodeURIComponent(extractedName)}&email=${encodeURIComponent(identifier)}`
-        );
+        if (role === "supplier") {
+          router.push("/supplier");
+        } else {
+          router.push(
+            `/home?login_success=true&role=${encodeURIComponent(role)}&name=${encodeURIComponent(extractedName)}&email=${encodeURIComponent(identifier)}`
+          );
+        }
       }, 700);
     }, 600);
   };
