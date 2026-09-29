@@ -35,3 +35,11 @@ export const AUTH_ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
 };
 
 export const DEFAULT_ROLE: UserRole = "umkm";
+
+export interface UserSession {
+  email: string;
+  name: string;
+  role: UserRole;
+  picture?: string;
+  provider: "google" | "credentials";
+}
