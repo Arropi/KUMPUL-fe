@@ -2,8 +2,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #F8FAF8;
-  --foreground: #0F172A;
+  --background: #FAF7F2;
+  --foreground: #18201B;
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-heading: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
@@ -11,25 +11,25 @@
 @theme {
   --color-primary: #0D3B2E;
   --color-primary-hover: #145A46;
-  --color-primary-light: #EBF5F0;
+  --color-primary-light: #EBF3EE;
   --color-secondary: #1E293B;
-  --color-secondary-muted: #64748B;
+  --color-secondary-muted: #5C6B62;
   --color-accent: #B45309;
   --color-accent-hover: #92400E;
   --color-accent-light: #FEF3C7;
   --color-circular-waste: #2D6A4F;
-  --color-circular-waste-light: #E8F5E9;
-  --color-background: #F8FAF8;
-  --color-surface: #FFFFFF;
-  --color-surface-subtle: #F1F5F2;
-  --color-border: #E2E8F0;
-  --color-border-strong: #CBD5E1;
+  --color-circular-waste-light: #E9F4EC;
+  --color-background: #FAF7F2;
+  --color-surface: #FFFDF9;
+  --color-surface-subtle: #F3EFE8;
+  --color-border: #E8E1D5;
+  --color-border-strong: #D5CBBF;
   --color-success: #15803D;
   --color-warning: #D97706;
   --color-error: #DC2626;
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #475569;
-  --color-text-muted: #64748B;
+  --color-text-primary: #18201B;
+  --color-text-secondary: #4A564F;
+  --color-text-muted: #75827A;
   --color-text-inverse: #FFFFFF;
 
   --font-heading: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -87,8 +87,6 @@
   font-family: var(--font-heading);
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 @utility shadow-elevation-1 {

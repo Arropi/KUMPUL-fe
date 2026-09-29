@@ -12,7 +12,7 @@ export function SupplierShell({ children }: SupplierShellProps) {
   const [isMobileNavOpen, setIsMobileNavOpen] = React.useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F8FAF8] text-[#0F172A] flex flex-col md:flex-row font-sans selection:bg-[#EBF5F0] selection:text-[#0D3B2E]">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col md:flex-row font-sans selection:bg-[#EBF5F0] selection:text-primary">
       {/* Sidebar Nav */}
       <SupplierNav
         isMobileOpen={isMobileNavOpen}

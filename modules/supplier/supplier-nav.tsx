@@ -2,24 +2,30 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { PlusSignIcon, SidebarLeftIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { motion, AnimatePresence } from "motion/react";
+import { cn } from "@/lib/utils";
 
 interface NavItem {
+  id: string;
   label: string;
   href: string;
   exact?: boolean;
-  icon: (active: boolean) => React.ReactNode;
   badge?: string;
+  icon: (active: boolean) => React.ReactNode;
 }
 
 const NAV_ITEMS: NavItem[] = [
   {
+    id: "ringkasan",
     label: "Ringkasan",
     href: "/supplier",
     exact: true,
     icon: (active) => (
       <svg
-        className={`w-5 h-5 transition-colors ${active ? "text-[#0D3B2E]" : "text-neutral-500"}`}
+        className={`w-5 h-5 transition-colors ${active ? "text-primary" : "text-text-muted"}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -35,11 +41,12 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    id: "katalog",
     label: "Katalog & Kuota",
     href: "/supplier/katalog",
     icon: (active) => (
       <svg
-        className={`w-5 h-5 transition-colors ${active ? "text-[#0D3B2E]" : "text-neutral-500"}`}
+        className={`w-5 h-5 transition-colors ${active ? "text-primary" : "text-text-muted"}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -55,12 +62,13 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    id: "pesanan",
     label: "Pesanan PO Masuk",
     href: "/supplier/pesanan",
     badge: "1 Baru",
     icon: (active) => (
       <svg
-        className={`w-5 h-5 transition-colors ${active ? "text-[#0D3B2E]" : "text-neutral-500"}`}
+        className={`w-5 h-5 transition-colors ${active ? "text-primary" : "text-text-muted"}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -76,11 +84,12 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    id: "profil",
     label: "Profil & Rekening",
     href: "/supplier/profil",
     icon: (active) => (
       <svg
-        className={`w-5 h-5 transition-colors ${active ? "text-[#0D3B2E]" : "text-neutral-500"}`}
+        className={`w-5 h-5 transition-colors ${active ? "text-primary" : "text-text-muted"}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -104,112 +113,230 @@ interface SupplierNavProps {
 
 export function SupplierNav({ isMobileOpen = false, onCloseMobile }: SupplierNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isOpen, setIsOpen] = React.useState(true);
+  const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 
-  const isLinkActive = (item: NavItem) => {
-    if (item.exact) {
-      return pathname === item.href;
-    }
-    return pathname.startsWith(item.href);
+  const getActiveIndex = () => {
+    const idx = NAV_ITEMS.findIndex((item) => {
+      if (item.exact) {
+        return pathname === item.href;
+      }
+      return pathname.startsWith(item.href);
+    });
+    return idx >= 0 ? idx : 0;
   };
 
-  const navContent = (
-    <div className="flex flex-col h-full justify-between">
-      <div className="space-y-6">
-        {/* Brand KUMPUL */}
-        <div className="px-5 py-4 flex items-center justify-between border-b border-neutral-200/80">
+  const selectedIndex = getActiveIndex();
+
+  const handleAddCommodity = () => {
+    router.push("/supplier/katalog/tambah");
+  };
+
+  const renderNavList = (expanded: boolean, isMobileView = false) => (
+    <div
+      className="relative z-10 flex w-full flex-col gap-1.5 whitespace-nowrap"
+      onMouseLeave={() => setHoveredIndex(null)}
+    >
+      {NAV_ITEMS.map((item, index) => {
+        const isSelected = selectedIndex === index;
+        const isHovered = hoveredIndex === index && !isSelected;
+
+        return (
           <Link
-            href="/supplier"
-            className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D3B2E] rounded-lg"
-            onClick={onCloseMobile}
+            key={item.id}
+            href={item.href}
+            onClick={() => {
+              if (isMobileView && onCloseMobile) {
+                onCloseMobile();
+              }
+            }}
+            onMouseEnter={() => setHoveredIndex(index)}
+            title={!expanded ? item.label : undefined}
+            className={cn(
+              "relative cursor-pointer min-h-[44px] rounded-xl flex items-center transition-all duration-150 active:scale-[0.98]",
+              expanded ? "px-3.5 py-2.5" : "justify-center px-2 py-2"
+            )}
           >
-            <span className="w-9 h-9 rounded-xl bg-[#0D3B2E] flex items-center justify-center text-white font-extrabold text-base shadow-xs">
-              K
-            </span>
-            <div className="flex flex-col">
-              <span className="font-bold text-lg text-[#0D3B2E] tracking-tight leading-none">
-                KUMPUL
-              </span>
-              <span className="text-[11px] font-semibold text-[#B45309] tracking-wider uppercase mt-1">
-                Portal Supplier
-              </span>
-            </div>
-          </Link>
+            {/* Active Selected Background (Watermelon UI MacOS Style) */}
+            <AnimatePresence>
+              {isSelected && (
+                <motion.div
+                  className="bg-primary-light border border-primary/20 absolute inset-0 z-0 rounded-xl shadow-xs"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                />
+              )}
+            </AnimatePresence>
 
-          {/* Close button on mobile */}
-          {onCloseMobile && (
-            <button
-              type="button"
-              onClick={onCloseMobile}
-              className="md:hidden p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label="Tutup menu navigasi"
+            {/* Hover Pill with Spring Physics */}
+            <AnimatePresence>
+              {isHovered && (
+                <motion.span
+                  layoutId={isMobileView ? "mobile-hover-bg" : "supplier-hover-bg"}
+                  className="bg-surface-subtle/90 absolute inset-0 z-0 rounded-xl"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 380,
+                    damping: 32,
+                  }}
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Label, Icon, and Badge Content */}
+            <div
+              className={cn(
+                "relative z-10 flex items-center w-full gap-3",
+                !expanded && "justify-center"
+              )}
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
+              <span className="shrink-0">{item.icon(isSelected)}</span>
 
-        {/* Menu Navigasi */}
-        <div className="px-3">
-          <p className="px-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-2">
-            Manajemen Pasokan
-          </p>
-          <nav className="space-y-1" aria-label="Menu Supplier">
-            {NAV_ITEMS.map((item) => {
-              const active = isLinkActive(item);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onCloseMobile}
-                  className={`min-h-[44px] px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all group ${
-                    active
-                      ? "bg-[#EBF5F0] text-[#0D3B2E] shadow-xs"
-                      : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {item.icon(active)}
-                    <span>{item.label}</span>
-                  </div>
+              {expanded && (
+                <div className="flex items-center justify-between flex-1 min-w-0 gap-2">
+                  <span
+                    className={cn(
+                      "font-sans text-xs truncate",
+                      isSelected
+                        ? "text-primary font-bold"
+                        : "text-text-secondary font-medium"
+                    )}
+                  >
+                    {item.label}
+                  </span>
+
                   {item.badge && (
-                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#B45309] text-white">
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-accent text-text-inverse shrink-0 shadow-xs">
                       {item.badge}
                     </span>
                   )}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
-      {/* Info Status Legalitas & Ringkasan Entitas */}
-      <div className="p-4 m-3 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium text-neutral-500">Legalitas Supplier</span>
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-            NIB Aktif
-          </span>
-        </div>
-        <p className="text-xs font-semibold text-neutral-800 line-clamp-1">
-          PT Agroniaga Nusantara
-        </p>
-        <p className="text-[11px] text-neutral-500 leading-tight">
-          Sektor: Pertanian &amp; Pangan
-        </p>
-      </div>
+                </div>
+              )}
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 
   return (
     <>
-      {/* Desktop Sidebar (Permanent) */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-neutral-200/80 shrink-0 sticky top-0 h-screen overflow-y-auto">
-        {navContent}
-      </aside>
+      {/* Desktop Animated MacOS Sidebar */}
+      <motion.aside
+        animate={{
+          width: isOpen ? 256 : 72,
+        }}
+        transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
+        className={cn(
+          "hidden md:flex flex-col justify-between border-r border-border bg-surface p-3 shrink-0 sticky top-0 h-screen overflow-y-auto select-none z-20",
+          isOpen ? "shadow-elevation-1" : "items-center"
+        )}
+      >
+        <div className="flex flex-col w-full">
+          {/* Header Controls (Logo / Brand / Plus & Toggle) */}
+          <div
+            className={cn(
+              "flex w-full items-center shrink-0 min-h-[48px] pb-3 border-b border-border/70",
+              isOpen ? "justify-between gap-2 px-1" : "justify-center"
+            )}
+          >
+            {isOpen && (
+              <Link
+                href="/supplier"
+                className="flex items-center gap-2.5 min-w-0 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
+              >
+                <div className="w-8 h-8 rounded-xl bg-primary text-text-inverse flex items-center justify-center font-heading font-extrabold text-sm shrink-0 shadow-xs">
+                  K
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-heading font-bold text-sm text-primary truncate leading-tight">
+                    KUMPUL
+                  </span>
+                  <span className="font-heading text-[10px] font-bold text-accent truncate leading-tight mt-0.5">
+                    Portal Supplier
+                  </span>
+                </div>
+              </Link>
+            )}
+
+            <div className="flex items-center gap-1 shrink-0">
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.button
+                    type="button"
+                    onClick={handleAddCommodity}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.15 }}
+                    title="Tambah Komoditas Baru"
+                    className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer active:scale-95"
+                  >
+                    <HugeiconsIcon
+                      icon={PlusSignIcon}
+                      className="size-4.5"
+                    />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
+              <motion.button
+                layout
+                type="button"
+                onClick={() => setIsOpen((prev) => !prev)}
+                title={isOpen ? "Tutup Sidebar" : "Buka Sidebar"}
+                className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer active:scale-95 flex items-center justify-center"
+              >
+                <HugeiconsIcon
+                  icon={SidebarLeftIcon}
+                  className="size-4.5"
+                />
+              </motion.button>
+            </div>
+          </div>
+
+          {/* Navigation Section */}
+          <div className="mt-4">
+            {isOpen && (
+              <p className="px-3 text-[10px] font-bold text-text-muted mb-2 font-heading">
+                Manajemen Pasokan
+              </p>
+            )}
+            {renderNavList(isOpen, false)}
+          </div>
+        </div>
+
+        {/* Footer Info Entitas */}
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="p-3.5 mt-4 rounded-xl bg-surface-subtle border border-border/80 shadow-xs space-y-1.5"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-semibold text-text-muted">Legalitas</span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-light text-primary border border-primary/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                NIB Terverifikasi
+              </span>
+            </div>
+            <p className="text-xs font-bold text-text-primary truncate">
+              PT Agroniaga Nusantara
+            </p>
+            <p className="text-[11px] text-text-muted leading-tight truncate">
+              Sektor: Pertanian &amp; Pangan
+            </p>
+          </motion.div>
+        )}
+      </motion.aside>
 
       {/* Mobile Drawer (Overlay) */}
       {isMobileOpen && (
@@ -220,13 +347,73 @@ export function SupplierNav({ isMobileOpen = false, onCloseMobile }: SupplierNav
           onClick={onCloseMobile}
         >
           <div
-            className="w-72 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-200"
+            className="w-72 max-w-[85vw] bg-surface h-full shadow-2xl flex flex-col justify-between p-4 animate-in slide-in-from-left duration-200 border-r border-border"
             onClick={(e) => e.stopPropagation()}
           >
-            {navContent}
+            <div className="space-y-5">
+              {/* Brand & Close Button */}
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <Link
+                  href="/supplier"
+                  className="flex items-center gap-2.5"
+                  onClick={onCloseMobile}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-primary text-text-inverse flex items-center justify-center font-heading font-extrabold text-sm shadow-xs">
+                    K
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-heading font-bold text-sm text-primary">
+                      KUMPUL
+                    </span>
+                    <span className="font-heading text-[10px] font-bold text-accent">
+                      Portal Supplier
+                    </span>
+                  </div>
+                </Link>
+
+                {onCloseMobile && (
+                  <button
+                    type="button"
+                    onClick={onCloseMobile}
+                    className="p-1.5 rounded-xl text-text-muted hover:text-text-primary hover:bg-surface-subtle min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer transition-all duration-150 active:scale-[0.96]"
+                    aria-label="Tutup menu navigasi"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Nav List for Mobile */}
+              <div>
+                <p className="px-3 text-[10px] font-bold text-text-muted mb-2 font-heading">
+                  Manajemen Pasokan
+                </p>
+                {renderNavList(true, true)}
+              </div>
+            </div>
+
+            {/* Mobile Footer Info */}
+            <div className="p-3.5 rounded-xl bg-surface-subtle border border-border/80 shadow-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-text-muted">Legalitas</span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-light text-primary border border-primary/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  NIB Aktif
+                </span>
+              </div>
+              <p className="text-xs font-bold text-text-primary truncate">
+                PT Agroniaga Nusantara
+              </p>
+              <p className="text-[11px] text-text-muted leading-tight truncate">
+                Sektor: Pertanian &amp; Pangan
+              </p>
+            </div>
           </div>
         </div>
       )}
     </>
   );
 }
+

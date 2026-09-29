@@ -9,6 +9,16 @@ import {
 } from "@/constants/supplier";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from "@/components/ui/table";
 import { Toast } from "@/components/ui/toast";
 
 interface PesananDetailViewProps {
@@ -16,7 +26,6 @@ interface PesananDetailViewProps {
 }
 
 export function PesananDetailView({ poId }: PesananDetailViewProps) {
-  // Ambil data PO atau fallback ke item pertama jika id tidak persis
   const initialPO =
     MOCK_CONSOLIDATED_POS.find((p) => p.id === poId) || MOCK_CONSOLIDATED_POS[0];
 
@@ -100,19 +109,19 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
         <div>
           <Link
             href="/supplier/pesanan"
-            className="text-xs font-semibold text-[#0D3B2E] hover:underline flex items-center gap-1.5 mb-1"
+            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1.5 mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
           >
             &larr; Kembali ke Daftar Pesanan PO
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
+            <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary text-balance">
               Rincian {po.poNumber}
             </h1>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EBF5F0] text-[#0D3B2E]">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#EBF5F0] text-primary border border-primary/20">
               {po.primaryDeliveryMethod === "HEMAT_HUB" ? "Opsi Hemat (Hub Konsolidasi)" : "Antar Langsung"}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-neutral-500 mt-0.5">
+          <p className="font-body text-xs sm:text-sm text-text-secondary mt-0.5 text-pretty">
             Diterbitkan pada {new Date(po.createdAt).toLocaleDateString("id-ID", { dateStyle: "long" })} &bull; Komoditas: {po.commodityName}
           </p>
         </div>
@@ -130,7 +139,7 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
                   "Pesanan ditandai sedang dikemas di gudang supplier."
                 )
               }
-              className="font-semibold shadow-xs"
+              className="font-semibold min-h-[44px]"
             >
               Mulai Kemas Barang
             </Button>
@@ -141,7 +150,7 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
               variant="primary"
               size="md"
               onClick={() => setShowShipModal(true)}
-              className="font-semibold shadow-xs"
+              className="font-semibold min-h-[44px]"
             >
               Berangkatkan Armada Pengiriman
             </Button>
@@ -158,14 +167,14 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
                   "Pesanan telah tiba di Hub Konsolidasi. Kode OTP pengambilan diterbitkan ke UMKM."
                 )
               }
-              className="font-semibold shadow-xs"
+              className="font-semibold min-h-[44px]"
             >
               Konfirmasi Tiba di Hub / Tujuan
             </Button>
           )}
 
           {po.status === "DELIVERED" && (
-            <Badge variant="success" className="text-xs px-3 py-1.5 font-bold">
+            <Badge variant="success" className="text-xs px-3.5 py-1.5 font-bold">
               ✓ Pesanan Telah Tiba &amp; Selesai
             </Badge>
           )}
@@ -173,166 +182,165 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
       </div>
 
       {/* Stepper Status Alur Logistik Terpadu */}
-      <section className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-6 shadow-xs space-y-4">
-        <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+      <Card className="p-5 sm:p-6 space-y-4">
+        <h2 className="font-heading text-xs font-bold text-text-secondary">
           Alur Status Pemenuhan Pesanan Konsolidasi
         </h2>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className={`p-3 rounded-xl border ${currentStep >= 1 ? "bg-emerald-50/70 border-emerald-300" : "bg-neutral-50 border-neutral-200"}`}>
-            <span className="text-[10px] font-bold text-emerald-800">Tahap 1</span>
-            <p className="text-xs font-bold text-neutral-900 mt-0.5">Dana di Escrow</p>
-            <p className="text-[11px] text-neutral-500 mt-0.5">Semua UMKM telah bayar</p>
+          <div className={`p-3.5 rounded-xl border ${currentStep >= 1 ? "bg-[#EBF5F0]/70 border-primary/30" : "bg-background border-border"}`}>
+            <span className="text-[10px] font-bold text-primary block">Tahap 1</span>
+            <p className="text-xs font-bold text-text-primary mt-0.5">Dana di Escrow</p>
+            <p className="text-[11px] text-text-secondary mt-0.5">Semua UMKM telah bayar</p>
           </div>
 
-          <div className={`p-3 rounded-xl border ${currentStep >= 2 ? "bg-emerald-50/70 border-emerald-300" : "bg-neutral-50 border-neutral-200"}`}>
-            <span className="text-[10px] font-bold text-emerald-800">Tahap 2</span>
-            <p className="text-xs font-bold text-neutral-900 mt-0.5">Sedang Dikemas</p>
-            <p className="text-[11px] text-neutral-500 mt-0.5">Pemeriksaan paspor mutu</p>
+          <div className={`p-3.5 rounded-xl border ${currentStep >= 2 ? "bg-[#EBF5F0]/70 border-primary/30" : "bg-background border-border"}`}>
+            <span className="text-[10px] font-bold text-primary block">Tahap 2</span>
+            <p className="text-xs font-bold text-text-primary mt-0.5">Sedang Dikemas</p>
+            <p className="text-[11px] text-text-secondary mt-0.5">Pemeriksaan paspor mutu</p>
           </div>
 
-          <div className={`p-3 rounded-xl border ${currentStep >= 3 ? "bg-emerald-50/70 border-emerald-300" : "bg-neutral-50 border-neutral-200"}`}>
-            <span className="text-[10px] font-bold text-emerald-800">Tahap 3</span>
-            <p className="text-xs font-bold text-neutral-900 mt-0.5">Dalam Pengiriman</p>
-            <p className="text-[11px] text-neutral-500 mt-0.5">Armada menuju Hub / UMKM</p>
+          <div className={`p-3.5 rounded-xl border ${currentStep >= 3 ? "bg-[#EBF5F0]/70 border-primary/30" : "bg-background border-border"}`}>
+            <span className="text-[10px] font-bold text-primary block">Tahap 3</span>
+            <p className="text-xs font-bold text-text-primary mt-0.5">Dalam Pengiriman</p>
+            <p className="text-[11px] text-text-secondary mt-0.5">Armada menuju Hub / UMKM</p>
           </div>
 
-          <div className={`p-3 rounded-xl border ${currentStep >= 4 ? "bg-emerald-50/70 border-emerald-300" : "bg-neutral-50 border-neutral-200"}`}>
-            <span className="text-[10px] font-bold text-emerald-800">Tahap 4</span>
-            <p className="text-xs font-bold text-neutral-900 mt-0.5">Tiba di Tujuan</p>
-            <p className="text-[11px] text-neutral-500 mt-0.5">Rilis dana escrow</p>
+          <div className={`p-3.5 rounded-xl border ${currentStep >= 4 ? "bg-[#EBF5F0]/70 border-primary/30" : "bg-background border-border"}`}>
+            <span className="text-[10px] font-bold text-primary block">Tahap 4</span>
+            <p className="text-xs font-bold text-text-primary mt-0.5">Tiba di Tujuan</p>
+            <p className="text-[11px] text-text-secondary mt-0.5">Rilis dana escrow</p>
           </div>
         </div>
 
         {po.trackingNumber && (
-          <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="p-3.5 rounded-xl bg-background border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
             <div>
-              <span className="text-neutral-500">Nomor Resi / Surat Jalan:</span>{" "}
-              <strong className="font-mono text-neutral-900 font-bold">{po.trackingNumber}</strong>
+              <span className="text-text-muted">Nomor Resi / Surat Jalan:</span>{" "}
+              <strong className="font-mono text-text-primary font-bold tabular-nums">{po.trackingNumber}</strong>
             </div>
             {po.driverName && (
               <div>
-                <span className="text-neutral-500">Pengemudi / Armada:</span>{" "}
-                <strong className="text-neutral-900 font-semibold">{po.driverName}</strong>
+                <span className="text-text-muted">Pengemudi / Armada:</span>{" "}
+                <strong className="text-text-primary font-semibold">{po.driverName}</strong>
               </div>
             )}
           </div>
         )}
-      </section>
+      </Card>
 
       {/* Dua Kolom: Info Hub Logistik & Rincian Finansial */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Kolom 1: Alamat Drop Point Hub Konsolidasi */}
-        <section className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-6 shadow-xs space-y-3">
+        <Card className="p-5 sm:p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-[#0F172A]">
+            <h2 className="font-heading text-sm font-bold text-text-primary">
               Destinasi Titik Kumpul (Hub Konsolidasi)
             </h2>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+            <Badge variant="primary">
               Optimal Drop Point
-            </span>
+            </Badge>
           </div>
-          <div className="p-3.5 rounded-xl bg-[#F8FAF8] border border-neutral-100 space-y-1.5">
-            <p className="text-xs font-bold text-neutral-800">
+          <div className="p-3.5 rounded-xl bg-background border border-border space-y-1.5">
+            <p className="text-xs font-bold text-text-primary">
               {po.hubName}
             </p>
-            <p className="text-xs text-neutral-500 leading-relaxed">
+            <p className="font-body text-xs text-text-secondary leading-relaxed text-pretty">
               {po.hubAddress}
             </p>
-            <div className="pt-1 flex items-center gap-3 text-[11px] text-neutral-500">
-              <span>Estimasi Tiba: <strong>{po.estimatedDeliveryDate}</strong></span>
+            <div className="pt-1 flex items-center gap-3 text-[11px] text-text-muted tabular-nums">
+              <span>Estimasi Tiba: <strong className="text-text-primary">{po.estimatedDeliveryDate}</strong></span>
               <span>&bull;</span>
-              <span className="text-emerald-700 font-semibold">Radius Rute Hemat</span>
+              <span className="text-primary font-semibold">Radius Rute Hemat</span>
             </div>
           </div>
-        </section>
+        </Card>
 
         {/* Kolom 2: Rincian Nilai Transaksi & Escrow */}
-        <section className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-6 shadow-xs space-y-3">
+        <Card className="p-5 sm:p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-[#0F172A]">
+            <h2 className="font-heading text-sm font-bold text-text-primary">
               Rincian Pembayaran Escrow Platform
             </h2>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+            <Badge variant="info">
               Terjamin Aman
-            </span>
+            </Badge>
           </div>
           <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between text-neutral-600">
+            <div className="flex items-center justify-between text-text-secondary">
               <span>Subtotal Komoditas ({po.totalQuantity} {po.wholesaleUnit}):</span>
-              <span className="font-semibold text-neutral-900">{formatCurrency(po.totalGoodsAmount)}</span>
+              <span className="font-semibold text-text-primary tabular-nums">{formatCurrency(po.totalGoodsAmount)}</span>
             </div>
-            <div className="flex items-center justify-between text-neutral-600">
+            <div className="flex items-center justify-between text-text-secondary">
               <span>Total Alokasi Ongkir Konsolidasi:</span>
-              <span className="font-semibold text-neutral-900">{formatCurrency(po.totalShippingAmount)}</span>
+              <span className="font-semibold text-text-primary tabular-nums">{formatCurrency(po.totalShippingAmount)}</span>
             </div>
-            <div className="pt-2 border-t border-neutral-200 flex items-center justify-between text-sm">
-              <span className="font-bold text-[#0F172A]">Total Dana Cair ke Supplier:</span>
-              <span className="font-extrabold text-[#0D3B2E] text-base">{formatCurrency(po.grandTotalAmount)}</span>
+            <div className="pt-2 border-t border-border flex items-center justify-between text-sm">
+              <span className="font-bold text-text-primary">Total Dana Cair ke Supplier:</span>
+              <span className="font-extrabold text-primary text-base tabular-nums">{formatCurrency(po.grandTotalAmount)}</span>
             </div>
           </div>
-        </section>
+        </Card>
       </div>
 
       {/* Manifest Distribusi Peserta Pooling UMKM (PRD Section 4) */}
-      <section className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-6 shadow-xs space-y-4">
+      <Card className="p-5 sm:p-6 space-y-4">
         <div>
-          <h2 className="text-base font-bold text-[#0F172A]">
+          <h2 className="font-heading font-bold text-base text-text-primary text-balance">
             Manifest Peserta Pool UMKM ({po.participants.length} Usaha Tergabung)
           </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <p className="font-body text-xs text-text-secondary mt-0.5 text-pretty">
             Daftar UMKM yang berpartisipasi dalam pesanan PO ini beserta pembagian alokasi kuota dan ongkos kirim.
           </p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-600 font-semibold">
-                <th className="py-3 px-3">Nama Usaha &amp; Kontak</th>
-                <th className="py-3 px-3">Kuota Dipesan</th>
-                <th className="py-3 px-3">Metode Pengiriman</th>
-                <th className="py-3 px-3">Bagi Ongkir (Split-Bill)</th>
-                <th className="py-3 px-3 text-right">Subtotal Belanja</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {po.participants.map((part) => (
-                <tr key={part.id} className="hover:bg-neutral-50/60 transition-colors">
-                  <td className="py-3 px-3">
-                    <p className="font-bold text-[#0F172A]">{part.umkmName}</p>
-                    <p className="text-[11px] text-neutral-500">{part.ownerName} &bull; {part.phone}</p>
-                  </td>
-                  <td className="py-3 px-3">
-                    <p className="font-bold text-neutral-800">{part.orderQtyUnit} {po.wholesaleUnit}</p>
-                    <p className="text-[11px] text-neutral-500">{part.orderWeightKg} kg</p>
-                  </td>
-                  <td className="py-3 px-3">
-                    {part.deliveryMethod === "HEMAT_HUB" ? (
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-200/60">
-                        Opsi Hemat (Hub)
-                      </span>
-                    ) : (
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 text-[11px] font-semibold border border-amber-200/60">
-                        Direct (Door-to-Door)
-                      </span>
-                    )}
-                    <p className="text-[10px] text-neutral-400 mt-0.5 line-clamp-1">
-                      {part.destinationAddress}
-                    </p>
-                  </td>
-                  <td className="py-3 px-3 font-medium text-neutral-700">
-                    {formatCurrency(part.allocatedShippingFee)}
-                  </td>
-                  <td className="py-3 px-3 text-right font-bold text-[#0D3B2E]">
-                    {formatCurrency(part.subtotalAmount)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+        {/* Table Watermelon UI */}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nama Usaha &amp; Kontak</TableHead>
+              <TableHead>Kuota Dipesan</TableHead>
+              <TableHead>Metode Pengiriman</TableHead>
+              <TableHead>Bagi Ongkir (Split-Bill)</TableHead>
+              <TableHead className="text-right">Subtotal Belanja</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {po.participants.map((part) => (
+              <TableRow key={part.id}>
+                <TableCell className="align-top">
+                  <p className="font-heading font-bold text-sm text-text-primary">{part.umkmName}</p>
+                  <p className="text-[11px] text-text-muted mt-0.5 tabular-nums">{part.ownerName} &bull; {part.phone}</p>
+                </TableCell>
+                <TableCell className="align-top">
+                  <p className="font-bold text-text-primary tabular-nums">{part.orderQtyUnit} {po.wholesaleUnit}</p>
+                  <p className="text-[11px] text-text-muted tabular-nums">{part.orderWeightKg} kg</p>
+                </TableCell>
+                <TableCell className="align-top">
+                  {part.deliveryMethod === "HEMAT_HUB" ? (
+                    <Badge variant="primary">
+                      Opsi Hemat (Hub)
+                    </Badge>
+                  ) : (
+                    <Badge variant="warning">
+                      Direct (Door-to-Door)
+                    </Badge>
+                  )}
+                  <p className="text-[11px] text-text-muted mt-1 line-clamp-1 max-w-xs text-pretty">
+                    {part.destinationAddress}
+                  </p>
+                </TableCell>
+                <TableCell className="align-top font-medium text-text-secondary tabular-nums">
+                  {formatCurrency(part.allocatedShippingFee)}
+                </TableCell>
+                <TableCell className="align-top text-right font-extrabold text-primary tabular-nums">
+                  {formatCurrency(part.subtotalAmount)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Modal Input Resi & Armada (Saat Berangkatkan Pengiriman) */}
       {showShipModal && (
@@ -341,42 +349,34 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
           role="dialog"
           aria-modal="true"
         >
-          <div
-            className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150"
+          <Card
+            className="w-full max-w-md p-6 shadow-elevation-3 space-y-4 animate-in fade-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-bold text-[#0F172A]">
+            <h3 className="font-heading font-bold text-base text-text-primary">
               Berangkatkan Armada Pengiriman
             </h3>
-            <p className="text-xs text-neutral-500 leading-relaxed">
+            <p className="font-body text-xs text-text-secondary leading-relaxed text-pretty">
               Masukkan identitas pengemudi dan nomor surat jalan untuk memantau perjalanan pesanan menuju Hub Konsolidasi.
             </p>
 
             <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-neutral-700 block mb-1">
-                  Nomor Resi / Surat Jalan
-                </label>
-                <input
-                  type="text"
-                  value={trackingNumberInput}
-                  onChange={(e) => setTrackingNumberInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-xs font-mono font-bold text-neutral-800"
-                />
-              </div>
+              <Input
+                id="trackingNumber"
+                label="Nomor Resi / Surat Jalan"
+                value={trackingNumberInput}
+                onChange={(e) => setTrackingNumberInput(e.target.value)}
+                className="min-h-[44px] font-mono tabular-nums font-bold"
+              />
 
-              <div>
-                <label className="text-xs font-semibold text-neutral-700 block mb-1">
-                  Nama Pengemudi &amp; Jenis Armada
-                </label>
-                <input
-                  type="text"
-                  value={driverNameInput}
-                  onChange={(e) => setDriverNameInput(e.target.value)}
-                  placeholder="Contoh: Hendra Wijaya (Truk Colt Diesel B 9812 UI)"
-                  className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-xs font-medium text-neutral-800"
-                />
-              </div>
+              <Input
+                id="driverName"
+                label="Nama Pengemudi &amp; Jenis Armada"
+                value={driverNameInput}
+                onChange={(e) => setDriverNameInput(e.target.value)}
+                placeholder="Contoh: Hendra Wijaya (Truk Colt Diesel B 9812 UI)"
+                className="min-h-[44px]"
+              />
             </div>
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
@@ -384,6 +384,7 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowShipModal(false)}
+                className="min-h-[44px]"
               >
                 Batal
               </Button>
@@ -397,11 +398,12 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
                     "Armada berhasil diberangkatkan! Nomor resi tercatat di sistem."
                   )
                 }
+                className="min-h-[44px]"
               >
                 Konfirmasi Berangkat
               </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

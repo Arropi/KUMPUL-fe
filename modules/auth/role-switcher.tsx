@@ -27,7 +27,7 @@ export function RoleSwitcher({ activeRole, onRoleChange }: RoleSwitcherProps) {
       role="tablist"
       aria-label="Pilih Peran Akun"
       onKeyDown={handleKeyDown}
-      className="w-full grid grid-cols-2 p-1 bg-neutral-100 rounded-xl"
+      className="w-full grid grid-cols-2 p-1 bg-surface-subtle border border-border/80 rounded-2xl shadow-xs"
     >
       {roles.map((r) => {
         const isSelected = activeRole === r.id;
@@ -42,11 +42,11 @@ export function RoleSwitcher({ activeRole, onRoleChange }: RoleSwitcherProps) {
             tabIndex={isSelected ? 0 : -1}
             onClick={() => onRoleChange(r.id)}
             className={cn(
-              "min-h-[44px] py-2 px-4 rounded-lg font-sans text-sm transition-all duration-150 cursor-pointer active:scale-[0.98]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D3B2E] focus-visible:ring-offset-1",
+              "w-full min-h-[44px] py-2.5 px-4 rounded-xl font-heading text-xs sm:text-sm transition-all duration-150 cursor-pointer active:scale-[0.98] flex items-center justify-center text-center",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 select-none",
               isSelected
-                ? "bg-white text-neutral-900 font-semibold shadow-sm"
-                : "text-neutral-500 hover:text-neutral-800"
+                ? "bg-surface text-primary font-bold shadow-[0_2px_8px_rgba(13,59,46,0.08),inset_0_1px_0_#FFFFFF] border border-border"
+                : "text-text-muted hover:text-text-primary hover:bg-surface/50 font-semibold"
             )}
           >
             {r.label}

@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { FloatingInput } from "@/components/ui/floating-input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Toast } from "@/components/ui/toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RoleSwitcher } from "@/modules/auth/role-switcher";
@@ -21,8 +23,6 @@ function LoginFormInner() {
   const [identifier, setIdentifier] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [rememberMe, setRememberMe] = React.useState(false);
-  const [showPassword, setShowPassword] = React.useState(false);
-
   const [errors, setErrors] = React.useState<{ identifier?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isOAuthLoading, setIsOAuthLoading] = React.useState(false);
@@ -76,14 +76,6 @@ function LoginFormInner() {
 
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
-    setErrors({});
-  };
-
-  const handleQuickFill = (targetRole: UserRole) => {
-    setRole(targetRole);
-    const targetConfig = AUTH_ROLE_CONFIGS[targetRole];
-    setIdentifier(targetConfig.defaultEmail);
-    setPassword("kumpul2026");
     setErrors({});
   };
 
@@ -149,11 +141,8 @@ function LoginFormInner() {
     const nextErrors: { identifier?: string; password?: string } = {};
 
     if (!identifier.trim()) {
-      nextErrors.identifier =
-        role === "umkm"
-          ? "Email atau nomor WhatsApp wajib diisi."
-          : "Email atau ID Supplier wajib diisi.";
-    } else if (identifier.includes("@") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+      nextErrors.identifier = "Alamat email wajib diisi.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim())) {
       nextErrors.identifier = "Format alamat email belum valid.";
     }
 
@@ -209,30 +198,42 @@ function LoginFormInner() {
         onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
       />
 
-      <Card className="w-full max-w-md mx-auto text-left">
-        <CardHeader className="gap-2">
-          <div>
-            <CardTitle>{currentConfig.title}</CardTitle>
-            <CardDescription className="mt-1">
+      <Card className="w-full max-w-[420px] mx-auto rounded-3xl border border-border bg-surface shadow-elevation-2 overflow-hidden flex flex-col justify-center">
+        <CardHeader className="gap-2.5 pt-6 sm:pt-7 pb-2 px-6 sm:px-8 text-center flex flex-col items-center justify-center">
+          {/* Logo KUMPUL di Bagian Atas Tengah Card */}
+          <div className="flex flex-col items-center justify-center gap-1.5 pb-1">
+            <div className="w-11 h-11 rounded-2xl bg-primary text-text-inverse flex items-center justify-center font-heading font-extrabold text-xl shadow-xs">
+              K
+            </div>
+            <span className="font-heading font-extrabold text-xl text-primary tracking-tight">
+              KUMPUL
+            </span>
+          </div>
+
+          <div className="text-center space-y-1">
+            <CardTitle className="text-xl font-bold tracking-tight text-text-primary text-center">
+              {currentConfig.title}
+            </CardTitle>
+            <CardDescription className="text-xs text-text-secondary text-center max-w-xs mx-auto">
               {currentConfig.shortDescription}
             </CardDescription>
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 w-full flex justify-center">
             <RoleSwitcher activeRole={role} onRoleChange={handleRoleChange} />
           </div>
         </CardHeader>
 
-        <CardContent className="pb-8 flex flex-col gap-4">
+        <CardContent className="px-6 sm:px-8 pb-7 sm:pb-8 pt-2 flex flex-col gap-3">
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-3"
             noValidate
           >
-            <Input
+            <FloatingInput
               id={`input-identifier-${role}`}
               label={currentConfig.identifierLabel}
-              placeholder={currentConfig.identifierPlaceholder}
+              type="email"
               value={identifier}
               onChange={(e) => {
                 setIdentifier(e.target.value);
@@ -241,129 +242,88 @@ function LoginFormInner() {
                 }
               }}
               error={errors.identifier}
-              autoComplete="username"
+              autoComplete="email"
               required
             />
 
-            <div className="flex flex-col gap-1">
-              <Input
-                id={`input-password-${role}`}
-                label="Kata Sandi"
-                type={showPassword ? "text" : "password"}
-                placeholder="Masukkan kata sandi"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) {
-                    setErrors((prev) => ({ ...prev, password: undefined }));
-                  }
-                }}
-                error={errors.password}
-                autoComplete="current-password"
-                required
-                rightElement={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="p-1 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer active:scale-[0.96]"
-                    aria-label={
-                      showPassword
-                        ? "Sembunyikan karakter kata sandi"
-                        : "Tampilkan karakter kata sandi"
-                    }
-                  >
-                    {showPassword ? (
-                      <svg
-                        className="w-4 h-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                        <line x1="2" x2="22" y1="2" y2="22" />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-4 h-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
+            <FloatingInput
+              id={`input-password-${role}`}
+              label="Kata Sandi"
+              isPassword
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) {
+                  setErrors((prev) => ({ ...prev, password: undefined }));
                 }
-              />
-            </div>
+              }}
+              error={errors.password}
+              autoComplete="current-password"
+              required
+            />
 
             <div className="flex items-center justify-between pt-0.5">
-              <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-neutral-600">
-                <input
-                  type="checkbox"
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember-me"
                   checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-neutral-300 text-[#0D3B2E] focus:ring-2 focus:ring-[#0D3B2E] cursor-pointer"
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
                 />
-                <span>Ingat saya</span>
-              </label>
+                <label
+                  htmlFor="remember-me"
+                  className="text-xs text-text-secondary cursor-pointer select-none font-medium"
+                >
+                  Ingat saya
+                </label>
+              </div>
 
               <button
                 type="button"
                 onClick={() => setIsForgotPasswordOpen(true)}
-                className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D3B2E] rounded active:scale-[0.96]"
+                className="text-xs font-semibold text-primary hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded active:scale-[0.96]"
               >
                 Lupa sandi?
               </button>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-1">
               <Button
                 type="submit"
                 variant="primary"
-                size="md"
+                size="default"
                 isLoading={isSubmitting}
-                className="w-full font-semibold"
+                className="w-full font-bold"
               >
                 {isSubmitting ? "Memverifikasi..." : currentConfig.submitButtonText}
               </Button>
             </div>
           </form>
 
-          {/* Pemisah Garis Halus */}
-          <div className="relative flex items-center justify-center my-0.5">
-            <div className="w-full border-t border-neutral-200" aria-hidden="true" />
-            <span className="relative bg-white px-3 text-[11px] text-neutral-400 font-sans uppercase tracking-wider">
-              atau
-            </span>
+          {/* Pemisah Garis Halus Presisi untuk "atau" */}
+          <div className="relative flex items-center justify-center py-2">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-surface px-3 text-[11px] font-medium text-text-muted font-sans">
+                atau
+              </span>
+            </div>
           </div>
 
-          {/* Tombol Masuk dengan Google OAuth (Supabase) */}
-          <button
+          {/* Tombol Masuk dengan Google OAuth (Supabase) Menggunakan Button Variant Secondary */}
+          <Button
             type="button"
+            variant="secondary"
+            size="default"
             onClick={handleGoogleSignIn}
             disabled={isOAuthLoading || isSubmitting}
-            className={`w-full min-h-[46px] px-4 py-2.5 rounded-xl border border-neutral-200/90 bg-white hover:bg-neutral-50 active:scale-[0.96] text-neutral-800 text-sm font-medium transition-all duration-150 flex items-center justify-center gap-3 shadow-xs hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D3B2E] ${
-              isOAuthLoading || isSubmitting
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-            }`}
-            aria-label="Masuk dengan akun Google via Supabase"
+            className="w-full flex items-center justify-center gap-2.5 font-semibold"
+            aria-label="Masuk dengan akun Google"
           >
             {isOAuthLoading ? (
               <svg
-                className="animate-spin h-4 w-4 text-neutral-600"
+                className="animate-spin h-4 w-4 text-text-primary"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -393,27 +353,30 @@ function LoginFormInner() {
               </svg>
             )}
             <span>Masuk dengan Google</span>
-          </button>
+          </Button>
 
-          {/* Baris Akun Demo untuk Pengujian Cepat */}
-          <div className="pt-1 flex items-center justify-center gap-3 text-xs text-neutral-500">
-            <span className="text-[11px] text-neutral-400">Akun demo:</span>
-            <button
-              type="button"
-              onClick={() => handleQuickFill("umkm")}
-              className="font-medium text-neutral-700 hover:text-[#0D3B2E] transition-colors cursor-pointer hover:underline"
-            >
-              UMKM
-            </button>
-            <span className="text-neutral-300">&bull;</span>
-            <button
-              type="button"
-              onClick={() => handleQuickFill("supplier")}
-              className="font-medium text-neutral-700 hover:text-[#0D3B2E] transition-colors cursor-pointer hover:underline"
-            >
-              Supplier
-            </button>
+          {/* Pemisah Garis Halus Presisi untuk "Belum memiliki akun KUMPUL?" */}
+          <div className="relative flex items-center justify-center pt-2 pb-1">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-surface px-3 text-xs text-text-secondary font-medium font-sans">
+                Belum memiliki akun KUMPUL?
+              </span>
+            </div>
           </div>
+
+          <Button
+            asChild
+            variant="secondary"
+            size="default"
+            className="w-full font-bold"
+          >
+            <Link href={`/register?role=${role}`}>
+              <span>Daftar Akun Baru</span>
+            </Link>
+          </Button>
         </CardContent>
       </Card>
 
@@ -436,7 +399,7 @@ function LoginFormInner() {
 
 export function LoginForm() {
   return (
-    <React.Suspense fallback={<div className="w-full max-w-md h-[400px] mx-auto bg-white rounded-2xl shadow-sm animate-pulse" />}>
+    <React.Suspense fallback={<div className="w-full max-w-[420px] h-[380px] mx-auto bg-surface rounded-3xl shadow-elevation-1 animate-pulse" />}>
       <LoginFormInner />
     </React.Suspense>
   );

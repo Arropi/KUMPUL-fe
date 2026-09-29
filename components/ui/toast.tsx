@@ -38,11 +38,11 @@ export function Toast({
       aria-live="polite"
       className={cn(
         "fixed top-5 right-5 z-50 max-w-sm sm:max-w-md w-[calc(100vw-2.5rem)] sm:w-auto",
-        "bg-white rounded-2xl shadow-xl shadow-black/10 border border-neutral-100 p-4",
+        "bg-surface rounded-2xl shadow-xl shadow-black/10 border border-border p-4",
         "flex items-start gap-3 transition-all duration-200 animate-in fade-in slide-in-from-top-3"
       )}
     >
-      <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+      <div className="w-6 h-6 rounded-full bg-primary-light text-primary flex items-center justify-center shrink-0 mt-0.5 border border-primary/20">
         {type === "success" && (
           <svg
             className="w-3.5 h-3.5"
@@ -60,10 +60,10 @@ export function Toast({
       </div>
 
       <div className="flex-1 text-left">
-        <p className="font-heading text-xs font-bold text-neutral-900 tracking-tight">
+        <p className="font-heading text-xs font-bold text-text-primary">
           {title}
         </p>
-        <p className="font-sans text-xs text-neutral-600 mt-0.5 leading-relaxed text-pretty">
+        <p className="font-sans text-xs text-text-secondary mt-0.5 leading-relaxed text-pretty">
           {message}
         </p>
       </div>
@@ -72,7 +72,7 @@ export function Toast({
         type="button"
         onClick={onClose}
         aria-label="Tutup notifikasi"
-        className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer active:scale-[0.96]"
+        className="p-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer active:scale-[0.96]"
       >
         <svg
           className="w-3.5 h-3.5"

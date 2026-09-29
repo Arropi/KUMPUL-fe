@@ -4,6 +4,7 @@ import * as React from "react";
 import { MOCK_SUPPLIER_PROFILE } from "@/constants/supplier";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Toast } from "@/components/ui/toast";
 
@@ -66,11 +67,11 @@ export function SupplierProfilView() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
+          <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary text-balance">
             Profil Legalitas &amp; Rekening Usaha
           </h1>
-          <p className="text-xs sm:text-sm text-neutral-500 mt-1">
-            Data identitas tunggal entitas bisnis (*Single Legal Entity* berbasis NIB/NPWP) dan rekening pencairan escrow.
+          <p className="font-body text-xs sm:text-sm text-text-secondary mt-1 text-pretty">
+            Data identitas tunggal entitas bisnis (Single Legal Entity berbasis NIB/NPWP) dan rekening pencairan escrow platform.
           </p>
         </div>
 
@@ -80,7 +81,7 @@ export function SupplierProfilView() {
               variant="outline"
               size="md"
               onClick={() => setIsEditing(true)}
-              className="font-semibold"
+              className="font-semibold min-h-[44px]"
             >
               Ubah Kontak Operasional
             </Button>
@@ -89,7 +90,7 @@ export function SupplierProfilView() {
               variant="ghost"
               size="md"
               onClick={() => setIsEditing(false)}
-              className="font-semibold text-neutral-600"
+              className="font-semibold text-text-secondary min-h-[44px]"
             >
               Batal
             </Button>
@@ -98,14 +99,14 @@ export function SupplierProfilView() {
       </div>
 
       {/* Informasi Legalitas Badan Usaha */}
-      <section className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-7 shadow-xs space-y-5">
-        <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+      <Card className="p-5 sm:p-7 space-y-5">
+        <div className="flex items-center justify-between border-b border-border pb-3">
           <div>
-            <h2 className="text-base font-bold text-[#0F172A]">
+            <h2 className="font-heading font-bold text-base text-text-primary">
               Identitas Badan Usaha Terdaftar
             </h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Terkunci sesuai verifikasi dokumen legalitas di Kementerian Investasi/OSS.
+            <p className="font-body text-xs text-text-secondary mt-0.5 text-pretty">
+              Terkunci sesuai verifikasi dokumen legalitas resmi di Kementerian Investasi/OSS.
             </p>
           </div>
           <Badge variant="success" className="font-bold text-xs">
@@ -114,52 +115,52 @@ export function SupplierProfilView() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-100">
-            <span className="text-neutral-400 font-semibold block text-[10px] uppercase">
+          <div className="p-3.5 rounded-xl bg-background border border-border">
+            <span className="text-text-muted font-semibold block text-[10px]">
               Nama Resmi Badan Hukum
             </span>
-            <p className="text-sm font-bold text-neutral-900 mt-0.5">
+            <p className="font-heading text-sm font-bold text-text-primary mt-0.5">
               {profile.legalName}
             </p>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-100">
-            <span className="text-neutral-400 font-semibold block text-[10px] uppercase">
+          <div className="p-3.5 rounded-xl bg-background border border-border">
+            <span className="text-text-muted font-semibold block text-[10px]">
               Nomor Pokok Wajib Pajak (NPWP) &amp; NIB
             </span>
-            <p className="text-xs font-mono font-bold text-neutral-800 mt-1">
+            <p className="text-xs font-mono font-bold text-text-primary mt-1 tabular-nums">
               {profile.npwpNib}
             </p>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-100">
-            <span className="text-neutral-400 font-semibold block text-[10px] uppercase">
+          <div className="p-3.5 rounded-xl bg-background border border-border">
+            <span className="text-text-muted font-semibold block text-[10px]">
               Kategori Sektor Utama
             </span>
-            <p className="text-xs font-bold text-neutral-800 mt-1">
+            <p className="text-xs font-bold text-text-primary mt-1">
               {profile.sector} &bull; Rantai Pasok Pangan Hulu
             </p>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-100">
-            <span className="text-neutral-400 font-semibold block text-[10px] uppercase">
+          <div className="p-3.5 rounded-xl bg-background border border-border">
+            <span className="text-text-muted font-semibold block text-[10px]">
               Tanggal Terdaftar di Platform KUMPUL
             </span>
-            <p className="text-xs font-bold text-neutral-800 mt-1">
+            <p className="text-xs font-bold text-text-primary mt-1 tabular-nums">
               {profile.registrationDate}
             </p>
           </div>
         </div>
-      </section>
+      </Card>
 
       {/* Form Kontak Operasional & Alamat Gudang */}
-      <section className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-7 shadow-xs space-y-5">
-        <div className="border-b border-neutral-100 pb-3">
-          <h2 className="text-base font-bold text-[#0F172A]">
+      <Card className="p-5 sm:p-7 space-y-5">
+        <div className="border-b border-border pb-3">
+          <h2 className="font-heading font-bold text-base text-text-primary">
             Kontak Distribusi &amp; Lokasi Gudang Pengiriman
           </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            Digunakan untuk koordinasi armada logistik dan penerbitan surat jalan.
+          <p className="font-body text-xs text-text-secondary mt-0.5 text-pretty">
+            Digunakan untuk koordinasi armada logistik pengiriman dan penerbitan surat jalan.
           </p>
         </div>
 
@@ -172,6 +173,7 @@ export function SupplierProfilView() {
               onChange={(e) => setBrandName(e.target.value)}
               disabled={!isEditing}
               required
+              className="min-h-[44px]"
             />
 
             <Input
@@ -181,6 +183,7 @@ export function SupplierProfilView() {
               onChange={(e) => setContactPhone(e.target.value)}
               disabled={!isEditing}
               required
+              className="min-h-[44px] tabular-nums"
             />
           </div>
 
@@ -192,6 +195,7 @@ export function SupplierProfilView() {
               onChange={(e) => setContactEmail(e.target.value)}
               disabled={!isEditing}
               required
+              className="min-h-[44px]"
             />
 
             <Input
@@ -201,6 +205,7 @@ export function SupplierProfilView() {
               onChange={(e) => setAddress(e.target.value)}
               disabled={!isEditing}
               required
+              className="min-h-[44px]"
             />
           </div>
 
@@ -211,46 +216,46 @@ export function SupplierProfilView() {
                 variant="primary"
                 size="md"
                 isLoading={isSaving}
-                className="font-semibold shadow-xs px-6"
+                className="font-semibold px-6 min-h-[44px]"
               >
                 {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
               </Button>
             </div>
           )}
         </form>
-      </section>
+      </Card>
 
       {/* Rekening Penampungan Escrow Terverifikasi */}
-      <section className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-7 shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+      <Card className="p-5 sm:p-7 space-y-4">
+        <div className="flex items-center justify-between border-b border-border pb-3">
           <div>
-            <h2 className="text-base font-bold text-[#0F172A]">
+            <h2 className="font-heading font-bold text-base text-text-primary">
               Rekening Bank Penampungan Escrow
             </h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="font-body text-xs text-text-secondary mt-0.5 text-pretty">
               Dana pesanan pooling yang telah tiba dan diverifikasi akan dicairkan otomatis ke rekening ini.
             </p>
           </div>
           <Badge variant="success">Kliring Siap</Badge>
         </div>
 
-        <div className="p-4 rounded-xl bg-[#EBF5F0]/60 border border-[#0D3B2E]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 rounded-xl bg-[#EBF5F0]/70 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-[#0D3B2E] uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-primary block">
               {profile.bankInfo.bankName}
             </span>
-            <p className="text-lg font-mono font-extrabold text-[#0F172A] tracking-wider">
+            <p className="text-lg font-mono font-extrabold text-text-primary tabular-nums">
               {profile.bankInfo.accountNumber}
             </p>
-            <p className="text-xs font-semibold text-neutral-600">
+            <p className="text-xs font-semibold text-text-secondary">
               Atas Nama: {profile.bankInfo.accountHolder}
             </p>
           </div>
-          <span className="text-[11px] font-medium text-emerald-800 bg-white px-3 py-1.5 rounded-lg border border-emerald-200/60 shadow-2xs self-start sm:self-center">
+          <span className="text-[11px] font-medium text-primary bg-surface px-3 py-1.5 rounded-full border border-primary/20 shadow-elevation-1 self-start sm:self-center">
             Pencairan Maks. 1x24 Jam Kerja
           </span>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }
