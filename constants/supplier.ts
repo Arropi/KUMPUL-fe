@@ -3,6 +3,13 @@ export type WholesaleUnit = "KARUNG" | "SAK" | "KRAT" | "PAX" | "BAL" | "PETI";
 export type StorageTemperature = "AMBIENT" | "CHILLED" | "FROZEN";
 
 export type SectorType =
+  | "PERTANIAN"
+  | "PETERNAKAN"
+  | "PERIKANAN"
+  | "PERKEBUNAN"
+  | "FNB & PENGOLAHAN"
+  | "RITEL"
+  | "LOGISTIK"
   | "Pertanian"
   | "Peternakan"
   | "Perikanan"
@@ -10,6 +17,16 @@ export type SectorType =
   | "FnB / Pengolahan"
   | "Ritel"
   | "Logistik";
+
+export const OFFICIAL_SECTORS = [
+  "PERTANIAN",
+  "PETERNAKAN",
+  "PERIKANAN",
+  "PERKEBUNAN",
+  "FNB & PENGOLAHAN",
+  "RITEL",
+  "LOGISTIK",
+] as const;
 
 export interface CommodityPriceTier {
   id: string;
@@ -112,10 +129,13 @@ export interface SupplierEntityProfile {
   brandName: string;
   npwpNib: string;
   sector: SectorType;
+  storageCapacity?: string;
   contactEmail: string;
   contactPhone: string;
   address: string;
   city: string;
+  latitude?: number;
+  longitude?: number;
   bankInfo: {
     bankName: string;
     accountNumber: string;
@@ -134,11 +154,14 @@ export const MOCK_SUPPLIER_PROFILE: SupplierEntityProfile = {
   legalName: "PT Agroniaga Nusantara Sejahtera",
   brandName: "AgroNusantara Supply",
   npwpNib: "01.892.341.2-045.000 / NIB 9120003481923",
-  sector: "Pertanian",
+  sector: "PERTANIAN",
+  storageCapacity: "750 Ton (Gudang Kering & Suhu Terkontrol)",
   contactEmail: "distribusi@agronusantara.co.id",
   contactPhone: "0811-8899-2311",
   address: "Kawasan Pergudangan Muara Karang Blok B7 No. 12",
   city: "Jakarta Utara",
+  latitude: -6.1158,
+  longitude: 106.7865,
   bankInfo: {
     bankName: "Bank Central Asia (BCA)",
     accountNumber: "883-0912-441",

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   MOCK_SUPPLIER_PROFILE,
   MOCK_SUPPLIER_COMMODITIES,
@@ -114,10 +115,26 @@ function InsightBadge({ children }: { children: React.ReactNode }) {
 }
 
 export function SupplierDashboardView() {
+  const searchParams = useSearchParams();
   const greeting = useGreeting(MOCK_SUPPLIER_PROFILE.legalName);
   const [timeline, setTimeline] = React.useState<TimelineOptionValue>("7d");
   const [orders] = React.useState<ConsolidatedPO[]>(MOCK_CONSOLIDATED_POS);
   const commodities = MOCK_SUPPLIER_COMMODITIES;
+
+  const isStoragePending = React.useSyncExternalStore(
+    (callback) => {
+      window.addEventListener("storage", callback);
+      return () => window.removeEventListener("storage", callback);
+    },
+    () => {
+      const savedComplete = localStorage.getItem("kumpul_supplier_profile_complete");
+      const pendingOnboarding = localStorage.getItem("kumpul_pending_onboarding");
+      return Boolean(pendingOnboarding) && savedComplete !== "true";
+    },
+    () => false
+  );
+
+  const isProfilePending = searchParams.get("onboarding") === "pending" || isStoragePending;
 
   const selectedLabel =
     TIMELINE_OPTIONS.find((opt) => opt.value === timeline)?.label ?? "7 Hari Terakhir";
@@ -212,6 +229,36 @@ export function SupplierDashboardView() {
           </Link>
         </div>
       </div>
+
+      {/* Banner Peringatan Kelengkapan Profiling */}
+      {isProfilePending && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-3">
+            <span className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0 font-bold text-base shadow-xs">
+              !
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-heading text-sm font-bold text-text-primary">
+                  Profil Usaha Perlu Dilengkapi
+                </h3>
+                <span className="text-[10px] font-bold text-amber-900 bg-amber-200/70 px-2 py-0.5 rounded-md border border-amber-300">
+                  Wajib Diisi
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Tentukan Sektor Usaha dari 7 Sektor Resmi, Kapasitas Storage Gudang, dan Rekening Bank Escrow sebelum menerbitkan katalog komoditas baru.
+              </p>
+            </div>
+          </div>
+
+          <Button asChild variant="accent" size="sm" className="font-bold shrink-0 self-start sm:self-auto min-h-[40px]">
+            <Link href="/supplier/profil?onboarding=pending">
+              <span>Lengkapi Profil Sekarang &rarr;</span>
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {/* 2. Hero Section: Overall Operational Wellness with Score Donut */}
       <section className="bg-surface rounded-3xl border border-border/80 p-6 sm:p-7 shadow-elevation-1 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
