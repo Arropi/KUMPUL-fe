@@ -3,6 +3,13 @@ export type WholesaleUnit = "KARUNG" | "SAK" | "KRAT" | "PAX" | "BAL" | "PETI";
 export type StorageTemperature = "AMBIENT" | "CHILLED" | "FROZEN";
 
 export type SectorType =
+  | "PERTANIAN"
+  | "PETERNAKAN"
+  | "PERIKANAN"
+  | "PERKEBUNAN"
+  | "FNB & PENGOLAHAN"
+  | "RITEL"
+  | "LOGISTIK"
   | "Pertanian"
   | "Peternakan"
   | "Perikanan"
@@ -10,6 +17,61 @@ export type SectorType =
   | "FnB / Pengolahan"
   | "Ritel"
   | "Logistik";
+
+export const OFFICIAL_SECTORS = [
+  "PERTANIAN",
+  "PETERNAKAN",
+  "PERIKANAN",
+  "PERKEBUNAN",
+  "FNB & PENGOLAHAN",
+  "RITEL",
+  "LOGISTIK",
+] as const;
+
+export type StorageUnit = "TON" | "KG" | "KUINTAL" | "M3" | "LITER" | "PALET";
+
+export type StorageType = "DRY" | "CHILLED" | "FROZEN" | "SILO";
+
+export interface StorageUnitOption {
+  label: string;
+  value: StorageUnit;
+  description: string;
+}
+
+export const STORAGE_UNIT_OPTIONS: StorageUnitOption[] = [
+  { label: "Ton", value: "TON", description: "Standar kapasitas komoditas pangan grosir" },
+  { label: "Kilogram (Kg)", value: "KG", description: "Satuan bobot kilogram" },
+  { label: "Kuintal (100 Kg)", value: "KUINTAL", description: "1 kuintal setara 100 kg" },
+  { label: "Meter Kubik (m³)", value: "M3", description: "Satuan volume ruang gudang" },
+  { label: "Palet / Kontainer", value: "PALET", description: "Kapasitas muat palet terstandarisasi" },
+  { label: "Liter (L)", value: "LITER", description: "Komoditas cair (minyak, susu segar, dll)" },
+];
+
+export interface StorageTypeOption {
+  label: string;
+  value: StorageType;
+  description: string;
+}
+
+export const STORAGE_TYPE_OPTIONS: StorageTypeOption[] = [
+  { label: "Gudang Kering (Ambient)", value: "DRY", description: "Penyimpanan suhu ruang (beras, jagung, umbi, biji-bijian)" },
+  { label: "Ruang Pendingin (Chilled 0° s/d 4°C)", value: "CHILLED", description: "Sayuran segar, buah, telur, olahan susu" },
+  { label: "Cold Storage Beku (Frozen -18°C)", value: "FROZEN", description: "Daging beku, seafood, ayam potong, produk beku" },
+  { label: "Silo / Curah", value: "SILO", description: "Penyimpanan curah terproteksi cuaca" },
+];
+
+export function calculateNormalizedKg(value: number, unit: StorageUnit): number | null {
+  switch (unit) {
+    case "TON":
+      return value * 1000;
+    case "KUINTAL":
+      return value * 100;
+    case "KG":
+      return value;
+    default:
+      return null;
+  }
+}
 
 export interface CommodityPriceTier {
   id: string;
@@ -112,10 +174,16 @@ export interface SupplierEntityProfile {
   brandName: string;
   npwpNib: string;
   sector: SectorType;
+  storageValue?: number;
+  storageUnit?: StorageUnit;
+  storageType?: StorageType;
+  storageCapacity?: string;
   contactEmail: string;
   contactPhone: string;
   address: string;
   city: string;
+  latitude?: number;
+  longitude?: number;
   bankInfo: {
     bankName: string;
     accountNumber: string;
@@ -134,11 +202,17 @@ export const MOCK_SUPPLIER_PROFILE: SupplierEntityProfile = {
   legalName: "PT Agroniaga Nusantara Sejahtera",
   brandName: "AgroNusantara Supply",
   npwpNib: "01.892.341.2-045.000 / NIB 9120003481923",
-  sector: "Pertanian",
+  sector: "PERTANIAN",
+  storageValue: 750,
+  storageUnit: "TON",
+  storageType: "DRY",
+  storageCapacity: "750 Ton • Gudang Kering (Ambient)",
   contactEmail: "distribusi@agronusantara.co.id",
   contactPhone: "0811-8899-2311",
   address: "Kawasan Pergudangan Muara Karang Blok B7 No. 12",
   city: "Jakarta Utara",
+  latitude: -6.1158,
+  longitude: 106.7865,
   bankInfo: {
     bankName: "Bank Central Asia (BCA)",
     accountNumber: "883-0912-441",

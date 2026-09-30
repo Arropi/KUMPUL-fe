@@ -16,6 +16,18 @@ import { Toast } from "@/components/ui/toast";
 export function TambahKomoditasForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const isProfilePending = React.useSyncExternalStore(
+    (callback) => {
+      window.addEventListener("storage", callback);
+      return () => window.removeEventListener("storage", callback);
+    },
+    () => {
+      const savedStatus = localStorage.getItem("kumpul_supplier_profile_complete");
+      const pendingOnboarding = localStorage.getItem("kumpul_pending_onboarding");
+      return Boolean(pendingOnboarding) && savedStatus !== "true";
+    },
+    () => false
+  );
 
   // Form State
   const [name, setName] = React.useState("");
@@ -138,7 +150,30 @@ export function TambahKomoditasForm() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      {/* Gatekeeper Card jika Profil Belum Dilengkapi */}
+      {isProfilePending ? (
+        <Card className="p-7 sm:p-10 border-2 border-amber-500/30 bg-amber-500/5 rounded-3xl text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-700 mx-auto flex items-center justify-center font-bold text-2xl shadow-xs">
+            !
+          </div>
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h2 className="font-heading text-lg font-bold text-text-primary">
+              Lengkapi Profil Operasional Terlebih Dahulu
+            </h2>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              Sebelum dapat menambahkan katalog komoditas baru, kamu wajib melengkapi Sektor Usaha dari 7 Sektor Resmi, Kapasitas Storage, dan Rekening Bank Escrow.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Button asChild variant="primary" size="default" className="font-bold min-h-[44px]">
+              <Link href="/supplier/profil?onboarding=pending">
+                <span>Lengkapi Profil Sekarang &rarr;</span>
+              </Link>
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {/* Bagian 1: Data Komoditas & Kuota Grosir */}
         <Card className="p-5 sm:p-7 space-y-5">
           <div className="border-b border-border pb-3">
@@ -183,15 +218,15 @@ export function TambahKomoditasForm() {
                 id="sector"
                 value={sector}
                 onChange={(e) => setSector(e.target.value as SectorType)}
-                className="min-h-[44px] px-3.5 py-2 rounded-xl border border-border bg-surface text-xs font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                className="min-h-[44px] px-3.5 py-2 rounded-xl border border-border bg-surface text-xs font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <option value="Pertanian">Pertanian</option>
-                <option value="FnB / Pengolahan">FnB / Pengolahan</option>
-                <option value="Peternakan">Peternakan</option>
-                <option value="Perikanan">Perikanan</option>
-                <option value="Perkebunan">Perkebunan</option>
-                <option value="Ritel">Ritel</option>
-                <option value="Logistik">Logistik</option>
+                <option value="PERTANIAN">PERTANIAN</option>
+                <option value="PETERNAKAN">PETERNAKAN</option>
+                <option value="PERIKANAN">PERIKANAN</option>
+                <option value="PERKEBUNAN">PERKEBUNAN</option>
+                <option value="FNB & PENGOLAHAN">FNB & PENGOLAHAN</option>
+                <option value="RITEL">RITEL</option>
+                <option value="LOGISTIK">LOGISTIK</option>
               </select>
             </div>
 
@@ -439,6 +474,7 @@ export function TambahKomoditasForm() {
           </Button>
         </div>
       </form>
+      )}
     </div>
   );
 }

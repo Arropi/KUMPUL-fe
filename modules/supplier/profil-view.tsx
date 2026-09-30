@@ -1,23 +1,39 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { MOCK_SUPPLIER_PROFILE } from "@/constants/supplier";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { FloatingInput } from "@/components/ui/floating-input";
 import { Toast } from "@/components/ui/toast";
+import { InlineDisclosureSelect } from "@/components/ui/inline-disclosure-select";
+
+const BANK_OPTIONS = [
+  "Bank Central Asia (BCA)",
+  "Bank Mandiri",
+  "Bank Rakyat Indonesia (BRI)",
+  "Bank Negara Indonesia (BNI)",
+  "Bank Syariah Indonesia (BSI)",
+];
 
 export function SupplierProfilView() {
-  const [profile, setProfile] = React.useState(MOCK_SUPPLIER_PROFILE);
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [isSaving, setIsSaving] = React.useState(false);
+  const searchParams = useSearchParams();
+  const isOnboardingPending = searchParams.get("onboarding") === "pending";
 
-  // Form Fields
-  const [brandName, setBrandName] = React.useState(profile.brandName);
-  const [contactEmail, setContactEmail] = React.useState(profile.contactEmail);
-  const [contactPhone, setContactPhone] = React.useState(profile.contactPhone);
-  const [address, setAddress] = React.useState(profile.address);
+  const [profile, setProfile] = React.useState(MOCK_SUPPLIER_PROFILE);
+  const [isEditing, setIsEditing] = React.useState(isOnboardingPending);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [isProfileComplete, setIsProfileComplete] = React.useState(!isOnboardingPending);
+
+  // Bank Info Fields
+  const [bankName, setBankName] = React.useState(profile.bankInfo.bankName || BANK_OPTIONS[0]);
+  const [accountNumber, setAccountNumber] = React.useState(profile.bankInfo.accountNumber || "");
+  const [accountHolder, setAccountHolder] = React.useState(
+    profile.bankInfo.accountHolder || profile.legalName
+  );
 
   const [toast, setToast] = React.useState<{
     isOpen: boolean;
@@ -38,24 +54,39 @@ export function SupplierProfilView() {
     setTimeout(() => {
       setProfile((prev) => ({
         ...prev,
-        brandName,
-        contactEmail,
-        contactPhone,
-        address,
+        bankInfo: {
+          bankName,
+          accountNumber,
+          accountHolder,
+        },
       }));
       setIsSaving(false);
       setIsEditing(false);
+      setIsProfileComplete(true);
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("kumpul_supplier_profile_complete", "true");
+        localStorage.setItem(
+          "kumpul_supplier_bank_data",
+          JSON.stringify({
+            bankName,
+            accountNumber,
+            accountHolder,
+          })
+        );
+      }
+
       setToast({
         isOpen: true,
-        title: "Profil Diperbarui",
-        message: "Data profil usaha dan kontak operasional berhasil disimpan.",
+        title: "Rekening Tersimpan",
+        message: "Rekening settlement escrow aktif untuk pencairan dana otomatis.",
         type: "success",
       });
-    }, 600);
+    }, 500);
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-5 max-w-2xl mx-auto">
       <Toast
         isOpen={toast.isOpen}
         title={toast.title}
@@ -64,33 +95,66 @@ export function SupplierProfilView() {
         onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
       />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Banner Ringkas Onboarding */}
+      {!isProfileComplete && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0 font-bold text-xs">
+              !
+            </span>
+            <p className="text-xs text-text-primary font-medium">
+              Lengkapi rekening escrow untuk mengaktifkan akses tambah katalog komoditas.
+            </p>
+          </div>
+          {!isEditing && (
+            <Button
+              type="button"
+              variant="accent"
+              size="sm"
+              onClick={() => setIsEditing(true)}
+              className="font-bold text-xs h-8 px-3 shrink-0"
+            >
+              Lengkapi
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Header Halaman */}
+      <div className="flex items-center justify-between gap-3 pt-1">
         <div>
-          <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary text-balance">
-            Profil Legalitas &amp; Rekening Usaha
+          <h1 className="font-heading font-bold text-xl text-text-primary">
+            Rekening Settlement Escrow
           </h1>
-          <p className="font-body text-xs sm:text-sm text-text-secondary mt-1 text-pretty">
-            Data identitas tunggal entitas bisnis (Single Legal Entity berbasis NIB/NPWP) dan rekening pencairan escrow platform.
+          <p className="text-xs text-text-muted mt-0.5">
+            {profile.legalName} &bull; {profile.npwpNib}
           </p>
         </div>
 
-        <div>
+        <div className="flex items-center gap-2">
+          {isProfileComplete && !isEditing && (
+            <Button asChild variant="primary" size="sm" className="font-bold text-xs h-9">
+              <Link href="/supplier/katalog/tambah">
+                <span>+ Tambah Katalog</span>
+              </Link>
+            </Button>
+          )}
+
           {!isEditing ? (
             <Button
               variant="outline"
-              size="md"
+              size="sm"
               onClick={() => setIsEditing(true)}
-              className="font-semibold min-h-[44px]"
+              className="text-xs h-9 font-semibold"
             >
-              Ubah Kontak Operasional
+              Ubah Rekening
             </Button>
           ) : (
             <Button
               variant="ghost"
-              size="md"
+              size="sm"
               onClick={() => setIsEditing(false)}
-              className="font-semibold text-text-secondary min-h-[44px]"
+              className="text-xs h-9 font-semibold text-text-secondary"
             >
               Batal
             </Button>
@@ -98,163 +162,90 @@ export function SupplierProfilView() {
         </div>
       </div>
 
-      {/* Informasi Legalitas Badan Usaha */}
-      <Card className="p-5 sm:p-7 space-y-5">
-        <div className="flex items-center justify-between border-b border-border pb-3">
-          <div>
-            <h2 className="font-heading font-bold text-base text-text-primary">
-              Identitas Badan Usaha Terdaftar
-            </h2>
-            <p className="font-body text-xs text-text-secondary mt-0.5 text-pretty">
-              Terkunci sesuai verifikasi dokumen legalitas resmi di Kementerian Investasi/OSS.
-            </p>
-          </div>
-          <Badge variant="success" className="font-bold text-xs">
-            ✓ NIB Terverifikasi
-          </Badge>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div className="p-3.5 rounded-xl bg-background border border-border">
-            <span className="text-text-muted font-semibold block text-[10px]">
-              Nama Resmi Badan Hukum
-            </span>
-            <p className="font-heading text-sm font-bold text-text-primary mt-0.5">
-              {profile.legalName}
-            </p>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-background border border-border">
-            <span className="text-text-muted font-semibold block text-[10px]">
-              Nomor Pokok Wajib Pajak (NPWP) &amp; NIB
-            </span>
-            <p className="text-xs font-mono font-bold text-text-primary mt-1 tabular-nums">
-              {profile.npwpNib}
-            </p>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-background border border-border">
-            <span className="text-text-muted font-semibold block text-[10px]">
-              Kategori Sektor Utama
-            </span>
-            <p className="text-xs font-bold text-text-primary mt-1">
-              {profile.sector} &bull; Rantai Pasok Pangan Hulu
-            </p>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-background border border-border">
-            <span className="text-text-muted font-semibold block text-[10px]">
-              Tanggal Terdaftar di Platform KUMPUL
-            </span>
-            <p className="text-xs font-bold text-text-primary mt-1 tabular-nums">
-              {profile.registrationDate}
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Form Kontak Operasional & Alamat Gudang */}
-      <Card className="p-5 sm:p-7 space-y-5">
-        <div className="border-b border-border pb-3">
-          <h2 className="font-heading font-bold text-base text-text-primary">
-            Kontak Distribusi &amp; Lokasi Gudang Pengiriman
-          </h2>
-          <p className="font-body text-xs text-text-secondary mt-0.5 text-pretty">
-            Digunakan untuk koordinasi armada logistik pengiriman dan penerbitan surat jalan.
-          </p>
-        </div>
-
+      {/* Form Input Rekening */}
+      <Card className="p-5 sm:p-6 rounded-2xl border border-border bg-surface shadow-xs">
         <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              id="brandName"
-              label="Nama Merek / Brand Dagang"
-              value={brandName}
-              onChange={(e) => setBrandName(e.target.value)}
-              disabled={!isEditing}
-              required
-              className="min-h-[44px]"
-            />
-
-            <Input
-              id="contactPhone"
-              label="Nomor Telepon / WhatsApp Operasional"
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-              disabled={!isEditing}
-              required
-              className="min-h-[44px] tabular-nums"
-            />
+          <div className="flex items-center justify-between pb-2 border-b border-border/70">
+            <span className="font-heading font-bold text-sm text-text-primary">
+              Informasi Rekening Bank
+            </span>
+            {isProfileComplete ? (
+              <Badge variant="success" className="text-[11px] font-semibold">
+                ✓ Aktif
+              </Badge>
+            ) : (
+              <Badge variant="warning" className="text-[11px] font-semibold">
+                Belum Terisi
+              </Badge>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              id="contactEmail"
-              label="Email Operasional Pengadaan"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              disabled={!isEditing}
-              required
-              className="min-h-[44px]"
-            />
+          {isEditing ? (
+            <div className="space-y-3 pt-1">
+              {/* Dropdown Bank (1 judul hint terpadu dari Watermelon) */}
+              <InlineDisclosureSelect
+                id="bankNameSelect"
+                label="Pilihan Bank Penampung"
+                options={BANK_OPTIONS}
+                value={bankName}
+                onChange={(val) => setBankName(val)}
+              />
 
-            <Input
-              id="address"
-              label="Alamat Gudang Penampungan Utama"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              disabled={!isEditing}
-              required
-              className="min-h-[44px]"
-            />
-          </div>
+              {/* Nomor Rekening (1 judul hint terpadu dari FloatingInput) */}
+              <FloatingInput
+                id="accountNumberInput"
+                label="Nomor Rekening Bank"
+                placeholder="Contoh: 8830912441"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                required
+                className="font-mono"
+              />
 
-          {isEditing && (
-            <div className="flex justify-end pt-2">
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                isLoading={isSaving}
-                className="font-semibold px-6 min-h-[44px]"
-              >
-                {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
-              </Button>
+              {/* Nama Pemilik Rekening (1 judul hint terpadu dari FloatingInput) */}
+              <FloatingInput
+                id="accountHolderInput"
+                label="Nama Pemilik Rekening (Sesuai Buku Tabungan)"
+                placeholder="Contoh: PT Agroniaga Nusantara Sejahtera"
+                value={accountHolder}
+                onChange={(e) => setAccountHolder(e.target.value)}
+                required
+              />
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  isLoading={isSaving}
+                  className="font-bold text-xs min-h-[42px] px-6"
+                >
+                  {isSaving ? "Menyimpan..." : "Simpan Rekening"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-surface-subtle border border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-primary font-heading">
+                  {bankName}
+                </span>
+                <span className="text-[10px] text-success font-semibold bg-success/10 px-2 py-0.5 rounded-md">
+                  BI-FAST Siap
+                </span>
+              </div>
+
+              <div>
+                <p className="text-lg font-mono font-bold text-text-primary tracking-wide tabular-nums">
+                  {accountNumber || "883-0912-441"}
+                </p>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Atas Nama: <span className="font-semibold text-text-primary">{accountHolder || profile.legalName}</span>
+                </p>
+              </div>
             </div>
           )}
         </form>
-      </Card>
-
-      {/* Rekening Penampungan Escrow Terverifikasi */}
-      <Card className="p-5 sm:p-7 space-y-4">
-        <div className="flex items-center justify-between border-b border-border pb-3">
-          <div>
-            <h2 className="font-heading font-bold text-base text-text-primary">
-              Rekening Bank Penampungan Escrow
-            </h2>
-            <p className="font-body text-xs text-text-secondary mt-0.5 text-pretty">
-              Dana pesanan pooling yang telah tiba dan diverifikasi akan dicairkan otomatis ke rekening ini.
-            </p>
-          </div>
-          <Badge variant="success">Kliring Siap</Badge>
-        </div>
-
-        <div className="p-4 rounded-xl bg-[#EBF5F0]/70 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-primary block">
-              {profile.bankInfo.bankName}
-            </span>
-            <p className="text-lg font-mono font-extrabold text-text-primary tabular-nums">
-              {profile.bankInfo.accountNumber}
-            </p>
-            <p className="text-xs font-semibold text-text-secondary">
-              Atas Nama: {profile.bankInfo.accountHolder}
-            </p>
-          </div>
-          <span className="text-[11px] font-medium text-primary bg-surface px-3 py-1.5 rounded-full border border-primary/20 shadow-elevation-1 self-start sm:self-center">
-            Pencairan Maks. 1x24 Jam Kerja
-          </span>
-        </div>
       </Card>
     </div>
   );
