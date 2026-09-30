@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TambahKomoditasForm } from "@/modules/supplier/tambah-komoditas-form";
+import { TambahKomoditasForm } from "@/modules/supplier/katalog/tambah-komoditas-form";
 
 export const metadata: Metadata = {
   title: "Tambah Pasokan Komoditas | Portal Supplier KUMPUL",

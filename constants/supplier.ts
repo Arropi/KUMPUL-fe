@@ -162,6 +162,8 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     availableStock: 120, // 6.000 kg
     leadTimeDays: 2,
     isActive: true,
+    imageUrl:
+      "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80",
     priceTiers: [
       {
         id: "tier-1",
@@ -202,6 +204,8 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     availableStock: 80,
     leadTimeDays: 1,
     isActive: true,
+    imageUrl:
+      "https://images.unsplash.com/photo-1599824425713-b25b65c2b774?auto=format&fit=crop&w=600&q=80",
     priceTiers: [
       {
         id: "tier-kdl-1",
@@ -242,6 +246,8 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     availableStock: 45,
     leadTimeDays: 2,
     isActive: true,
+    imageUrl:
+      "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&w=600&q=80",
     priceTiers: [
       {
         id: "tier-bam-1",
@@ -282,6 +288,8 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     availableStock: 30,
     leadTimeDays: 1,
     isActive: false, // Ditandai nonaktif untuk contoh UI
+    imageUrl:
+      "https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=600&q=80",
     priceTiers: [
       {
         id: "tier-aym-1",
@@ -305,7 +313,7 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
       expiryDate: "2026-10-06",
       storageTemperature: "CHILLED",
       originLocation: "Bogor, Jawa Barat",
-      hygieneStatus: "TERVERIFIKASI",
+      hygieneStatus: "MENUNGGU_AUDIT",
     },
     createdAt: "2026-09-28",
   },

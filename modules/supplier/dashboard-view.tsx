@@ -8,7 +8,6 @@ import {
   MOCK_CONSOLIDATED_POS,
   ConsolidatedPO,
 } from "@/constants/supplier";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,7 +32,8 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency, formatNumber } from "@/lib/utils";
+import { getOrderStatusBadge } from "./helpers";
 
 type TimelineOptionValue = "7d" | "30d" | "90d";
 
@@ -134,36 +134,13 @@ export function SupplierDashboardView() {
     .filter((o) => o.status !== "DELIVERED")
     .reduce((acc, curr) => acc + curr.grandTotalAmount, 0);
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(val);
-  };
-
-  const getStatusBadge = (status: ConsolidatedPO["status"]) => {
-    switch (status) {
-      case "PAID_TO_ESCROW":
-        return <Badge variant="warning">Dana Siap di Escrow</Badge>;
-      case "PROCESSING":
-        return <Badge variant="info">Sedang Dikemas</Badge>;
-      case "SHIPPED":
-        return <Badge variant="info">Dalam Pengiriman</Badge>;
-      case "DELIVERED":
-        return <Badge variant="success">Tiba di Tujuan</Badge>;
-      default:
-        return <Badge variant="neutral">{status}</Badge>;
-    }
-  };
-
   return (
     <div className="flex flex-col gap-6 sm:gap-7">
       {/* 1. Header Section: Greeting + Timeline Filter Dropdown */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-1 border-b border-border/60">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="text-xs font-semibold text-text-muted">
               {MOCK_SUPPLIER_PROFILE.legalName} &bull; {MOCK_SUPPLIER_PROFILE.npwpNib}
             </span>
@@ -294,7 +271,7 @@ export function SupplierDashboardView() {
             <div>
               <div className="flex items-baseline gap-1">
                 <span className="font-heading text-xl sm:text-2xl font-black text-text-primary tabular-nums">
-                  {totalWeightInFulfillment.toLocaleString("id-ID")}
+                  {formatNumber(totalWeightInFulfillment)}
                 </span>
                 <span className="text-xs font-semibold text-text-muted">kg</span>
               </div>
@@ -664,7 +641,7 @@ export function SupplierDashboardView() {
                         {po.primaryDeliveryMethod === "HEMAT_HUB" ? "Opsi Hemat (Hub)" : "Direct"}
                       </span>
                     </TableCell>
-                    <TableCell>{getStatusBadge(po.status)}</TableCell>
+                    <TableCell>{getOrderStatusBadge(po.status)}</TableCell>
                     <TableCell className="text-right">
                       <Link href={`/supplier/pesanan/${po.id}`}>
                         <Button variant="secondary" size="sm">

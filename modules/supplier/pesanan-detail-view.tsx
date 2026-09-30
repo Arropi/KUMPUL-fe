@@ -19,7 +19,9 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { Toast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/toast";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { getStatusStepIndex } from "./helpers";
 
 interface PesananDetailViewProps {
   poId: string;
@@ -35,26 +37,6 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
   const [trackingNumberInput, setTrackingNumberInput] = React.useState(po.trackingNumber || "KMPL-LOG-2026-90412");
   const [showShipModal, setShowShipModal] = React.useState(false);
 
-  const [toast, setToast] = React.useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    type: "success" | "info" | "error";
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    type: "info",
-  });
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(val);
-  };
-
   const handleAdvanceStatus = (nextStatus: POStatus, successMsg: string) => {
     setIsUpdating(true);
     setTimeout(() => {
@@ -66,43 +48,14 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
       }));
       setIsUpdating(false);
       setShowShipModal(false);
-      setToast({
-        isOpen: true,
-        title: "Status PO Diperbarui",
-        message: successMsg,
-        type: "success",
-      });
+      toast.success(successMsg, "Status PO Diperbarui");
     }, 600);
-  };
-
-  const getStatusStepIndex = (status: POStatus) => {
-    switch (status) {
-      case "ISSUED":
-        return 0;
-      case "PAID_TO_ESCROW":
-        return 1;
-      case "PROCESSING":
-        return 2;
-      case "SHIPPED":
-        return 3;
-      case "DELIVERED":
-        return 4;
-      default:
-        return 1;
-    }
   };
 
   const currentStep = getStatusStepIndex(po.status);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <Toast
-        isOpen={toast.isOpen}
-        title={toast.title}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
-      />
 
       {/* Navigasi Balik & Header PO */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -122,7 +75,7 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
             </span>
           </div>
           <p className="font-body text-xs sm:text-sm text-text-secondary mt-0.5 text-pretty">
-            Diterbitkan pada {new Date(po.createdAt).toLocaleDateString("id-ID", { dateStyle: "long" })} &bull; Komoditas: {po.commodityName}
+            Diterbitkan pada {formatDate(po.createdAt, "long")} &bull; Komoditas: {po.commodityName}
           </p>
         </div>
 

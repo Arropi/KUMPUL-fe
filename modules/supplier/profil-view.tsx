@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Toast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/toast";
 
 export function SupplierProfilView() {
   const [profile, setProfile] = React.useState(MOCK_SUPPLIER_PROFILE);
@@ -18,18 +18,6 @@ export function SupplierProfilView() {
   const [contactEmail, setContactEmail] = React.useState(profile.contactEmail);
   const [contactPhone, setContactPhone] = React.useState(profile.contactPhone);
   const [address, setAddress] = React.useState(profile.address);
-
-  const [toast, setToast] = React.useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    type: "success" | "info" | "error";
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    type: "info",
-  });
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,24 +33,15 @@ export function SupplierProfilView() {
       }));
       setIsSaving(false);
       setIsEditing(false);
-      setToast({
-        isOpen: true,
-        title: "Profil Diperbarui",
-        message: "Data profil usaha dan kontak operasional berhasil disimpan.",
-        type: "success",
-      });
+      toast.success(
+        "Data profil usaha dan kontak operasional berhasil disimpan.",
+        "Profil Diperbarui"
+      );
     }, 600);
   };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <Toast
-        isOpen={toast.isOpen}
-        title={toast.title}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
-      />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

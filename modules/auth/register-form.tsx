@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { FloatingInput } from "@/components/ui/floating-input";
-import { Toast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/toast";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RoleSwitcher } from "@/modules/auth/role-switcher";
@@ -91,19 +91,6 @@ function RegisterFormInner() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isOAuthLoading, setIsOAuthLoading] = React.useState(false);
 
-  // Toast State
-  const [toast, setToast] = React.useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    type: "success" | "error" | "info";
-  }>({
-    isOpen: false,
-    title: "Berhasil",
-    message: "",
-    type: "success",
-  });
-
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
     setErrors({});
@@ -128,12 +115,7 @@ function RegisterFormInner() {
       });
 
       if (error) {
-        setToast({
-          isOpen: true,
-          title: "Registrasi Google Gagal",
-          message: error.message || "Gagal menghubungkan ke akun Google.",
-          type: "error",
-        });
+        toast.error(error.message || "Gagal menghubungkan ke akun Google.", "Registrasi Google Gagal");
         setIsOAuthLoading(false);
         return;
       }
@@ -142,12 +124,7 @@ function RegisterFormInner() {
         window.location.href = data.url;
       }
     } catch {
-      setToast({
-        isOpen: true,
-        title: "Kesalahan Sistem",
-        message: "Terjadi gangguan koneksi saat mendaftar dengan Google.",
-        type: "error",
-      });
+      toast.error("Terjadi gangguan koneksi saat mendaftar dengan Google.", "Kesalahan Sistem");
       setIsOAuthLoading(false);
     }
   };
@@ -264,21 +241,17 @@ function RegisterFormInner() {
 
         // Jika Supplier: Masuk ke Onboarding Wizard
         if (role === "supplier") {
-          setToast({
-            isOpen: true,
-            title: "Pendaftaran Berhasil",
-            message: "Akun telah dibuat. Silakan lengkapi profil legalitas dan operasional Supplier kamu.",
-            type: "success",
-          });
+          toast.success(
+            "Akun telah dibuat. Silakan lengkapi profil legalitas dan operasional Supplier kamu.",
+            "Pendaftaran Berhasil"
+          );
           setCurrentStep("SUPPLIER_LEGAL");
         } else {
           // Jika UMKM: Tampilkan Sukses dan redirect ke Home UMKM
-          setToast({
-            isOpen: true,
-            title: "Pendaftaran UMKM Berhasil",
-            message: "Akun Pelaku UMKM berhasil didaftarkan. Mengalihkan ke beranda...",
-            type: "success",
-          });
+          toast.success(
+            "Akun Pelaku UMKM berhasil didaftarkan. Mengalihkan ke beranda...",
+            "Pendaftaran UMKM Berhasil"
+          );
           setTimeout(() => {
             router.push("/home");
           }, 1000);
@@ -317,12 +290,10 @@ function RegisterFormInner() {
     setTimeout(() => {
       setIsSubmitting(false);
       setCurrentStep("SUCCESS");
-      setToast({
-        isOpen: true,
-        title: "Onboarding Berhasil!",
-        message: "Profil supplier dan katalog komoditas perdana kamu telah aktif di pasar KUMPUL.",
-        type: "success",
-      });
+      toast.success(
+        "Profil supplier dan katalog komoditas perdana kamu telah aktif di pasar KUMPUL.",
+        "Onboarding Berhasil!"
+      );
     }, 800);
   };
 
@@ -344,14 +315,6 @@ function RegisterFormInner() {
 
   return (
     <>
-      <Toast
-        isOpen={toast.isOpen}
-        title={toast.title}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
-      />
-
       <Card className={`w-full ${cardMaxWidth} mx-auto rounded-3xl border border-border bg-surface shadow-elevation-2 overflow-hidden flex flex-col justify-center transition-all duration-200`}>
         {/* Header Bersama dengan Indikator Wizard */}
         <CardHeader className="gap-2.5 pt-6 sm:pt-7 pb-2 px-6 sm:px-8 text-center flex flex-col items-center justify-center">
