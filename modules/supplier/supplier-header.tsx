@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/toast";
+import { switchRoleAction } from "@/actions/auth";
 
 interface SupplierHeaderProps {
   onToggleMobileNav?: () => void;
@@ -11,16 +12,35 @@ interface SupplierHeaderProps {
 
 export function SupplierHeader({ onToggleMobileNav }: SupplierHeaderProps) {
   const router = useRouter();
+  const [isSwitching, setIsSwitching] = React.useState(false);
 
-  const handleSwitchToUmkm = () => {
+  const handleSwitchToUmkm = async () => {
+    if (isSwitching) return;
+    setIsSwitching(true);
     toast.info(
-      "Beralih ke akun UMKM KUMPUL (Single Legal Entity). Mengalihkan...",
+      "Menyiapkan akun & beralih ke portal UMKM...",
       "Beralih Peran Usaha"
     );
 
-    setTimeout(() => {
-      router.push("/home?role=umkm&login_success=true");
-    }, 500);
+    try {
+      const res = await switchRoleAction("umkm");
+      if (res.success) {
+        toast.success(
+          res.autoCreatedInDb
+            ? "Akun Pelaku UMKM baru otomatis dibuat & diaktifkan."
+            : "Berhasil beralih ke portal Pelaku UMKM.",
+          "Beralih Peran Usaha"
+        );
+        router.push(res.redirectTo);
+        router.refresh();
+      } else {
+        window.location.href = "/api/auth/switch-role?to=umkm&next=/umkm";
+      }
+    } catch {
+      window.location.href = "/api/auth/switch-role?to=umkm&next=/umkm";
+    } finally {
+      setIsSwitching(false);
+    }
   };
 
   return (
@@ -55,17 +75,25 @@ export function SupplierHeader({ onToggleMobileNav }: SupplierHeaderProps) {
           {/* PRD Modul A.3: 1-Click Cross-Role Account Switching */}
           <button
             type="button"
+            disabled={isSwitching}
             onClick={handleSwitchToUmkm}
-            className="min-h-[40px] px-3.5 sm:px-4 py-1.5 rounded-xl border border-primary/20 bg-[#EBF5F0] text-primary text-xs font-bold transition-all duration-150 flex items-center gap-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(13,59,46,0.1),0_2px_6px_rgba(13,59,46,0.08)] hover:bg-[#E0EFE8] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_12px_rgba(13,59,46,0.12)] active:scale-[0.98] active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(13,59,46,0.2)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            title="Pindah ke peran UMKM untuk pengadaan pooling"
+            className="min-h-[40px] px-3.5 sm:px-4 py-1.5 rounded-xl border border-primary/20 bg-[#EBF5F0] text-primary text-xs font-bold transition-all duration-150 flex items-center gap-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(13,59,46,0.1),0_2px_6px_rgba(13,59,46,0.08)] hover:bg-[#E0EFE8] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_12px_rgba(13,59,46,0.12)] active:scale-[0.98] active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(13,59,46,0.2)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            title="Pindah ke peran UMKM untuk pengadaan pooling (tanpa login ulang)"
           >
-            <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
+            {isSwitching ? (
+              <svg className="w-3.5 h-3.5 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            )}
             <span className="hidden xs:inline">Mode:</span>
             <span className="font-extrabold text-accent">Supplier</span>
             <span className="text-text-muted">➔</span>
-            <span className="underline decoration-dotted">UMKM</span>
+            <span className="underline decoration-dotted">{isSwitching ? "Beralih..." : "UMKM"}</span>
           </button>
 
           {/* Notifikasi PO Cepat */}
@@ -82,6 +110,25 @@ export function SupplierHeader({ onToggleMobileNav }: SupplierHeaderProps) {
               />
             </svg>
             <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent" />
+          </Link>
+
+          {/* Link Profil Supplier */}
+          <Link
+            href="/supplier/profil"
+            className="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-subtle transition-colors"
+            title="Profil Badan Usaha Supplier"
+          >
+            <div className="w-8 h-8 rounded-full bg-primary text-text-inverse flex items-center justify-center font-bold text-xs shadow-xs">
+              S
+            </div>
+            <div className="hidden lg:flex flex-col text-left">
+              <span className="text-xs font-bold text-text-primary leading-tight">
+                PT Agroniaga
+              </span>
+              <span className="text-[10px] text-text-muted leading-tight">
+                Mitra Supplier
+              </span>
+            </div>
           </Link>
 
           {/* Tombol Logout */}

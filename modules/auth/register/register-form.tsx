@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "@/components/ui/toast";
 import {
@@ -194,7 +195,7 @@ function RegisterFormInner() {
           result.redirectTo ||
             (role === "supplier"
               ? "/supplier?onboarding=pending"
-              : "/home?onboarding=pending"),
+              : "/umkm?onboarding=pending"),
         );
       }, 700);
     } catch (err: unknown) {
@@ -210,13 +211,15 @@ function RegisterFormInner() {
   return (
     <Card className="w-full max-w-[480px] mx-auto rounded-3xl border border-border bg-surface shadow-elevation-2 overflow-hidden flex flex-col justify-center">
       <CardHeader className="gap-2.5 pt-6 sm:pt-7 pb-2 px-6 sm:px-8 text-center flex flex-col items-center justify-center">
-        <div className="flex flex-col items-center justify-center gap-1.5 pb-0.5">
-          <div className="w-11 h-11 rounded-2xl bg-primary text-text-inverse flex items-center justify-center font-heading font-extrabold text-xl shadow-xs">
-            K
-          </div>
-          <span className="font-heading font-extrabold text-xl text-primary tracking-tight">
-            KUMPUL
-          </span>
+        <div className="flex items-center justify-center pb-1">
+          <Image
+            src="/logo/without-bg.svg"
+            alt="Logo KUMPUL"
+            width={160}
+            height={52}
+            className="h-12 w-auto object-contain"
+            priority
+          />
         </div>
 
         {currentStep === "AUTH" && (

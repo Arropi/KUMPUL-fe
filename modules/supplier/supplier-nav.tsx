@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { PlusSignIcon, SidebarLeftIcon } from "@hugeicons/core-free-icons";
+import { usePathname } from "next/navigation";
+import { SidebarLeftIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -113,7 +114,6 @@ interface SupplierNavProps {
 
 export function SupplierNav({ isMobileOpen = false, onCloseMobile }: SupplierNavProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [isOpen, setIsOpen] = React.useState(true);
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 
@@ -128,10 +128,6 @@ export function SupplierNav({ isMobileOpen = false, onCloseMobile }: SupplierNav
   };
 
   const selectedIndex = getActiveIndex();
-
-  const handleAddCommodity = () => {
-    router.push("/supplier/katalog/tambah");
-  };
 
   const renderNavList = (expanded: boolean, isMobileView = false) => (
     <div
@@ -239,66 +235,44 @@ export function SupplierNav({ isMobileOpen = false, onCloseMobile }: SupplierNav
         )}
       >
         <div className="flex flex-col w-full">
-          {/* Header Controls (Logo / Brand / Plus & Toggle) */}
+          {/* Header Controls (Logo / Brand & Toggle) */}
           <div
             className={cn(
-              "flex w-full items-center shrink-0 min-h-[48px] pb-3 border-b border-border/70",
+              "flex w-full items-center shrink-0 min-h-[52px] pb-3 border-b border-border/70",
               isOpen ? "justify-between gap-2 px-1" : "justify-center"
             )}
           >
             {isOpen && (
               <Link
                 href="/supplier"
-                className="flex items-center gap-2.5 min-w-0 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
+                className="flex items-center gap-2 min-w-0 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
               >
-                <div className="w-8 h-8 rounded-xl bg-primary text-text-inverse flex items-center justify-center font-heading font-extrabold text-sm shrink-0 shadow-xs">
-                  K
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="font-heading font-bold text-sm text-primary truncate leading-tight">
-                    KUMPUL
-                  </span>
-                  <span className="font-heading text-[10px] font-bold text-accent truncate leading-tight mt-0.5">
-                    Portal Supplier
-                  </span>
-                </div>
+                <Image
+                  src="/logo/without-bg.svg"
+                  alt="Logo KUMPUL"
+                  width={140}
+                  height={44}
+                  className="h-10 w-auto object-contain shrink-0"
+                  priority
+                />
+                <span className="font-heading text-[10px] font-bold text-accent px-1.5 py-0.5 bg-accent/10 rounded-md border border-accent/20 shrink-0">
+                  Supplier
+                </span>
               </Link>
             )}
 
-            <div className="flex items-center gap-1 shrink-0">
-              <AnimatePresence>
-                {isOpen && (
-                  <motion.button
-                    type="button"
-                    onClick={handleAddCommodity}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.15 }}
-                    title="Tambah Komoditas Baru"
-                    className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer active:scale-95"
-                  >
-                    <HugeiconsIcon
-                      icon={PlusSignIcon}
-                      className="size-4.5"
-                    />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-
-              <motion.button
-                layout
-                type="button"
-                onClick={() => setIsOpen((prev) => !prev)}
-                title={isOpen ? "Tutup Sidebar" : "Buka Sidebar"}
-                className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer active:scale-95 flex items-center justify-center"
-              >
-                <HugeiconsIcon
-                  icon={SidebarLeftIcon}
-                  className="size-4.5"
-                />
-              </motion.button>
-            </div>
+            <motion.button
+              layout
+              type="button"
+              onClick={() => setIsOpen((prev) => !prev)}
+              title={isOpen ? "Tutup Sidebar" : "Buka Sidebar"}
+              className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer active:scale-95 flex items-center justify-center shrink-0"
+            >
+              <HugeiconsIcon
+                icon={SidebarLeftIcon}
+                className="size-4.5"
+              />
+            </motion.button>
           </div>
 
           {/* Navigation Section */}
@@ -355,20 +329,20 @@ export function SupplierNav({ isMobileOpen = false, onCloseMobile }: SupplierNav
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <Link
                   href="/supplier"
-                  className="flex items-center gap-2.5"
+                  className="flex items-center gap-2"
                   onClick={onCloseMobile}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-primary text-text-inverse flex items-center justify-center font-heading font-extrabold text-sm shadow-xs">
-                    K
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-heading font-bold text-sm text-primary">
-                      KUMPUL
-                    </span>
-                    <span className="font-heading text-[10px] font-bold text-accent">
-                      Portal Supplier
-                    </span>
-                  </div>
+                  <Image
+                    src="/logo/without-bg.svg"
+                    alt="Logo KUMPUL"
+                    width={140}
+                    height={44}
+                    className="h-10 w-auto object-contain shrink-0"
+                    priority
+                  />
+                  <span className="font-heading text-[10px] font-bold text-accent px-1.5 py-0.5 bg-accent/10 rounded-md border border-accent/20 shrink-0">
+                    Supplier
+                  </span>
                 </Link>
 
                 {onCloseMobile && (

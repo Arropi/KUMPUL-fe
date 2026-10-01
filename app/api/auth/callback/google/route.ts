@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { UserRole } from "@/constants/auth";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,8 +10,9 @@ export async function GET(request: Request) {
     const email = searchParams.get("email") || "user@gmail.com";
     const name = searchParams.get("name") || "Pengguna Google";
 
+    const redirectPath = role === "supplier" ? "/supplier" : "/umkm";
     const response = NextResponse.redirect(
-      `${appUrl}/home?login_success=true&role=${encodeURIComponent(role)}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
+      `${appUrl}${redirectPath}?login_success=true&role=${encodeURIComponent(role)}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
     );
 
     response.cookies.set(
@@ -102,8 +102,9 @@ export async function GET(request: Request) {
     const name = profile.name || email.split("@")[0];
     const picture = profile.picture || "";
 
+    const redirectPath = role === "supplier" ? "/supplier" : "/umkm";
     const response = NextResponse.redirect(
-      `${appUrl}/home?login_success=true&role=${encodeURIComponent(role)}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
+      `${appUrl}${redirectPath}?login_success=true&role=${encodeURIComponent(role)}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
     );
 
     response.cookies.set(
