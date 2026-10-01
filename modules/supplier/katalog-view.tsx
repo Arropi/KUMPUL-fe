@@ -10,7 +10,29 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
+
+const SECTOR_OPTIONS = [
+  { value: "ALL", label: "Semua Sektor" },
+  { value: "Pertanian", label: "Pertanian" },
+  { value: "FnB / Pengolahan", label: "FnB / Pengolahan" },
+  { value: "Peternakan", label: "Peternakan" },
+  { value: "Perikanan", label: "Perikanan" },
+  { value: "Perkebunan", label: "Perkebunan" },
+] as const;
+
+const STATUS_OPTIONS = [
+  { value: "ALL", label: "Semua Status" },
+  { value: "ACTIVE", label: "Aktif di Bursa" },
+  { value: "INACTIVE", label: "Nonaktif (Draft)" },
+] as const;
 
 export function SupplierKatalogView() {
   const [commodities, setCommodities] = React.useState<SupplierCommodity[]>(
@@ -19,6 +41,11 @@ export function SupplierKatalogView() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = React.useState<string>("ALL");
+
+  const selectedSectorLabel =
+    SECTOR_OPTIONS.find((s) => s.value === selectedSector)?.label || "Semua Sektor";
+  const selectedStatusLabel =
+    STATUS_OPTIONS.find((s) => s.value === selectedStatus)?.label || "Semua Status";
 
   const handleToggleStatus = (id: string) => {
     setCommodities((prev) =>
@@ -114,64 +141,125 @@ export function SupplierKatalogView() {
             />
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 w-full sm:w-auto">
             {/* Filter Sektor */}
-            <div className="flex items-center gap-2">
-              <label
-                htmlFor="filter-sector"
-                className="text-xs font-semibold text-text-secondary whitespace-nowrap"
-              >
-                Sektor:
-              </label>
-              <select
-                id="filter-sector"
-                value={selectedSector}
-                onChange={(e) => setSelectedSector(e.target.value)}
-                className="min-h-[44px] px-3.5 py-2 rounded-xl border border-border bg-surface text-xs font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
-              >
-                <option value="ALL">Semua Sektor</option>
-                <option value="Pertanian">Pertanian</option>
-                <option value="FnB / Pengolahan">FnB / Pengolahan</option>
-                <option value="Peternakan">Peternakan</option>
-                <option value="Perikanan">Perikanan</option>
-                <option value="Perkebunan">Perkebunan</option>
-              </select>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="default"
+                  className="h-11 w-full sm:w-auto sm:shrink-0 gap-2 rounded-xl px-3 text-xs sm:text-sm font-semibold shadow-xs justify-between"
+                  aria-label={`Pilih filter sektor: saat ini ${selectedSectorLabel}`}
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-text-muted font-normal text-xs hidden xs:inline">Sektor:</span>
+                    <span className="font-semibold text-text-primary truncate">{selectedSectorLabel}</span>
+                  </div>
+                  <svg
+                    className="w-3.5 h-3.5 text-text-muted shrink-0 transition-transform duration-200"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-48">
+                <DropdownMenuRadioGroup
+                  value={selectedSector}
+                  onValueChange={setSelectedSector}
+                >
+                  {SECTOR_OPTIONS.map((opt) => (
+                    <DropdownMenuRadioItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Filter Status */}
-            <div className="flex items-center gap-2">
-              <label
-                htmlFor="filter-status"
-                className="text-xs font-semibold text-text-secondary whitespace-nowrap"
-              >
-                Status:
-              </label>
-              <select
-                id="filter-status"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="min-h-[44px] px-3.5 py-2 rounded-xl border border-border bg-surface text-xs font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
-              >
-                <option value="ALL">Semua Status</option>
-                <option value="ACTIVE">Aktif di Bursa</option>
-                <option value="INACTIVE">Nonaktif (Draft)</option>
-              </select>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="default"
+                  className="h-11 w-full sm:w-auto sm:shrink-0 gap-2 rounded-xl px-3 text-xs sm:text-sm font-semibold shadow-xs justify-between"
+                  aria-label={`Pilih filter status: saat ini ${selectedStatusLabel}`}
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-text-muted font-normal text-xs hidden xs:inline">Status:</span>
+                    <span className="font-semibold text-text-primary truncate">{selectedStatusLabel}</span>
+                  </div>
+                  <svg
+                    className="w-3.5 h-3.5 text-text-muted shrink-0 transition-transform duration-200"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-48">
+                <DropdownMenuRadioGroup
+                  value={selectedStatus}
+                  onValueChange={setSelectedStatus}
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <DropdownMenuRadioItem key={opt.value} value={opt.value}>
+                      <div className="flex items-center gap-2">
+                        {opt.value === "ACTIVE" && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        )}
+                        {opt.value === "INACTIVE" && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        )}
+                        {opt.value === "ALL" && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                        )}
+                        <span>{opt.label}</span>
+                      </div>
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
+            {/* Reset Filter Button */}
             {(searchQuery ||
               selectedSector !== "ALL" ||
               selectedStatus !== "ALL") && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setSearchQuery("");
                   setSelectedSector("ALL");
                   setSelectedStatus("ALL");
                 }}
-                className="text-xs font-semibold text-primary hover:underline cursor-pointer min-h-[44px] px-2 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
+                className="h-11 col-span-2 sm:col-span-1 text-xs font-semibold text-primary hover:text-primary-hover hover:bg-primary/5 min-h-[44px] px-3 gap-1.5 justify-center sm:justify-start"
               >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
                 Reset Filter
-              </button>
+              </Button>
             )}
           </div>
         </div>

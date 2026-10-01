@@ -7,7 +7,8 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const role = (searchParams.get("role") as UserRole) || "umkm";
-  const next = searchParams.get("next") || "/home";
+  const defaultPath = role === "supplier" ? "/supplier" : "/umkm";
+  const next = searchParams.get("next") || defaultPath;
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
       let beToken = "";
       let beEntityId = "";
 
-      let beRes = await callBackendLogin({
+      const beRes = await callBackendLogin({
         user_id: data.user.id,
         role: beRole,
       });

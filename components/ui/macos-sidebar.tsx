@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { PlusSignIcon, SidebarLeftIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion, AnimatePresence } from "motion/react";
@@ -89,9 +90,13 @@ export function MacOSSidebar({
             {isOpen && (
               <div className="flex items-center gap-2.5 min-w-0 overflow-hidden">
                 {headerLogo || (
-                  <div className="w-8 h-8 rounded-xl bg-primary text-text-inverse flex items-center justify-center font-heading font-extrabold text-sm shrink-0 shadow-xs">
-                    K
-                  </div>
+                  <Image
+                    src="/logo/without-bg.svg"
+                    alt="Logo KUMPUL"
+                    width={90}
+                    height={28}
+                    className="h-7 w-auto object-contain shrink-0"
+                  />
                 )}
                 {(headerTitle || headerSubtitle) && (
                   <div className="flex flex-col min-w-0">

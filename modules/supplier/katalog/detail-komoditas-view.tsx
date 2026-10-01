@@ -97,8 +97,8 @@ export function DetailKomoditasView({
       {/* Grid Banner Foto & Informasi Inti */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Kolom Kiri: Foto Komoditas */}
-        <Card className="overflow-hidden rounded-2xl border-border bg-surface p-0 shadow-elevation-1">
-          <div className="relative aspect-[4/3] w-full bg-neutral-100">
+        <Card className="flex flex-col rounded-2xl border-border bg-surface p-3.5 sm:p-4 shadow-elevation-1">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-100 border border-border/40">
             {commodity.imageUrl ? (
               <Image
                 src={commodity.imageUrl}
@@ -125,7 +125,7 @@ export function DetailKomoditasView({
               </div>
             )}
           </div>
-          <div className="p-4 bg-surface border-t border-border/70 space-y-1">
+          <div className="pt-3.5 px-1 space-y-1">
             <span className="text-[11px] font-semibold text-text-muted block">
               Lokasi Asal Panen
             </span>

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -162,7 +163,7 @@ function LoginFormInner() {
       );
 
       setTimeout(() => {
-        router.push(result.redirectTo || (role === "supplier" ? "/supplier" : "/home"));
+        router.push(result.redirectTo || (role === "supplier" ? "/supplier" : "/umkm"));
       }, 500);
     } catch (err: unknown) {
       setIsSubmitting(false);
@@ -179,13 +180,15 @@ function LoginFormInner() {
       <Card className="w-full max-w-[420px] mx-auto rounded-3xl border border-border bg-surface shadow-elevation-2 overflow-hidden flex flex-col justify-center">
         <CardHeader className="gap-2.5 pt-6 sm:pt-7 pb-2 px-6 sm:px-8 text-center flex flex-col items-center justify-center">
           {/* Logo KUMPUL di Bagian Atas Tengah Card */}
-          <div className="flex flex-col items-center justify-center gap-1.5 pb-1">
-            <div className="w-11 h-11 rounded-2xl bg-primary text-text-inverse flex items-center justify-center font-heading font-extrabold text-xl shadow-xs">
-              K
-            </div>
-            <span className="font-heading font-extrabold text-xl text-primary tracking-tight">
-              KUMPUL
-            </span>
+          <div className="flex items-center justify-center pb-1">
+            <Image
+              src="/logo/without-bg.svg"
+              alt="Logo KUMPUL"
+              width={160}
+              height={52}
+              className="h-12 w-auto object-contain"
+              priority
+            />
           </div>
 
           <div className="text-center space-y-1">

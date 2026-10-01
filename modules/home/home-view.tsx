@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "@/components/ui/toast";
@@ -61,12 +62,16 @@ export function HomeView({ initialSession }: HomeViewProps) {
           <div className="flex items-center gap-3">
             <Link
               href="/home"
-              className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg p-1"
+              className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg p-1"
             >
-              <span className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-text-inverse font-bold text-base shadow-xs">
-                K
-              </span>
-              <span className="font-bold text-lg text-primary">KUMPUL</span>
+              <Image
+                src="/logo/without-bg.svg"
+                alt="Logo KUMPUL"
+                width={120}
+                height={40}
+                className="h-9 w-auto object-contain"
+                priority
+              />
             </Link>
             <span className="hidden sm:inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-primary-light text-primary border border-primary/20">
               {isSupplier ? "Portal Mitra Supplier" : "Portal Pelaku UMKM"}
