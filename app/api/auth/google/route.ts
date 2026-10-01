@@ -4,22 +4,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const role = searchParams.get("role") || "umkm";
 
-  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientId = process.env.GOOGLE_CLIENT_ID as string;
   const redirectUri =
     process.env.GOOGLE_REDIRECT_URI ||
     `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/callback/google`;
 
-  // Simulasi alur OAuth lokal jika kredensial Google belum diisi pada .env.local
-  if (!clientId || clientId.includes("your-google-client-id")) {
-    const mockEmail = role === "umkm" ? "mitra.umkm@gmail.com" : "pemasok.agro@gmail.com";
-    const mockName = role === "umkm" ? "Budi Santoso (UMKM)" : "Hendra Kusuma (Supplier)";
-    const callbackUrl = new URL(redirectUri);
-    callbackUrl.searchParams.set("simulated", "true");
-    callbackUrl.searchParams.set("role", role);
-    callbackUrl.searchParams.set("email", mockEmail);
-    callbackUrl.searchParams.set("name", mockName);
-    return NextResponse.redirect(callbackUrl.toString());
-  }
 
   const statePayload = Buffer.from(
     JSON.stringify({

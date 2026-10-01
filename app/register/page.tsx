@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { RegisterView } from "@/modules/auth/register-view";
+import { RegisterView } from "@/modules/auth/register/register-view";
 
 export const metadata: Metadata = {
   title: "Daftar Akun Baru | KUMPUL",

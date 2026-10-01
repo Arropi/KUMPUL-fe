@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LoginView } from "@/modules/auth/login-view";
+import { LoginView } from "@/modules/auth/login/login-view";
 
 export const metadata: Metadata = {
   title: "Masuk ke Akun | KUMPUL",

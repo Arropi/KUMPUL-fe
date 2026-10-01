@@ -3,15 +3,21 @@
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "@/components/ui/toast";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { RoleSwitcher } from "@/modules/auth/role-switcher";
 import { UserRole, DEFAULT_ROLE } from "@/constants/auth";
 import {
   registerWithCredentialsAction,
   initiateGoogleAuthAction,
 } from "@/actions/auth";
-import { RegisterAuthStep } from "./register-auth-step";
-import { RegisterBusinessStep } from "./register-business-step";
+import { RegisterAuthStep } from "./auth-step";
+import { RegisterBusinessStep } from "../business-step";
 
 type StepType = "AUTH" | "BUSINESS_VALIDATION";
 
@@ -21,7 +27,8 @@ function RegisterFormInner() {
 
   // Role Switcher State
   const roleFromUrl = searchParams.get("role");
-  const initialRole: UserRole = roleFromUrl === "supplier" ? "supplier" : DEFAULT_ROLE;
+  const initialRole: UserRole =
+    roleFromUrl === "supplier" ? "supplier" : DEFAULT_ROLE;
   const [role, setRole] = React.useState<UserRole>(initialRole);
 
   // Wizard Step State
@@ -37,10 +44,14 @@ function RegisterFormInner() {
   const [address, setAddress] = React.useState("");
   const [latitude, setLatitude] = React.useState<number>(-7.2575);
   const [longitude, setLongitude] = React.useState<number>(112.7521);
-  const [locationName, setLocationName] = React.useState<string>("Surabaya, Jawa Timur");
+  const [locationName, setLocationName] = React.useState<string>(
+    "Surabaya, Jawa Timur",
+  );
 
   // Error State per-step
-  const [errors, setErrors] = React.useState<Record<string, string | undefined>>({});
+  const [errors, setErrors] = React.useState<
+    Record<string, string | undefined>
+  >({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isOAuthLoading, setIsOAuthLoading] = React.useState(false);
 
@@ -66,15 +77,21 @@ function RegisterFormInner() {
         setIsOAuthLoading(false);
         toast.error(
           result.error || "Gagal menghubungkan ke akun Google.",
-          "Registrasi Google Gagal"
+          "Registrasi Google Gagal",
         );
         return;
       }
 
-      console.info("[CLIENT LOG] Google OAuth Signup URL disiapkan:", result.log);
+      console.info(
+        "[CLIENT LOG] Google OAuth Signup URL disiapkan:",
+        result.log,
+      );
       window.location.href = result.url;
     } catch {
-      toast.error("Terjadi gangguan koneksi saat mendaftar dengan Google.", "Kesalahan Sistem");
+      toast.error(
+        "Terjadi gangguan koneksi saat mendaftar dengan Google.",
+        "Kesalahan Sistem",
+      );
       setIsOAuthLoading(false);
     }
   };
@@ -109,7 +126,8 @@ function RegisterFormInner() {
       errs.taxId = "Nomor NPWP atau NIB usaha dagang wajib diisi.";
     }
     if (!address.trim()) {
-      errs.address = "Alamat lengkap fasilitas atau toko operasional wajib diisi.";
+      errs.address =
+        "Alamat lengkap fasilitas atau toko operasional wajib diisi.";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -147,7 +165,7 @@ function RegisterFormInner() {
       if (!result.success) {
         toast.error(
           result.error || "Gagal mendaftarkan akun. Silakan coba kembali.",
-          "Registrasi Gagal"
+          "Registrasi Gagal",
         );
 
         // Jika error terkait email / sudah terdaftar, kembalikan ke Step 1 (AUTH)
@@ -167,14 +185,16 @@ function RegisterFormInner() {
 
       toast.success(
         `Akun ${businessName} berhasil didaftarkan. Mengalihkan ke dashboard...`,
-        "Pendaftaran Usaha Berhasil"
+        "Pendaftaran Usaha Berhasil",
       );
 
       // HANYA redirect jika registrasi benar-benar berhasil
       setTimeout(() => {
         router.push(
           result.redirectTo ||
-            (role === "supplier" ? "/supplier?onboarding=pending" : "/home?onboarding=pending")
+            (role === "supplier"
+              ? "/supplier?onboarding=pending"
+              : "/home?onboarding=pending"),
         );
       }, 700);
     } catch (err: unknown) {
@@ -223,7 +243,8 @@ function RegisterFormInner() {
               Legalitas &amp; Lokasi Peta Usaha
             </CardTitle>
             <CardDescription className="text-xs text-text-secondary text-center max-w-xs mx-auto">
-              Tentukan identitas usaha dan titik koordinat maps untuk radius logistik
+              Tentukan identitas usaha dan titik koordinat maps untuk radius
+              logistik
             </CardDescription>
           </div>
         )}

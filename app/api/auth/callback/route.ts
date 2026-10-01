@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { UserRole } from "@/constants/auth";
-import { printAuthLog } from "@/actions/auth";
 import { callBackendLogin, callBackendRegister } from "@/lib/be-auth";
 
 export async function GET(request: Request) {
@@ -15,15 +14,7 @@ export async function GET(request: Request) {
   // Jika otorisasi dibatalkan atau ditolak dari pihak Google
   if (error) {
     const message = errorDescription || error || "Otorisasi dibatalkan.";
-    await printAuthLog({
-      timestamp: new Date().toISOString(),
-      action: "GOOGLE_AUTH_CALLBACK",
-      provider: "google",
-      status: "FAILED",
-      role,
-      email: "canceled@google.com",
-      error: message,
-    });
+    
     return NextResponse.redirect(`${origin}/login?oauth_error=${encodeURIComponent(message)}`);
   }
 
@@ -112,37 +103,10 @@ export async function GET(request: Request) {
         }
       );
 
-      // Cetak log terstruktur di server console
-      await printAuthLog({
-        timestamp: new Date().toISOString(),
-        action: "GOOGLE_AUTH_CALLBACK",
-        provider: "google",
-        status: "SUCCESS",
-        role,
-        email,
-        name,
-        redirectTo: `${next}?role=${role}`,
-        metadata: {
-          supabaseUserId: data.user.id,
-          hasPicture: !!picture,
-          beTokenIssued: !!beToken,
-          beEntityId: beEntityId || null,
-        },
-      });
-
       return response;
     }
 
     if (exchangeError) {
-      await printAuthLog({
-        timestamp: new Date().toISOString(),
-        action: "GOOGLE_AUTH_CALLBACK",
-        provider: "google",
-        status: "FAILED",
-        role,
-        email: "unknown",
-        error: exchangeError.message,
-      });
       return NextResponse.redirect(
         `${origin}/login?oauth_error=${encodeURIComponent(exchangeError.message)}`
       );

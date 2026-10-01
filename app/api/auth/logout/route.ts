@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { UserRole } from "@/constants/auth";
-import { printAuthLog } from "@/actions/auth";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -10,16 +9,6 @@ export async function GET(request: Request) {
 
   const supabase = await createClient();
   await supabase.auth.signOut();
-
-  await printAuthLog({
-    timestamp: new Date().toISOString(),
-    action: "LOGOUT",
-    provider: "credentials",
-    status: "SUCCESS",
-    role: role || "umkm",
-    email: "session_cleared",
-    redirectTo: target,
-  });
 
   const response = NextResponse.redirect(target);
   response.cookies.delete("kumpul_token");
@@ -35,15 +24,6 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   await supabase.auth.signOut();
 
-  await printAuthLog({
-    timestamp: new Date().toISOString(),
-    action: "LOGOUT",
-    provider: "credentials",
-    status: "SUCCESS",
-    role: role || "umkm",
-    email: "session_cleared",
-    redirectTo: target,
-  });
 
   const response = NextResponse.redirect(target);
   response.cookies.delete("kumpul_token");
