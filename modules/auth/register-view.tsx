@@ -8,7 +8,13 @@ export function RegisterView() {
 
       <main className="flex-1 flex items-center justify-center py-4 sm:py-6 my-auto">
         <div className="w-full max-w-[560px]">
-          <RegisterForm />
+          <React.Suspense
+            fallback={
+              <div className="p-8 text-center text-text-muted">Memuat formulir pendaftaran...</div>
+            }
+          >
+            <RegisterForm />
+          </React.Suspense>
         </div>
       </main>
 

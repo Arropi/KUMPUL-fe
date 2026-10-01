@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { KatalogFormErrors } from "../types";
+import type { KatalogFormErrors } from "../../modules/supplier/katalog/types";
 
 interface PanenJadwalSectionProps {
   harvestDate: string;
@@ -27,7 +27,8 @@ export function PanenJadwalSection({
           2. Perkiraan Tanggal Panen / Produksi &amp; Publikasi
         </h2>
         <p className="font-body text-xs text-text-secondary mt-0.5">
-          Atur estimasi waktu panen atau siklus produksi dan opsi penayangan otomatis ke bursa marketplace.
+          Atur estimasi waktu panen atau siklus produksi dan opsi penayangan
+          otomatis ke bursa marketplace.
         </p>
       </div>
 
@@ -65,7 +66,9 @@ export function PanenJadwalSection({
               Otomatis aktifkan ke marketplace ketika tanggal panen/produksi
             </span>
             <p className="text-xs text-text-secondary leading-relaxed">
-              Jika dicentang, katalog pasokan komoditas ini akan otomatis berstatus aktif dan langsung muncul di marketplace KUMPUL tepat pada tanggal panen atau produksi yang ditentukan.
+              Jika dicentang, katalog pasokan komoditas ini akan otomatis
+              berstatus aktif dan langsung muncul di marketplace KUMPUL tepat
+              pada tanggal panen atau produksi yang ditentukan.
             </p>
           </div>
         </label>

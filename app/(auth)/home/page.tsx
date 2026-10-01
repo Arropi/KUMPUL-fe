@@ -11,42 +11,44 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("kumpul_session");
   let session: UserSession | null = null;
 
-  if (user) {
-    const email = user.email || "";
-    const name =
-      (user.user_metadata?.full_name as string) ||
-      (user.user_metadata?.name as string) ||
-      email.split("@")[0] ||
-      "Pengguna";
-    const role = (user.user_metadata?.role as UserRole) || "umkm";
-    const picture =
-      (user.user_metadata?.avatar_url as string) ||
-      (user.user_metadata?.picture as string) ||
-      "";
+  if (sessionCookie?.value) {
+    try {
+      session = JSON.parse(sessionCookie.value) as UserSession;
+    } catch {
+      // Abaikan jika cookie sesi tidak valid
+    }
+  }
 
-    session = {
-      email,
-      name,
-      role,
-      picture,
-      provider: "google",
-    };
-  } else {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get("kumpul_session");
-    if (sessionCookie?.value) {
-      try {
-        session = JSON.parse(sessionCookie.value) as UserSession;
-      } catch {
-        // Abaikan jika cookie sesi tidak valid
-      }
+  if (!session) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const email = user.email || "";
+      const name =
+        (user.user_metadata?.full_name as string) ||
+        (user.user_metadata?.name as string) ||
+        email.split("@")[0] ||
+        "Pengguna";
+      const role = (user.user_metadata?.role as UserRole) || "umkm";
+      const picture =
+        (user.user_metadata?.avatar_url as string) ||
+        (user.user_metadata?.picture as string) ||
+        "";
+
+      session = {
+        email,
+        name,
+        role,
+        picture,
+        provider: "google",
+      };
     }
   }
 

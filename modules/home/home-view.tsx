@@ -31,13 +31,23 @@ export function HomeView({ initialSession }: HomeViewProps) {
   const effectiveProvider =
     initialSession?.provider || (queryEmail?.includes("@gmail.com") ? "google" : "credentials");
 
+  const hasShownToast = React.useRef(false);
+
   React.useEffect(() => {
-    if (querySuccess) {
+    if (querySuccess && !hasShownToast.current) {
+      hasShownToast.current = true;
       const roleLabel = effectiveRole === "supplier" ? "Mitra Supplier" : "Pelaku UMKM";
       toast.success(
         `Selamat datang di portal KUMPUL, ${effectiveName} (${roleLabel}).`,
         "Login Berhasil"
       );
+
+      // Bersihkan parameter query login_success dari URL agar tidak terpicu ulang
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("login_success");
+        window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+      }
     }
   }, [querySuccess, effectiveRole, effectiveName]);
 

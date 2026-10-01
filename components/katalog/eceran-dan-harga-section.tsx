@@ -5,7 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import type { PriceTierRange, KatalogFormErrors } from "../types";
+import type {
+  PriceTierRange,
+  KatalogFormErrors,
+} from "../../modules/supplier/katalog/types";
 
 interface EceranDanHargaSectionProps {
   unit: string;
@@ -48,7 +51,11 @@ export function EceranDanHargaSection({
 
   const handleAddTier = () => {
     const lastTier = priceTiers[priceTiers.length - 1];
-    const newMin = lastTier ? lastTier.maxQty + 1 : (minOrderQty > 0 ? minOrderQty : 1);
+    const newMin = lastTier
+      ? lastTier.maxQty + 1
+      : minOrderQty > 0
+        ? minOrderQty
+        : 1;
     const newMax = newMin + 20;
     const newPrice = lastTier ? Math.max(0, lastTier.price - 500) : 10000;
 
@@ -71,7 +78,7 @@ export function EceranDanHargaSection({
   const handleUpdateTier = (
     id: string,
     field: "minQty" | "maxQty" | "price",
-    value: number
+    value: number,
   ) => {
     setPriceTiers((prev) =>
       prev.map((tier, idx) => {
@@ -83,7 +90,7 @@ export function EceranDanHargaSection({
           return { ...tier, [field]: value };
         }
         return tier;
-      })
+      }),
     );
   };
 
@@ -94,7 +101,8 @@ export function EceranDanHargaSection({
           3. Penjualan Eceran &amp; Skema Peningkatan Harga
         </h2>
         <p className="font-body text-xs text-text-secondary mt-0.5">
-          Atur opsi penjualan eceran di bawah batas minimum dan konfigurasi rentang kuota harga bertingkat.
+          Atur opsi penjualan eceran di bawah batas minimum dan konfigurasi
+          rentang kuota harga bertingkat.
         </p>
       </div>
 
@@ -117,7 +125,8 @@ export function EceranDanHargaSection({
                 Terima penjualan eceran atau kurang dari Batas minimum penjualan
               </span>
               <p className="text-xs text-text-secondary leading-relaxed">
-                Izinkan pembeli atau UMKM memesan dengan kuota lebih sedikit dari batas MOQ yang telah ditentukan.
+                Izinkan pembeli atau UMKM memesan dengan kuota lebih sedikit
+                dari batas MOQ yang telah ditentukan.
               </p>
             </div>
           </label>
@@ -131,7 +140,9 @@ export function EceranDanHargaSection({
                 label={`Harga Eceran per ${unit} (Rp)`}
                 placeholder="Contoh: 15000"
                 value={retailPrice <= 0 ? "" : retailPrice.toString()}
-                onChange={(e) => setRetailPrice(Math.max(0, Number(e.target.value)))}
+                onChange={(e) =>
+                  setRetailPrice(Math.max(0, Number(e.target.value)))
+                }
                 error={errors.retailPrice}
                 helperText={`Harga berlaku untuk pembelian di bawah ${minOrderQty > 0 ? minOrderQty : "batas minimum"} ${unit}`}
                 required
@@ -163,7 +174,9 @@ export function EceranDanHargaSection({
                 Berikan peningkatan harga bertingkat
               </span>
               <p className="text-xs text-text-secondary leading-relaxed">
-                Terapkan skema harga bertingkat dengan batas bawah, batas atas, dan harga spesifik. Rentang pertama otomatis dimulai dari nilai MOQ dan terkunci.
+                Terapkan skema harga bertingkat dengan batas bawah, batas atas,
+                dan harga spesifik. Rentang pertama otomatis dimulai dari nilai
+                MOQ dan terkunci.
               </p>
             </div>
           </label>
@@ -176,7 +189,8 @@ export function EceranDanHargaSection({
                     Daftar Rentang &amp; Tingkatan Harga
                   </h3>
                   <p className="text-xs text-text-secondary">
-                    Tentukan batas kuota pembelian dan harga per {unit} untuk masing-masing rentang volume.
+                    Tentukan batas kuota pembelian dan harga per {unit} untuk
+                    masing-masing rentang volume.
                   </p>
                 </div>
               </div>
@@ -229,16 +243,26 @@ export function EceranDanHargaSection({
                             min={1}
                             label={`Batas Bawah (${unit})${isFirstTier ? " (MOQ)" : ""}`}
                             placeholder="Contoh: 5"
-                            value={isFirstTier ? minOrderQty.toString() : tier.minQty <= 0 ? "" : tier.minQty.toString()}
+                            value={
+                              isFirstTier
+                                ? minOrderQty.toString()
+                                : tier.minQty <= 0
+                                  ? ""
+                                  : tier.minQty.toString()
+                            }
                             onChange={(e) =>
                               handleUpdateTier(
                                 tier.id,
                                 "minQty",
-                                Math.max(0, Number(e.target.value))
+                                Math.max(0, Number(e.target.value)),
                               )
                             }
                             disabled={isFirstTier}
-                            helperText={isFirstTier ? "Terkunci dari nilai MOQ dan tidak dapat diubah" : undefined}
+                            helperText={
+                              isFirstTier
+                                ? "Terkunci dari nilai MOQ dan tidak dapat diubah"
+                                : undefined
+                            }
                             className={`min-h-[44px] tabular-nums ${isFirstTier ? "bg-neutral-100/80 cursor-not-allowed text-text-secondary" : ""}`}
                           />
                         </div>
@@ -251,12 +275,14 @@ export function EceranDanHargaSection({
                             min={isFirstTier ? minOrderQty : tier.minQty}
                             label={`Batas Atas (${unit})`}
                             placeholder="Contoh: 50"
-                            value={tier.maxQty <= 0 ? "" : tier.maxQty.toString()}
+                            value={
+                              tier.maxQty <= 0 ? "" : tier.maxQty.toString()
+                            }
                             onChange={(e) =>
                               handleUpdateTier(
                                 tier.id,
                                 "maxQty",
-                                Math.max(0, Number(e.target.value))
+                                Math.max(0, Number(e.target.value)),
                               )
                             }
                             className="min-h-[44px] tabular-nums"
@@ -276,7 +302,7 @@ export function EceranDanHargaSection({
                               handleUpdateTier(
                                 tier.id,
                                 "price",
-                                Math.max(0, Number(e.target.value))
+                                Math.max(0, Number(e.target.value)),
                               )
                             }
                             className="min-h-[44px] tabular-nums font-semibold"

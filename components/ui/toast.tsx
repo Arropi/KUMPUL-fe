@@ -46,10 +46,35 @@ function getServerSnapshot(): ToastItem[] {
   return emptySnapshot;
 }
 
+// Cache deduplikasi toast untuk mencegah pop-up ganda dalam interval singkat
+const recentToasts = new Map<string, number>();
+const DEDUPE_INTERVAL_MS = 1500;
+
 export function dispatchToast(
   options: ToastOptions | string,
   type: ToastType = "info"
 ): string {
+  const rawMessage = typeof options === "string" ? options : options.message || "";
+  const rawType = typeof options === "string" ? type : options.type || type;
+  const dedupeKey = `${rawType}:${rawMessage.trim()}`;
+  const now = Date.now();
+  const lastTime = recentToasts.get(dedupeKey);
+
+  // Cegah pemanggilan duplikat untuk pesan yang sama dalam jendela waktu 1.5 detik
+  if (lastTime && now - lastTime < DEDUPE_INTERVAL_MS) {
+    return "";
+  }
+  recentToasts.set(dedupeKey, now);
+
+  // Bersihkan cache lama berkala
+  if (recentToasts.size > 40) {
+    for (const [k, timestamp] of recentToasts.entries()) {
+      if (now - timestamp > 6000) {
+        recentToasts.delete(k);
+      }
+    }
+  }
+
   const id = Math.random().toString(36).substring(2, 9);
   const defaultTitle =
     type === "success"

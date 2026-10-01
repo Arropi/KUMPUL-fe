@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
-import { KomoditasInfoSection } from "./components/komoditas-info-section";
-import { PanenJadwalSection } from "./components/panen-jadwal-section";
-import { EceranDanHargaSection } from "./components/eceran-dan-harga-section";
+import { KomoditasInfoSection } from "@/components/katalog/komoditas-info-section";
+import { PanenJadwalSection } from "@/components/katalog/panen-jadwal-section";
+import { EceranDanHargaSection } from "@/components/katalog/eceran-dan-harga-section";
 import type { PriceTierRange, KatalogFormErrors } from "./types";
 
 export function TambahKomoditasForm() {
@@ -25,7 +25,9 @@ export function TambahKomoditasForm() {
 
   // Foto Komoditas State
   const [, setImageFile] = React.useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = React.useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = React.useState<string | null>(
+    null,
+  );
 
   // Harvest & Marketplace State
   const [harvestDate, setHarvestDate] = React.useState("2026-10-15");
@@ -35,7 +37,8 @@ export function TambahKomoditasForm() {
   // Retail & Pricing State
   const [allowRetail, setAllowRetail] = React.useState<boolean>(false);
   const [retailPrice, setRetailPrice] = React.useState<number>(18000);
-  const [enablePriceTiers, setEnablePriceTiers] = React.useState<boolean>(false);
+  const [enablePriceTiers, setEnablePriceTiers] =
+    React.useState<boolean>(false);
   const [priceTiers, setPriceTiers] = React.useState<PriceTierRange[]>([
     {
       id: "tier-initial-1",
@@ -71,15 +74,18 @@ export function TambahKomoditasForm() {
     }
 
     if (allowRetail && retailPrice <= 0) {
-      err.retailPrice = "Harga eceran harus lebih dari 0 jika penjualan eceran diterima.";
+      err.retailPrice =
+        "Harga eceran harus lebih dari 0 jika penjualan eceran diterima.";
     }
 
     if (enablePriceTiers) {
       if (priceTiers.length === 0) {
-        err.priceTiers = "Mohon tambahkan minimal satu rentang harga bertingkat.";
+        err.priceTiers =
+          "Mohon tambahkan minimal satu rentang harga bertingkat.";
       } else {
         const hasInvalidTier = priceTiers.some(
-          (tier) => tier.minQty <= 0 || tier.maxQty < tier.minQty || tier.price <= 0
+          (tier) =>
+            tier.minQty <= 0 || tier.maxQty < tier.minQty || tier.price <= 0,
         );
         if (hasInvalidTier) {
           err.priceTiers =
@@ -98,7 +104,7 @@ export function TambahKomoditasForm() {
     if (!validate()) {
       toast.error(
         "Mohon periksa kembali formulir dan lengkapi data yang belum sesuai.",
-        "Formulir Belum Lengkap"
+        "Formulir Belum Lengkap",
       );
       return;
     }
@@ -109,7 +115,7 @@ export function TambahKomoditasForm() {
       setIsSubmitting(false);
       toast.success(
         `Komoditas ${name} berhasil disimpan ke katalog pasokan.`,
-        "Katalog Berhasil Ditambahkan"
+        "Katalog Berhasil Ditambahkan",
       );
 
       setTimeout(() => {
@@ -132,7 +138,8 @@ export function TambahKomoditasForm() {
           Tambah Pasokan Komoditas Baru
         </h1>
         <p className="font-body text-xs sm:text-sm text-text-secondary mt-1">
-          Daftarkan kuota panen, atur harga utama, foto produk, batas minimum pesanan, serta skema harga bertingkat.
+          Daftarkan kuota panen, atur harga utama, foto produk, batas minimum
+          pesanan, serta skema harga bertingkat.
         </p>
       </div>
 
@@ -202,9 +209,7 @@ export function TambahKomoditasForm() {
             isLoading={isSubmitting}
             className="font-semibold px-8 min-h-[44px]"
           >
-            {isSubmitting
-              ? "Menyimpan Komoditas..."
-              : "Simpan & Publikasikan"}
+            {isSubmitting ? "Menyimpan Komoditas..." : "Simpan & Publikasikan"}
           </Button>
         </div>
       </form>

@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import type { KatalogFormErrors } from "../types";
+import type { KatalogFormErrors } from "../../modules/supplier/katalog/types";
 
 interface KomoditasInfoSectionProps {
   name: string;
@@ -83,7 +83,8 @@ export function KomoditasInfoSection({
           1. Informasi Komoditas, Foto &amp; Harga Utama
         </h2>
         <p className="font-body text-xs text-text-secondary mt-0.5">
-          Tentukan identitas komoditas, foto visual produk, kuota batas minimum, dan harga dasar utama.
+          Tentukan identitas komoditas, foto visual produk, kuota batas minimum,
+          dan harga dasar utama.
         </p>
       </div>
 
@@ -243,7 +244,9 @@ export function KomoditasInfoSection({
           label={`Perkiraan Stock Siap Pasok (${unit})`}
           placeholder="Contoh: 500"
           value={estimatedStock <= 0 ? "" : estimatedStock.toString()}
-          onChange={(e) => setEstimatedStock(Math.max(0, Number(e.target.value)))}
+          onChange={(e) =>
+            setEstimatedStock(Math.max(0, Number(e.target.value)))
+          }
           error={errors.estimatedStock}
           helperText="Total estimasi kapasitas stok yang siap dialokasikan"
           required

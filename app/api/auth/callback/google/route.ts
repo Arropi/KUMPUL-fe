@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { UserRole } from "@/constants/auth";
+import { printAuthLog } from "@/actions/auth";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -101,6 +103,21 @@ export async function GET(request: Request) {
     const name = profile.name || email.split("@")[0];
     const picture = profile.picture || "";
 
+    await printAuthLog({
+      timestamp: new Date().toISOString(),
+      action: "GOOGLE_AUTH_CALLBACK",
+      provider: "google",
+      status: "SUCCESS",
+      role: (role as UserRole) || "umkm",
+      email,
+      name,
+      redirectTo: `${appUrl}/home?role=${role}`,
+      metadata: {
+        oauthType: "google-direct",
+        hasPicture: !!picture,
+      },
+    });
+
     const response = NextResponse.redirect(
       `${appUrl}/home?login_success=true&role=${encodeURIComponent(role)}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`
     );
@@ -121,6 +138,15 @@ export async function GET(request: Request) {
   } catch (err: unknown) {
     const errorMsg =
       err instanceof Error ? err.message : "Terjadi kendala saat memproses login Google OAuth.";
+    await printAuthLog({
+      timestamp: new Date().toISOString(),
+      action: "GOOGLE_AUTH_CALLBACK",
+      provider: "google",
+      status: "FAILED",
+      role: (role as UserRole) || "umkm",
+      email: "unknown",
+      error: errorMsg,
+    });
     return NextResponse.redirect(`${appUrl}/login?oauth_error=${encodeURIComponent(errorMsg)}`);
   }
 }

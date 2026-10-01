@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
-import { CommodityCatalogCard } from "./katalog/components/commodity-catalog-card";
+import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
 
 export function SupplierKatalogView() {
   const [commodities, setCommodities] = React.useState<SupplierCommodity[]>(
-    MOCK_SUPPLIER_COMMODITIES
+    MOCK_SUPPLIER_COMMODITIES,
   );
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
@@ -28,18 +28,18 @@ export function SupplierKatalogView() {
           if (nextState) {
             toast.success(
               `Status publikasi ${c.name} telah diaktifkan di Bursa KUMPUL.`,
-              "Komoditas Dipublikasikan"
+              "Komoditas Dipublikasikan",
             );
           } else {
             toast.info(
               `Status publikasi ${c.name} telah ditarik dari etalase bursa.`,
-              "Komoditas Dinonaktifkan"
+              "Komoditas Dinonaktifkan",
             );
           }
           return { ...c, isActive: nextState };
         }
         return c;
-      })
+      }),
     );
   };
 
@@ -47,7 +47,9 @@ export function SupplierKatalogView() {
     const matchSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.batchTag.licenseNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      item.batchTag.licenseNumber
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
 
     const matchSector =
       selectedSector === "ALL" || item.sector === selectedSector;
@@ -69,12 +71,17 @@ export function SupplierKatalogView() {
             Katalog Pasokan Komoditas Grosir
           </h1>
           <p className="font-body text-xs sm:text-sm text-text-secondary mt-1">
-            Kelola etalase komoditas, verifikasi paspor mutu kesehatan pangan, dan pantau status publikasi di bursa.
+            Kelola etalase komoditas, verifikasi paspor mutu kesehatan pangan,
+            dan pantau status publikasi di bursa.
           </p>
         </div>
 
         <Link href="/supplier/katalog/tambah" className="shrink-0">
-          <Button variant="primary" size="md" className="font-semibold min-h-[44px]">
+          <Button
+            variant="primary"
+            size="md"
+            className="font-semibold min-h-[44px]"
+          >
             <svg
               className="w-4 h-4 mr-2"
               fill="none"
@@ -83,7 +90,11 @@ export function SupplierKatalogView() {
               strokeWidth={2}
               aria-hidden="true"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             Tambah Pasokan Komoditas
           </Button>
@@ -106,7 +117,10 @@ export function SupplierKatalogView() {
           <div className="flex items-center gap-3 flex-wrap">
             {/* Filter Sektor */}
             <div className="flex items-center gap-2">
-              <label htmlFor="filter-sector" className="text-xs font-semibold text-text-secondary whitespace-nowrap">
+              <label
+                htmlFor="filter-sector"
+                className="text-xs font-semibold text-text-secondary whitespace-nowrap"
+              >
                 Sektor:
               </label>
               <select
@@ -126,7 +140,10 @@ export function SupplierKatalogView() {
 
             {/* Filter Status */}
             <div className="flex items-center gap-2">
-              <label htmlFor="filter-status" className="text-xs font-semibold text-text-secondary whitespace-nowrap">
+              <label
+                htmlFor="filter-status"
+                className="text-xs font-semibold text-text-secondary whitespace-nowrap"
+              >
                 Status:
               </label>
               <select
@@ -141,7 +158,9 @@ export function SupplierKatalogView() {
               </select>
             </div>
 
-            {(searchQuery || selectedSector !== "ALL" || selectedStatus !== "ALL") && (
+            {(searchQuery ||
+              selectedSector !== "ALL" ||
+              selectedStatus !== "ALL") && (
               <button
                 type="button"
                 onClick={() => {
@@ -170,14 +189,19 @@ export function SupplierKatalogView() {
               strokeWidth={1.5}
               aria-hidden="true"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              />
             </svg>
           </div>
           <h2 className="font-heading font-bold text-base text-text-primary">
             Tidak ada komoditas yang sesuai kriteria
           </h2>
           <p className="font-body text-xs text-text-secondary max-w-sm mx-auto">
-            Ubah kata kunci pencarian atau reset filter untuk menampilkan komoditas yang terdaftar.
+            Ubah kata kunci pencarian atau reset filter untuk menampilkan
+            komoditas yang terdaftar.
           </p>
         </div>
       ) : (

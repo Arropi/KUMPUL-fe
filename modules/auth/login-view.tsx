@@ -8,7 +8,13 @@ export function LoginView() {
 
       <main className="flex-1 flex items-center justify-center py-4 sm:py-6 my-auto">
         <div className="w-full max-w-[440px]">
-          <LoginForm />
+          <React.Suspense
+            fallback={
+              <div className="p-8 text-center text-text-muted">Memuat formulir masuk...</div>
+            }
+          >
+            <LoginForm />
+          </React.Suspense>
         </div>
       </main>
 
