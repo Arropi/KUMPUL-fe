@@ -69,9 +69,11 @@ export function RegisterAuthStep({
             type="submit"
             variant="primary"
             size="default"
+            isLoading={isSubmitting}
+            disabled={isSubmitting || isOAuthLoading}
             className="w-full font-bold"
           >
-            Lanjut ke Validasi Usaha &rarr;
+            {isSubmitting ? "Memverifikasi Akun..." : "Lanjut ke Validasi Usaha \u2192"}
           </Button>
         </div>
       </form>

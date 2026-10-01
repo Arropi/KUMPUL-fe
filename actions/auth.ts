@@ -1,57 +1,44 @@
 "use server";
+
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import {
-  UserRole,
-  UserSession,
-  AuthLogEvent,
-  AuthActionResult,
-} from "@/constants/auth";
+import { UserRole, UserSession, AuthActionResult } from "@/constants/auth";
 import {
   callBackendLogin,
   callBackendRegister,
   normalizeSectorForBE,
+  BESectorType,
 } from "@/lib/be-auth";
 import { saveAuthCookies, clearAuthCookies } from "@/lib/auth-cookies";
 
-
-
-/**
- * Server Action: Login dengan Email & Password (Opsi A: Token Exchange)
- * FE signIn Supabase -> Supabase issue user.id -> BE issue Custom JWT KUMPUL
- */
+// Server Action: Login dengan Email & Password (Token Exchange Opsi A)
 export async function loginWithCredentialsAction(payload: {
   email: string;
   password: string;
-  role: UserRole;
+  role?: UserRole;
   rememberMe?: boolean;
 }): Promise<AuthActionResult> {
   const email = payload.email.trim();
   const password = payload.password;
-  const role = payload.role;
 
-  // 1. Validasi format input di server. Jika gagal, JANGAN DI-REDIRECT
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    const errorMsg = "Format alamat email tidak valid.";
-    return { success: false, error: errorMsg, };
+    return { success: false, error: "Format alamat email tidak valid." };
   }
-
   if (!password || password.length < 6) {
-    const errorMsg = "Kata sandi minimal 6 karakter.";
-    return { success: false, error: errorMsg};
+    return { success: false, error: "Kata sandi minimal 6 karakter." };
   }
 
-  // 2. Autentikasi identitas dengan Supabase Auth
   const supabase = await createClient();
   const { data, error: signInError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  // Jika kredensial salah, JANGAN DI-REDIRECT
   if (signInError || !data.user?.id) {
-    const errorMsg = "Email atau kata sandi yang Anda masukkan salah. Silakan coba kembali.";
-    return { success: false, error: errorMsg };
+    return {
+      success: false,
+      error: "Email atau kata sandi yang Anda masukkan salah. Silakan coba kembali.",
+    };
   }
 
   const supabaseUserId = data.user.id;
@@ -61,125 +48,82 @@ export async function loginWithCredentialsAction(payload: {
     (data.user.user_metadata?.business_name as string) ||
     email.split("@")[0];
 
-  // 3. Token Exchange ke Backend Express KUMPUL (Opsi A)
-  const beRole = role === "supplier" ? "SUPPLIER" : "UMKM";
-  let beRes = await callBackendLogin({
+  const beRole = payload.role ? (payload.role === "supplier" ? "SUPPLIER" : "UMKM") : undefined;
+  const beRes = await callBackendLogin({
     user_id: supabaseUserId,
     role: beRole,
   });
 
-  // Auto-registrasi jika role belum pernah terdaftar di database backend
+  // Jika belum REGISTERED / profil belum lengkap: alihkan ke business-step (JANGAN REDIRECT)
   if (
     !beRes.success &&
-    (beRes.errorCode === "ENTITY_NOT_FOUND" || beRes.errorCode === "ROLE_NOT_REGISTERED")
+    (beRes.errorCode === "ROLE_NOT_REGISTERED" ||
+      beRes.errorCode === "BUSINESS_PROFILE_INCOMPLETE")
   ) {
-    const regRes = await callBackendRegister({
-      user_id: supabaseUserId,
-      role: beRole,
-    });
-    if (regRes.success && regRes.data?.token) {
-      beRes = {
-        success: true,
-        data: {
-          token: regRes.data.token,
-          user_id: regRes.data.user_id,
-          entity_id: regRes.data.entity_id,
-          active_role: { role_type: regRes.data.role },
-        },
-      };
-    }
+    return {
+      success: false,
+      requiresBusinessStep: true,
+      errorCode: beRes.errorCode,
+      userId: supabaseUserId,
+      email,
+      role: payload.role || "umkm",
+      error: beRes.error || "Profil atau role bisnis belum lengkap.",
+    };
   }
 
-  // Jika backend gagal menerbitkan token, JANGAN DI-REDIRECT
   if (!beRes.success || !beRes.data?.token) {
-    const errorMsg = beRes.error || "Gagal memperoleh token kustom dari backend KUMPUL.";
-    return { success: false, error: errorMsg };
+    return {
+      success: false,
+      error: beRes.error || "Gagal memperoleh token kustom dari backend KUMPUL.",
+      errorCode: beRes.errorCode,
+    };
   }
 
   const beToken = beRes.data.token;
   const entityId = beRes.data.entity_id;
+  const activeRoleType = beRes.data.active_role?.role_type;
+  const effectiveRole: UserRole = activeRoleType === "SUPPLIER" ? "supplier" : "umkm";
 
-  // 4. Bangun sesi pengguna dengan Custom JWT KUMPUL
   const session: UserSession = {
     email,
     name: userName,
-    role,
+    role: effectiveRole,
     provider: "credentials",
     supabaseUserId,
     token: beToken,
     entityId,
   };
 
-  // 5. Simpan HANYA token dari backend KUMPUL di HTTP-Only cookie server
   const maxAgeDays = payload.rememberMe ? 30 : 7;
   await saveAuthCookies({ beToken, session, maxAgeDays });
 
-  const redirectTo = role === "supplier" ? "/supplier" : "/home";
-
+  const redirectTo = effectiveRole === "supplier" ? "/supplier" : "/home";
 
   return { success: true, user: session, redirectTo };
 }
 
-/**
- * Server Action: Registrasi Akun Baru
- * Verifikasi Supabase -> JIKA EMAIL SUDAH ADA JANGAN REDIRECT -> Hit BE /api/auth/register -> Simpan BE Token
- */
+// Server Action: Inisiasi Registrasi Akun Baru (cek token login, jika belum REGISTERED masuk business-step)
 export async function registerWithCredentialsAction(payload: {
-  role: UserRole;
   email: string;
   password: string;
-  businessName: string;
-  sector?: string;
-  storageCapacity?: number;
-  taxId?: string;
-  address?: string;
-  latitude?: number;
-  longitude?: number;
-  locationName?: string;
+  role?: UserRole;
 }): Promise<AuthActionResult> {
   const email = payload.email.trim();
   const password = payload.password;
-  const role = payload.role;
-  const businessName = payload.businessName.trim();
 
-  // 1. Validasi input form di sisi server
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    const errorMsg = "Alamat email operasional belum valid.";
-    return { success: false, error: errorMsg};
+    return { success: false, error: "Alamat email operasional belum valid." };
   }
-
-  if (!businessName) {
-    const errorMsg = "Nama usaha atau perusahaan wajib diisi.";
-    return { success: false, error: errorMsg};
-  }
-
   if (!password || password.length < 6) {
-    const errorMsg = "Kata sandi minimal 6 karakter.";
-    return { success: false, error: errorMsg };
+    return { success: false, error: "Kata sandi minimal 6 karakter." };
   }
 
-  // 2. Hubungkan ke Supabase Auth untuk inisiasi akun baru
   const supabase = await createClient();
   const { data, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: {
-        role,
-        business_name: businessName,
-        full_name: businessName,
-        name: businessName,
-        tax_id: payload.taxId || "",
-        address: payload.address || "",
-        latitude: payload.latitude,
-        longitude: payload.longitude,
-        location_name: payload.locationName || "",
-        profile_completed: false,
-      },
-    },
   });
 
-  // 3. JIKA EMAIL SUDAH ADA / SIGNUP GAGAL -> BERSIHKAN SESI & JANGAN DI-REDIRECT
   const isDuplicateEmail =
     (signUpError &&
       (signUpError.message.toLowerCase().includes("already registered") ||
@@ -193,51 +137,174 @@ export async function registerWithCredentialsAction(payload: {
     } catch {
       // Abaikan
     }
-
-    const errorMsg = isDuplicateEmail
-      ? "Alamat email ini sudah terdaftar. Silakan gunakan email lain atau masuk ke akun Anda."
-      : signUpError?.message || "Gagal membuat akun di Supabase Auth.";
-
-    return { success: false, error: errorMsg };
+    return {
+      success: false,
+      error: isDuplicateEmail
+        ? "Alamat email ini sudah terdaftar. Silakan gunakan email lain atau masuk ke akun Anda."
+        : signUpError?.message || "Gagal membuat akun di Supabase Auth.",
+    };
   }
 
   const supabaseUserId = data.user.id;
+  const beRole = payload.role ? (payload.role === "supplier" ? "SUPPLIER" : "UMKM") : undefined;
 
-  // 4. Hit endpoint Backend Express KUMPUL: POST /api/auth/register
-  const beRole = role === "supplier" ? "SUPPLIER" : "UMKM";
-  const beSector = normalizeSectorForBE(payload.sector);
-
-  const beRes = await callBackendRegister({
+  // Cek login route backend untuk cek token (jika belum REGISTERED, masuk business-step)
+  const beLoginRes = await callBackendLogin({
     user_id: supabaseUserId,
     role: beRole,
-    sector_type: beSector,
-    storage_capacity: payload.storageCapacity ?? 0,
   });
 
-  if (!beRes.success || !beRes.data?.token) {
-    const errorMsg = beRes.error || "Gagal mendaftarkan role entitas usaha di backend KUMPUL.";
-    return { success: false, error: errorMsg };
+  // Jika akun sudah memiliki role lengkap dan mengembalikan token:
+  if (beLoginRes.success && beLoginRes.data?.token) {
+    const beToken = beLoginRes.data.token;
+    const entityId = beLoginRes.data.entity_id;
+    const activeRoleType = beLoginRes.data.active_role?.role_type;
+    const effectiveRole: UserRole = activeRoleType === "SUPPLIER" ? "supplier" : "umkm";
+    const session: UserSession = {
+      email,
+      name: email.split("@")[0],
+      role: effectiveRole,
+      provider: "credentials",
+      supabaseUserId,
+      token: beToken,
+      entityId,
+    };
+    await saveAuthCookies({ beToken, session, maxAgeDays: 7 });
+    return {
+      success: true,
+      user: session,
+      redirectTo: effectiveRole === "supplier" ? "/supplier" : "/home",
+    };
   }
 
-  // 5. Ambil token kustom dari respon /api/auth/register Backend
-  const beToken = beRes.data.token;
-  const entityId = beRes.data.entity_id;
+  // Jika belum REGISTERED atau profil belum lengkap: masuk ke business-step
+  return {
+    success: false,
+    requiresBusinessStep: true,
+    errorCode: beLoginRes.errorCode || "ROLE_NOT_REGISTERED",
+    userId: supabaseUserId,
+    email,
+    role: payload.role || "umkm",
+  };
+}
+
+// Server Action: Penyelesaian Data Usaha (POST /api/auth/register-complete)
+export async function completeBusinessRegistrationAction(payload: {
+  userId: string;
+  email?: string;
+  legalName: string;
+  npwpNib: string;
+  defaultAddress: string;
+  latitude: number | string;
+  longitude: number | string;
+  role: UserRole;
+  sectorType?: string;
+  storageCapacity?: number;
+}): Promise<AuthActionResult> {
+  const {
+    userId,
+    email = "",
+    legalName,
+    npwpNib,
+    defaultAddress,
+    latitude,
+    longitude,
+    role,
+    sectorType,
+    storageCapacity = 0,
+  } = payload;
+
+  let targetUserId = userId;
+  let targetEmail = email;
+
+  if (!targetUserId || !targetEmail) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        if (!targetUserId && data.user.id) targetUserId = data.user.id;
+        if (!targetEmail && data.user.email) targetEmail = data.user.email;
+      }
+    } catch {
+      // Abaikan jika auth client gagal
+    }
+  }
+
+  if (!targetUserId) {
+    return { success: false, error: "Identitas pengguna (user_id) tidak valid. Silakan login atau daftar ulang." };
+  }
+  if (!legalName || legalName.trim().length < 2) {
+    return { success: false, error: "Nama legal usaha minimal 2 karakter." };
+  }
+  if (!npwpNib || npwpNib.trim().length < 5) {
+    return { success: false, error: "Nomor NPWP/NIB minimal 5 karakter." };
+  }
+  if (!defaultAddress || defaultAddress.trim().length < 3) {
+    return { success: false, error: "Alamat operasional lengkap wajib diisi." };
+  }
+
+  const latNum = typeof latitude === "number" ? latitude : parseFloat(latitude);
+  const lngNum = typeof longitude === "number" ? longitude : parseFloat(longitude);
+  if (isNaN(latNum) || isNaN(lngNum) || (latNum === 0 && lngNum === 0)) {
+    return {
+      success: false,
+      error: "Pilih titik lokasi valid pada peta (koordinat tidak boleh 0, 0).",
+    };
+  }
+
+  const beRole = role === "supplier" ? "SUPPLIER" : "UMKM";
+  const beSector = normalizeSectorForBE(sectorType) as BESectorType;
+
+  const completeRes = await callBackendRegister({
+    user_id: targetUserId,
+    legal_name: legalName.trim(),
+    npwp_nib: npwpNib.trim(),
+    default_address: defaultAddress.trim(),
+    latitude: latNum,
+    longitude: lngNum,
+    role: beRole,
+    sector: beSector,
+    storage_capacity: Number(storageCapacity) || 0,
+  });
+
+  if (!completeRes.success || !completeRes.data) {
+    return {
+      success: false,
+      error: completeRes.error || "Gagal melengkapi data profil usaha di backend KUMPUL.",
+      errorCode: completeRes.errorCode,
+    };
+  }
+
+  let beToken = completeRes.data.token;
+  const entityId = completeRes.data.entity_id;
+
+  if (!beToken) {
+    const loginAfter = await callBackendLogin({ user_id: targetUserId, role: beRole });
+    if (loginAfter.success && loginAfter.data?.token) {
+      beToken = loginAfter.data.token;
+    }
+  }
+
+  if (!beToken) {
+    return {
+      success: false,
+      error: "Profil usaha berhasil disimpan, namun gagal menerbitkan token akses sesi.",
+    };
+  }
 
   const session: UserSession = {
-    email,
-    name: businessName,
+    email: targetEmail,
+    name: legalName.trim(),
     role,
     provider: "credentials",
-    supabaseUserId,
+    supabaseUserId: targetUserId,
     token: beToken,
     entityId,
   };
 
-  // 6. Simpan token dari /register BE saja ke dalam cookie HTTP-Only server-side
   await saveAuthCookies({ beToken, session, maxAgeDays: 7 });
 
-  const redirectTo =
-    role === "supplier" ? "/supplier?onboarding=pending" : "/home?onboarding=pending";
+  const redirectTo = role === "supplier" ? "/supplier" : "/home";
 
   return { success: true, user: session, redirectTo };
 }
@@ -245,17 +312,19 @@ export async function registerWithCredentialsAction(payload: {
 /**
  * Server Action: Inisiasi Google OAuth dari sisi server
  */
-export async function initiateGoogleAuthAction(payload: {
-  role: UserRole;
+export async function initiateGoogleAuthAction(payload?: {
+  role?: UserRole;
   origin?: string;
-}): Promise<{ success: boolean; url?: string; error?: string; log?: AuthLogEvent }> {
+}): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     const supabase = await createClient();
     const headerList = await headers();
     const host = headerList.get("host") || "localhost:3000";
     const proto = headerList.get("x-forwarded-proto") || "http";
-    const appOrigin = payload.origin || `${proto}://${host}`;
-    const redirectTo = `${appOrigin}/api/auth/callback?role=${payload.role}`;
+    const appOrigin = payload?.origin || `${proto}://${host}`;
+    const redirectTo = payload?.role
+      ? `${appOrigin}/api/auth/callback?role=${payload.role}`
+      : `${appOrigin}/api/auth/callback`;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -268,11 +337,13 @@ export async function initiateGoogleAuthAction(payload: {
     if (error) {
       return { success: false, error: error.message };
     }
+
     return { success: true, url: data.url };
   } catch (err: unknown) {
-    const errorMsg =
-      err instanceof Error ? err.message : "Gagal menginisiasi OAuth dari server.";
-    return { success: false, error: errorMsg };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Gagal menginisiasi OAuth dari server.",
+    };
   }
 }
 
@@ -290,8 +361,6 @@ export async function logoutAction(
   }
 
   await clearAuthCookies();
-
   const redirectTo = role ? `/login?role=${encodeURIComponent(role)}` : "/login";
-
   return { success: true, redirectTo };
 }

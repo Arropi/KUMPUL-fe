@@ -80,7 +80,13 @@ export interface UserSession {
 
 export interface AuthLogEvent {
   timestamp: string;
-  action: "LOGIN" | "REGISTER" | "GOOGLE_AUTH_INIT" | "GOOGLE_AUTH_CALLBACK" | "LOGOUT";
+  action:
+    | "LOGIN"
+    | "REGISTER"
+    | "REGISTER_COMPLETE"
+    | "GOOGLE_AUTH_INIT"
+    | "GOOGLE_AUTH_CALLBACK"
+    | "LOGOUT";
   provider: "credentials" | "google";
   status: "SUCCESS" | "FAILED";
   role: UserRole;
@@ -97,5 +103,10 @@ export interface AuthActionResult {
   user?: UserSession;
   redirectTo?: string;
   error?: string;
+  errorCode?: string;
+  requiresBusinessStep?: boolean;
+  userId?: string;
+  email?: string;
+  role?: UserRole;
   log?: AuthLogEvent;
 }

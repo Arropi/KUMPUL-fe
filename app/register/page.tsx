@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { RegisterView } from "@/modules/auth/register/register-view";
+import { AuthView } from "@/modules/auth/auth-view";
 
 export const metadata: Metadata = {
   title: "Daftar Akun Baru | KUMPUL",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function RegisterPage() {
-  return <RegisterView />;
+  return <AuthView defaultMode="register" />;
 }
