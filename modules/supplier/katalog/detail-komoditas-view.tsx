@@ -45,7 +45,7 @@ export function DetailKomoditasView({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Link
-            href="/supplier/katalog"
+            href="/katalog"
             className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1.5 mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
           >
             &larr; Kembali ke Katalog
@@ -71,22 +71,32 @@ export function DetailKomoditasView({
           </h1>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <Link href={`/katalog/${commodity.id}/verifikasi`}>
+            <Button
+              type="button"
+              variant="outline"
+              size="md"
+              className="font-semibold text-xs sm:text-sm min-h-[42px] border-emerald-600 text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+            >
+              Verifikasi Kepatuhan
+            </Button>
+          </Link>
           <Button
             type="button"
             variant={commodity.isActive ? "outline" : "primary"}
             size="md"
             onClick={handleToggleStatus}
-            className="font-semibold text-xs sm:text-sm min-h-[44px]"
+            className="font-semibold text-xs sm:text-sm min-h-[42px] cursor-pointer"
           >
             {commodity.isActive ? "Tarik dari Bursa" : "Publikasikan"}
           </Button>
-          <Link href={`/supplier/katalog/${commodity.id}/edit`}>
+          <Link href={`/katalog/${commodity.id}/edit`}>
             <Button
               type="button"
               variant="secondary"
               size="md"
-              className="font-semibold text-xs sm:text-sm min-h-[44px]"
+              className="font-semibold text-xs sm:text-sm min-h-[42px] cursor-pointer"
             >
               Ubah Data
             </Button>
@@ -97,8 +107,8 @@ export function DetailKomoditasView({
       {/* Grid Banner Foto & Informasi Inti */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Kolom Kiri: Foto Komoditas */}
-        <Card className="overflow-hidden rounded-2xl border-border bg-surface p-0 shadow-elevation-1">
-          <div className="relative aspect-[4/3] w-full bg-neutral-100">
+        <Card className="flex flex-col rounded-2xl border-border bg-surface p-3.5 sm:p-4 shadow-elevation-1">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-100 border border-border/40">
             {commodity.imageUrl ? (
               <Image
                 src={commodity.imageUrl}
@@ -125,7 +135,7 @@ export function DetailKomoditasView({
               </div>
             )}
           </div>
-          <div className="p-4 bg-surface border-t border-border/70 space-y-1">
+          <div className="pt-3.5 px-1 space-y-1">
             <span className="text-[11px] font-semibold text-text-muted block">
               Lokasi Asal Panen
             </span>
@@ -219,11 +229,23 @@ export function DetailKomoditasView({
                 </svg>
                 Paspor Mutu &amp; Kepatuhan Sanitasi Digital
               </h2>
-              {isHygienePassed ? (
-                <Badge variant="success">Terverifikasi</Badge>
-              ) : (
-                <Badge variant="warning">Menunggu Audit</Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {isHygienePassed ? (
+                  <Badge variant="success">Terverifikasi</Badge>
+                ) : (
+                  <Badge variant="warning">Menunggu Audit</Badge>
+                )}
+                <Link href={`/katalog/${commodity.id}/verifikasi`}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs font-semibold h-7 px-2.5 border-emerald-600 text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+                  >
+                    Verifikasi Kepatuhan &rarr;
+                  </Button>
+                </Link>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">

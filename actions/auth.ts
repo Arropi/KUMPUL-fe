@@ -1,5 +1,4 @@
 "use server";
-
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { UserRole, UserSession, AuthActionResult } from "@/constants/auth";
@@ -10,6 +9,7 @@ import {
   BESectorType,
 } from "@/lib/be-auth";
 import { saveAuthCookies, clearAuthCookies } from "@/lib/auth-cookies";
+import { switchRoleAction as executeSwitchRole } from "./switch-role";
 
 // Server Action: Login dengan Email & Password (Token Exchange Opsi A)
 export async function loginWithCredentialsAction(payload: {
@@ -97,7 +97,7 @@ export async function loginWithCredentialsAction(payload: {
   const maxAgeDays = payload.rememberMe ? 30 : 7;
   await saveAuthCookies({ beToken, session, maxAgeDays });
 
-  const redirectTo = effectiveRole === "supplier" ? "/supplier" : "/home";
+  const redirectTo = "/home";
 
   return { success: true, user: session, redirectTo };
 }
@@ -173,7 +173,7 @@ export async function registerWithCredentialsAction(payload: {
     return {
       success: true,
       user: session,
-      redirectTo: effectiveRole === "supplier" ? "/supplier" : "/home",
+      redirectTo: "/home",
     };
   }
 
@@ -292,6 +292,7 @@ export async function completeBusinessRegistrationAction(payload: {
     };
   }
 
+  // 5. Bangun sesi pengguna
   const session: UserSession = {
     email: targetEmail,
     name: legalName.trim(),
@@ -304,7 +305,7 @@ export async function completeBusinessRegistrationAction(payload: {
 
   await saveAuthCookies({ beToken, session, maxAgeDays: 7 });
 
-  const redirectTo = role === "supplier" ? "/supplier" : "/home";
+  const redirectTo = "/home";
 
   return { success: true, user: session, redirectTo };
 }
@@ -364,3 +365,20 @@ export async function logoutAction(
   const redirectTo = role ? `/login?role=${encodeURIComponent(role)}` : "/login";
   return { success: true, redirectTo };
 }
+
+/**
+ * Server Action: Beralih Peran (Switch Role) UMKM <-> Supplier tanpa harus login kembali.
+ * Didelegasikan ke actions/switch-role.ts untuk menjaga modularitas kode.
+ */
+export async function switchRoleAction(
+  targetRole: UserRole
+): Promise<{
+  success: boolean;
+  user?: UserSession;
+  redirectTo: string;
+  autoCreatedInDb?: boolean;
+  error?: string;
+}> {
+  return executeSwitchRole(targetRole);
+}
+

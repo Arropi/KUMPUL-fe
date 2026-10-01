@@ -196,8 +196,7 @@ export function BusinessStep({
         "Pendaftaran Berhasil"
       );
 
-      const targetPath =
-        result.redirectTo || (role === "supplier" ? "/supplier" : "/home");
+      const targetPath = result.redirectTo || "/home";
 
       if (onSuccess) {
         onSuccess(targetPath);

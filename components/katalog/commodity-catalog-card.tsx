@@ -24,16 +24,16 @@ export function CommodityCatalogCard({
   const isHygienePassed = item.batchTag.hygieneStatus === "TERVERIFIKASI";
 
   return (
-    <Card className="flex flex-col overflow-hidden rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong">
+    <Card className="group flex flex-col rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong p-3.5 sm:p-4">
       {/* Gambar Komoditas & Overlay Badges */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-neutral-100">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-100 border border-border/40">
         {item.imageUrl && !imgError ? (
           <Image
             src={item.imageUrl}
             alt={item.name}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 hover:scale-105"
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -57,15 +57,15 @@ export function CommodityCatalogCard({
         )}
 
         {/* Floating Badges */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
+        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none">
           {/* Badge Active / Nonaktif */}
           <div className="pointer-events-auto">
             {item.isActive ? (
-              <Badge variant="success" className="shadow-xs font-semibold">
+              <Badge variant="success" className="shadow-xs font-semibold backdrop-blur-xs">
                 Aktif di Bursa
               </Badge>
             ) : (
-              <Badge variant="neutral" className="shadow-xs font-semibold bg-neutral-900/75 text-white backdrop-blur-xs">
+              <Badge variant="neutral" className="shadow-xs font-semibold bg-neutral-900/80 text-white backdrop-blur-xs">
                 Nonaktif (Draft)
               </Badge>
             )}
@@ -74,9 +74,9 @@ export function CommodityCatalogCard({
           {/* Badge Lulus Kesehatan / Mutu */}
           <div className="pointer-events-auto">
             {isHygienePassed ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200 shadow-xs">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
                 <svg
-                  className="size-3 text-emerald-600"
+                  className="size-3 text-white"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                   aria-hidden="true"
@@ -90,9 +90,9 @@ export function CommodityCatalogCard({
                 Lulus Mutu
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200 shadow-xs">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
                 <svg
-                  className="size-3 text-amber-600"
+                  className="size-3 text-white"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                   aria-hidden="true"
@@ -111,7 +111,7 @@ export function CommodityCatalogCard({
       </div>
 
       {/* Konten Card */}
-      <div className="flex flex-1 flex-col p-4 sm:p-5 space-y-3.5">
+      <div className="flex flex-1 flex-col pt-3.5 space-y-3">
         <div>
           <div className="flex items-center gap-2 text-[11px] text-text-muted mb-1">
             <span className="font-mono font-semibold uppercase">{item.sku}</span>

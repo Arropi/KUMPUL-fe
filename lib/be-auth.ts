@@ -27,13 +27,14 @@ export interface BELoginResult {
 
 export interface BERegisterCompletePayload {
   user_id: string;
-  legal_name: string;
-  npwp_nib: string;
-  default_address: string;
-  latitude: number | string;
-  longitude: number | string;
   role: "SUPPLIER" | "UMKM";
-  sector: BESectorType;
+  sector?: BESectorType;
+  sector_type?: BESectorType;
+  legal_name?: string;
+  npwp_nib?: string;
+  default_address?: string;
+  latitude?: number | string;
+  longitude?: number | string;
   storage_capacity?: number;
   bank_account_info?: Record<string, unknown>;
   profile_picture_url?: string | null;
@@ -115,10 +116,29 @@ export async function callBackendRegister(
   payload: BERegisterCompletePayload
 ): Promise<{ success: boolean; data?: BERegisterCompleteResult; error?: string; errorCode?: string }> {
   try {
+    const sector =
+      payload.sector ||
+      payload.sector_type ||
+      (payload.role === "SUPPLIER" ? "PERTANIAN" : "FNB_PENGOLAHAN");
+
+    const body = {
+      user_id: payload.user_id,
+      role: payload.role,
+      sector,
+      legal_name: payload.legal_name || "Mitra KUMPUL",
+      npwp_nib: payload.npwp_nib || "0000000000000000",
+      default_address: payload.default_address || "Indonesia",
+      latitude: payload.latitude ?? -7.2575,
+      longitude: payload.longitude ?? 112.7521,
+      storage_capacity: payload.storage_capacity ?? (payload.role === "SUPPLIER" ? 5000 : 0),
+      bank_account_info: payload.bank_account_info || { bank_name: "BCA", account_number: "0000000000" },
+      profile_picture_url: payload.profile_picture_url || null,
+    };
+
     const res = await fetch(`${BACKEND_API_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
       cache: "no-store",
     });
 
@@ -143,3 +163,49 @@ export async function callBackendRegister(
     return { success: false, error: msg };
   }
 }
+
+export interface BESwitchRoleResult {
+  token: string;
+  user_id: string;
+  entity_id: string;
+  active_role: { id: string; role_type: "SUPPLIER" | "UMKM"; sector_type?: string };
+  available_roles: Array<{ id: string; role_type: "SUPPLIER" | "UMKM"; sector_type?: string }>;
+  business_entity?: Record<string, unknown>;
+  auto_created?: boolean;
+}
+
+/**
+ * Hit POST /auth/switch-role ke Backend Express KUMPUL
+ */
+export async function callBackendSwitchRole(payload: {
+  user_id: string;
+  role: "SUPPLIER" | "UMKM";
+  sector_type?: BESectorType;
+  storage_capacity?: number;
+  daily_capacity?: number;
+}): Promise<{ success: boolean; data?: BESwitchRoleResult; error?: string; errorCode?: string }> {
+  try {
+    const res = await fetch(`${BACKEND_API_URL}/auth/switch-role`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    });
+
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok || json?.status === "error") {
+      const msg = json?.message || `Switch role di backend gagal (HTTP ${res.status}).`;
+      return { success: false, error: msg, errorCode: json?.error_code };
+    }
+
+    return { success: true, data: json.data };
+  } catch (err: unknown) {
+    const msg =
+      err instanceof Error
+        ? `Gagal terhubung ke backend: ${err.message}`
+        : "Tidak dapat terhubung ke server backend KUMPUL.";
+    return { success: false, error: msg };
+  }
+}
+

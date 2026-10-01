@@ -316,7 +316,7 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     leadTimeDays: 1,
     isActive: true,
     imageUrl:
-      "https://images.unsplash.com/photo-1599824425713-b25b65c2b774?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1639843606783-b2f9c50a7468?auto=format&fit=crop&w=600&q=80",
     priceTiers: [
       {
         id: "tier-kdl-1",

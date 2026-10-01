@@ -7,7 +7,8 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const role = (searchParams.get("role") as UserRole) || "umkm";
-  const next = searchParams.get("next") || "/home";
+  const defaultPath = "/home";
+  const next = searchParams.get("next") || defaultPath;
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 
@@ -66,7 +67,7 @@ export async function GET(request: Request) {
         }
       }
 
-      const redirectPath = effectiveRole === "supplier" ? "/supplier" : next || "/home";
+      const redirectPath = "/home";
       const response = NextResponse.redirect(
         `${origin}${redirectPath}?login_success=true&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`
       );
