@@ -5,9 +5,7 @@ import Link from "next/link";
 import {
   MOCK_CONSOLIDATED_POS,
   ConsolidatedPO,
-  POStatus,
 } from "@/constants/supplier";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +17,8 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { getOrderStatusBadge } from "./helpers";
 
 export function SupplierPesananView() {
   const [orders] = React.useState<ConsolidatedPO[]>(MOCK_CONSOLIDATED_POS);
@@ -40,31 +40,6 @@ export function SupplierPesananView() {
 
     return matchSearch && matchTab;
   });
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(val);
-  };
-
-  const getStatusBadge = (status: POStatus) => {
-    switch (status) {
-      case "ISSUED":
-        return <Badge variant="neutral">Menunggu Pembayaran</Badge>;
-      case "PAID_TO_ESCROW":
-        return <Badge variant="warning">Dana Siap (Perlu Dikemas)</Badge>;
-      case "PROCESSING":
-        return <Badge variant="info">Sedang Dikemas</Badge>;
-      case "SHIPPED":
-        return <Badge variant="info">Dalam Pengiriman</Badge>;
-      case "DELIVERED":
-        return <Badge variant="success">Tiba di Hub / Tujuan</Badge>;
-      default:
-        return <Badge variant="neutral">{status}</Badge>;
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -177,9 +152,9 @@ export function SupplierPesananView() {
                         <span className="font-mono text-xs font-bold text-text-primary bg-neutral-100 px-2.5 py-0.5 rounded-md tabular-nums border border-neutral-200 block w-fit">
                           {po.poNumber}
                         </span>
-                        <div>{getStatusBadge(po.status)}</div>
+                        <div>{getOrderStatusBadge(po.status)}</div>
                         <span className="text-[10px] text-text-muted block tabular-nums">
-                          {new Date(po.createdAt).toLocaleDateString("id-ID", { dateStyle: "medium" })}
+                          {formatDate(po.createdAt, "medium")}
                         </span>
                       </div>
                     </TableCell>
@@ -252,7 +227,7 @@ export function SupplierPesananView() {
                     <span className="font-mono text-xs font-bold text-text-primary bg-neutral-100 px-2.5 py-0.5 rounded-md tabular-nums border border-neutral-200">
                       {po.poNumber}
                     </span>
-                    {getStatusBadge(po.status)}
+                    {getOrderStatusBadge(po.status)}
                   </div>
                   <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#EBF5F0] text-primary border border-primary/20">
                     {po.primaryDeliveryMethod === "HEMAT_HUB" ? "Opsi Hemat" : "Direct"}

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Toast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/toast";
 
 interface SupplierHeaderProps {
   onToggleMobileNav?: () => void;
@@ -11,25 +11,12 @@ interface SupplierHeaderProps {
 
 export function SupplierHeader({ onToggleMobileNav }: SupplierHeaderProps) {
   const router = useRouter();
-  const [toast, setToast] = React.useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    type: "success" | "info" | "error";
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    type: "info",
-  });
 
   const handleSwitchToUmkm = () => {
-    setToast({
-      isOpen: true,
-      title: "Beralih Peran Usaha",
-      message: "Beralih ke akun UMKM KUMPUL (Single Legal Entity). Mengalihkan...",
-      type: "info",
-    });
+    toast.info(
+      "Beralih ke akun UMKM KUMPUL (Single Legal Entity). Mengalihkan...",
+      "Beralih Peran Usaha"
+    );
 
     setTimeout(() => {
       router.push("/home?role=umkm&login_success=true");
@@ -38,14 +25,6 @@ export function SupplierHeader({ onToggleMobileNav }: SupplierHeaderProps) {
 
   return (
     <>
-      <Toast
-        isOpen={toast.isOpen}
-        title={toast.title}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
-      />
-
       <header className="sticky top-0 z-30 w-full bg-surface/95 backdrop-blur-md border-b border-border h-16 px-4 sm:px-6 flex items-center justify-between gap-4">
         {/* Sisi Kiri: Tombol Burger Mobile & Status Halaman */}
         <div className="flex items-center gap-3">

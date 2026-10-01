@@ -3,13 +3,6 @@ export type WholesaleUnit = "KARUNG" | "SAK" | "KRAT" | "PAX" | "BAL" | "PETI";
 export type StorageTemperature = "AMBIENT" | "CHILLED" | "FROZEN";
 
 export type SectorType =
-  | "PERTANIAN"
-  | "PETERNAKAN"
-  | "PERIKANAN"
-  | "PERKEBUNAN"
-  | "FNB & PENGOLAHAN"
-  | "RITEL"
-  | "LOGISTIK"
   | "Pertanian"
   | "Peternakan"
   | "Perikanan"
@@ -27,6 +20,50 @@ export const OFFICIAL_SECTORS = [
   "RITEL",
   "LOGISTIK",
 ] as const;
+
+export const BANK_OPTIONS = [
+  "Bank Central Asia (BCA)",
+  "Bank Mandiri",
+  "Bank Rakyat Indonesia (BRI)",
+  "Bank Negara Indonesia (BNI)",
+  "Bank Syariah Indonesia (BSI)",
+];
+
+export const SECTOR_MEDIA_MAP: Record<
+  string,
+  { label: string; image: string; tag: string }
+> = {
+  PERTANIAN: {
+    label: "Sektor Pertanian & Agribisnis",
+    image:
+      "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80",
+    tag: "Agribisnis Pangan Pokok",
+  },
+  PETERNAKAN: {
+    label: "Sektor Peternakan & Daging",
+    image:
+      "https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&w=1200&q=80",
+    tag: "Peternakan & Unggas Ruminansia",
+  },
+  PERIKANAN: {
+    label: "Sektor Perikanan & Hasil Laut",
+    image:
+      "https://images.unsplash.com/photo-1534483509719-3feaee7c30da?auto=format&fit=crop&w=1200&q=80",
+    tag: "Akuakultur & Hasil Laut",
+  },
+  PERKEBUNAN: {
+    label: "Sektor Perkebunan & Rempah",
+    image:
+      "https://images.unsplash.com/photo-1592417817098-8f3d6910985c?auto=format&fit=crop&w=1200&q=80",
+    tag: "Hortikultura & Komoditas Rempah",
+  },
+  "FNB & PENGOLAHAN": {
+    label: "Sektor FnB & Pengolahan Bahan Baku",
+    image:
+      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
+    tag: "Industri Pengolahan Pangan",
+  },
+};
 
 export type StorageUnit = "TON" | "KG" | "KUINTAL" | "M3" | "LITER" | "PALET";
 
@@ -202,7 +239,7 @@ export const MOCK_SUPPLIER_PROFILE: SupplierEntityProfile = {
   legalName: "PT Agroniaga Nusantara Sejahtera",
   brandName: "AgroNusantara Supply",
   npwpNib: "01.892.341.2-045.000 / NIB 9120003481923",
-  sector: "PERTANIAN",
+  sector: "Pertanian",
   storageValue: 750,
   storageUnit: "TON",
   storageType: "DRY",
@@ -236,6 +273,8 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     availableStock: 120, // 6.000 kg
     leadTimeDays: 2,
     isActive: true,
+    imageUrl:
+      "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80",
     priceTiers: [
       {
         id: "tier-1",
@@ -276,6 +315,8 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     availableStock: 80,
     leadTimeDays: 1,
     isActive: true,
+    imageUrl:
+      "https://images.unsplash.com/photo-1599824425713-b25b65c2b774?auto=format&fit=crop&w=600&q=80",
     priceTiers: [
       {
         id: "tier-kdl-1",
@@ -316,6 +357,8 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     availableStock: 45,
     leadTimeDays: 2,
     isActive: true,
+    imageUrl:
+      "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&w=600&q=80",
     priceTiers: [
       {
         id: "tier-bam-1",
@@ -356,6 +399,8 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     availableStock: 30,
     leadTimeDays: 1,
     isActive: false, // Ditandai nonaktif untuk contoh UI
+    imageUrl:
+      "https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=600&q=80",
     priceTiers: [
       {
         id: "tier-aym-1",
@@ -379,7 +424,7 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
       expiryDate: "2026-10-06",
       storageTemperature: "CHILLED",
       originLocation: "Bogor, Jawa Barat",
-      hygieneStatus: "TERVERIFIKASI",
+      hygieneStatus: "MENUNGGU_AUDIT",
     },
     createdAt: "2026-09-28",
   },

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Toast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/toast";
 import { UserRole, UserSession } from "@/constants/auth";
 
 interface HomeViewProps {
@@ -31,30 +31,23 @@ export function HomeView({ initialSession }: HomeViewProps) {
   const effectiveProvider =
     initialSession?.provider || (queryEmail?.includes("@gmail.com") ? "google" : "credentials");
 
-  const [toast, setToast] = React.useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    type: "success" | "info" | "error";
-  }>({
-    isOpen: false,
-    title: "Login Berhasil",
-    message: "",
-    type: "success",
-  });
+  const hasShownToast = React.useRef(false);
 
   React.useEffect(() => {
-    if (querySuccess) {
+    if (querySuccess && !hasShownToast.current) {
+      hasShownToast.current = true;
       const roleLabel = effectiveRole === "supplier" ? "Mitra Supplier" : "Pelaku UMKM";
-      const timer = setTimeout(() => {
-        setToast({
-          isOpen: true,
-          title: "Login Berhasil",
-          message: `Selamat datang di portal KUMPUL, ${effectiveName} (${roleLabel}).`,
-          type: "success",
-        });
-      }, 100);
-      return () => clearTimeout(timer);
+      toast.success(
+        `Selamat datang di portal KUMPUL, ${effectiveName} (${roleLabel}).`,
+        "Login Berhasil"
+      );
+
+      // Bersihkan parameter query login_success dari URL agar tidak terpicu ulang
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("login_success");
+        window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+      }
     }
   }, [querySuccess, effectiveRole, effectiveName]);
 
@@ -62,14 +55,6 @@ export function HomeView({ initialSession }: HomeViewProps) {
 
   return (
     <div className="min-h-screen bg-background text-text-primary flex flex-col font-sans selection:bg-primary-light selection:text-primary">
-      <Toast
-        isOpen={toast.isOpen}
-        title={toast.title}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
-      />
-
       {/* Navigasi Atas Bersih */}
       <header className="sticky top-0 z-30 w-full bg-surface/95 backdrop-blur-md border-b border-border shadow-[0_2px_12px_rgb(0,0,0,0.02)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
@@ -231,7 +216,7 @@ export function HomeView({ initialSession }: HomeViewProps) {
                   <div className="pt-2">
                     <button
                       type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul pooling MOQ aktif sedang dipersiapkan.", type: "info" })}
+                      onClick={() => toast.info("Modul pooling MOQ aktif sedang dipersiapkan.", "Informasi")}
                       className="text-xs font-semibold text-primary hover:underline cursor-pointer"
                     >
                       Ikuti Pooling Aktif &rarr;
@@ -250,7 +235,7 @@ export function HomeView({ initialSession }: HomeViewProps) {
                   <div className="pt-2">
                     <button
                       type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul pelacakan paspor mutu sedang dipersiapkan.", type: "info" })}
+                      onClick={() => toast.info("Modul pelacakan paspor mutu sedang dipersiapkan.", "Informasi")}
                       className="text-xs font-semibold text-primary hover:underline cursor-pointer"
                     >
                       Periksa Paspor Mutu &rarr;
@@ -269,7 +254,7 @@ export function HomeView({ initialSession }: HomeViewProps) {
                   <div className="pt-2">
                     <button
                       type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul ekonomi sirkular sedang dipersiapkan.", type: "info" })}
+                      onClick={() => toast.info("Modul ekonomi sirkular sedang dipersiapkan.", "Informasi")}
                       className="text-xs font-semibold text-primary hover:underline cursor-pointer"
                     >
                       Kelola Residu Usaha &rarr;

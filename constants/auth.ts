@@ -73,4 +73,29 @@ export interface UserSession {
   role: UserRole;
   picture?: string;
   provider: "google" | "credentials";
+  supabaseUserId?: string;
+  token?: string;
+  entityId?: string;
+}
+
+export interface AuthLogEvent {
+  timestamp: string;
+  action: "LOGIN" | "REGISTER" | "GOOGLE_AUTH_INIT" | "GOOGLE_AUTH_CALLBACK" | "LOGOUT";
+  provider: "credentials" | "google";
+  status: "SUCCESS" | "FAILED";
+  role: UserRole;
+  email: string;
+  name?: string;
+  businessName?: string;
+  redirectTo?: string;
+  metadata?: Record<string, unknown>;
+  error?: string;
+}
+
+export interface AuthActionResult {
+  success: boolean;
+  user?: UserSession;
+  redirectTo?: string;
+  error?: string;
+  log?: AuthLogEvent;
 }

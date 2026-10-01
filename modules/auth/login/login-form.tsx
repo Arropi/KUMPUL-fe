@@ -3,15 +3,18 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { FloatingInput } from "@/components/ui/floating-input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Toast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RoleSwitcher } from "@/modules/auth/role-switcher";
 import { ForgotPasswordModal } from "@/modules/auth/forgot-password-modal";
 import { UserRole, AUTH_ROLE_CONFIGS, DEFAULT_ROLE } from "@/constants/auth";
+import {
+  loginWithCredentialsAction,
+  initiateGoogleAuthAction,
+} from "@/actions/auth";
 
 function LoginFormInner() {
   const router = useRouter();
@@ -28,22 +31,13 @@ function LoginFormInner() {
   const [isOAuthLoading, setIsOAuthLoading] = React.useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = React.useState(false);
 
-  const [toast, setToast] = React.useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    type: "success" | "error" | "info";
-  }>({
-    isOpen: false,
-    title: "Berhasil",
-    message: "",
-    type: "success",
-  });
-
   const currentConfig = AUTH_ROLE_CONFIGS[role];
+
+  const hasHandledOAuth = React.useRef(false);
 
   // Mendengarkan respon callback dari OAuth
   React.useEffect(() => {
+    if (hasHandledOAuth.current) return;
     const isSuccess = searchParams.get("oauth_success");
     const oauthError = searchParams.get("oauth_error");
     const oauthRole = searchParams.get("role") as UserRole | null;
@@ -51,26 +45,15 @@ function LoginFormInner() {
     const name = searchParams.get("name");
 
     if (isSuccess === "true") {
+      hasHandledOAuth.current = true;
       const roleLabel = oauthRole === "supplier" ? "Mitra Supplier" : "Pelaku UMKM";
-      const timer = setTimeout(() => {
-        setToast({
-          isOpen: true,
-          title: "Login Google Berhasil",
-          message: `Selamat datang kembali, ${name || "Pengguna"}. Masuk sebagai ${roleLabel} (${email || "Google"}).`,
-          type: "success",
-        });
-      }, 0);
-      return () => clearTimeout(timer);
+      toast.success(
+        `Selamat datang kembali, ${name || "Pengguna"}. Masuk sebagai ${roleLabel} (${email || "Google"}).`,
+        "Login Google Berhasil"
+      );
     } else if (oauthError) {
-      const timer = setTimeout(() => {
-        setToast({
-          isOpen: true,
-          title: "Gagal Masuk Google",
-          message: decodeURIComponent(oauthError),
-          type: "error",
-        });
-      }, 0);
-      return () => clearTimeout(timer);
+      hasHandledOAuth.current = true;
+      toast.error(decodeURIComponent(oauthError), "Gagal Masuk Google");
     }
   }, [searchParams]);
 
@@ -82,58 +65,39 @@ function LoginFormInner() {
   const handleGoogleSignIn = async () => {
     setIsOAuthLoading(true);
     try {
-      const supabase = createClient();
-      const redirectTo = `${window.location.origin}/api/auth/callback?role=${role}`;
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: "offline",
-            prompt: "select_account",
-          },
-        },
+      // Panggil Server Action untuk inisiasi Google OAuth dari server
+      const result = await initiateGoogleAuthAction({
+        role,
+        origin: window.location.origin,
       });
 
-      if (error) {
+      if (!result.success || !result.url) {
         setIsOAuthLoading(false);
+        const errMsg = result.error || "Gagal menginisiasi OAuth Google.";
         if (
-          error.message.includes("provider is not enabled") ||
-          error.message.includes("validation_failed")
+          errMsg.includes("provider is not enabled") ||
+          errMsg.includes("validation_failed")
         ) {
-          setToast({
-            isOpen: true,
-            title: "Provider Google Belum Aktif",
-            message:
-              "Provider Google belum diaktifkan di Dashboard Supabase. Buka Authentication > Providers > Google dan masukkan Client ID & Secret.",
-            type: "error",
-          });
+          toast.error(
+            "Provider Google belum diaktifkan di Dashboard Supabase. Buka Authentication > Providers > Google dan masukkan Client ID & Secret.",
+            "Provider Google Belum Aktif"
+          );
         } else {
-          setToast({
-            isOpen: true,
-            title: "Gagal Masuk Google",
-            message: error.message,
-            type: "error",
-          });
+          toast.error(errMsg, "Gagal Masuk Google");
         }
         return;
       }
 
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      console.info("[CLIENT LOG] Server Action Google OAuth URL disiapkan:", result.log);
+      window.location.href = result.url;
     } catch (err: unknown) {
       setIsOAuthLoading(false);
-      setToast({
-        isOpen: true,
-        title: "Gagal Masuk Google",
-        message:
-          err instanceof Error
-            ? err.message
-            : "Terjadi kendala saat menghubungkan ke Supabase.",
-        type: "error",
-      });
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Terjadi kendala saat menghubungkan ke Supabase.",
+        "Gagal Masuk Google"
+      );
     }
   };
 
@@ -156,7 +120,7 @@ function LoginFormInner() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validate()) {
@@ -165,39 +129,53 @@ function LoginFormInner() {
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      const roleLabel = role === "umkm" ? "Pelaku UMKM" : "Mitra Supplier";
-      setToast({
-        isOpen: true,
-        title: "Login Berhasil",
-        message: `Selamat datang kembali, ${roleLabel}. Mengalihkan ke beranda...`,
-        type: "success",
+    try {
+      // Eksekusi Server Action otentikasi login dari sisi server
+      const result = await loginWithCredentialsAction({
+        email: identifier,
+        password,
+        role,
+        rememberMe,
       });
 
-      const extractedName = identifier.includes("@") ? identifier.split("@")[0] : identifier;
+      setIsSubmitting(false);
+
+      if (!result.success) {
+        toast.error(
+          result.error || "Gagal masuk. Periksa kembali email dan kata sandi Anda.",
+          "Login Gagal"
+        );
+        setErrors({
+          identifier: result.error || "Email atau kata sandi yang Anda masukkan salah.",
+        });
+        return;
+      }
+
+      // Cetak log data server yang dikembalikan ke console client untuk inspeksi data
+      console.info("[CLIENT LOG] Berhasil Login via Server Action:", result.log);
+
+      const roleLabel = role === "umkm" ? "Pelaku UMKM" : "Mitra Supplier";
+      const displayName = result.user?.name || roleLabel;
+      toast.success(
+        `Selamat datang kembali, ${displayName}. Mengalihkan ke beranda...`,
+        "Login Berhasil"
+      );
+
       setTimeout(() => {
-        if (role === "supplier") {
-          router.push("/supplier");
-        } else {
-          router.push(
-            `/home?login_success=true&role=${encodeURIComponent(role)}&name=${encodeURIComponent(extractedName)}&email=${encodeURIComponent(identifier)}`
-          );
-        }
-      }, 700);
-    }, 600);
+        router.push(result.redirectTo || (role === "supplier" ? "/supplier" : "/home"));
+      }, 500);
+    } catch (err: unknown) {
+      setIsSubmitting(false);
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : "Terjadi gangguan sistem saat menghubungkan ke server.";
+      toast.error(errMsg, "Kesalahan Server");
+    }
   };
 
   return (
     <>
-      <Toast
-        isOpen={toast.isOpen}
-        title={toast.title}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
-      />
-
       <Card className="w-full max-w-[420px] mx-auto rounded-3xl border border-border bg-surface shadow-elevation-2 overflow-hidden flex flex-col justify-center">
         <CardHeader className="gap-2.5 pt-6 sm:pt-7 pb-2 px-6 sm:px-8 text-center flex flex-col items-center justify-center">
           {/* Logo KUMPUL di Bagian Atas Tengah Card */}
@@ -384,14 +362,7 @@ function LoginFormInner() {
         isOpen={isForgotPasswordOpen}
         role={role}
         onClose={() => setIsForgotPasswordOpen(false)}
-        onSuccess={(msg) =>
-          setToast({
-            isOpen: true,
-            title: "Tautan Terkirim",
-            message: msg,
-            type: "success",
-          })
-        }
+        onSuccess={(msg) => toast.success(msg, "Tautan Terkirim")}
       />
     </>
   );
