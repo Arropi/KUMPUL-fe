@@ -48,3 +48,57 @@ export function getStatusStepIndex(status: POStatus): number {
       return 0;
   }
 }
+
+import type { BESupplierCommodity } from "@/lib/api/types";
+import type { SupplierCommodity, WholesaleUnit, CommodityPriceTier } from "@/constants/supplier";
+
+export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommodity {
+  const basePrice = Number(be.base_price) || 0;
+  const stock = Number(be.stock) || 0;
+  const moq = Number(be.base_moq) || 1;
+
+  const tiers: CommodityPriceTier[] = (be.price_tiers && be.price_tiers.length > 0)
+    ? be.price_tiers.map((t, idx) => ({
+        id: `tier-${be.id}-${idx}`,
+        minQty: t.min_qty,
+        maxQty: t.max_qty,
+        pricePerUnit: t.tier_price,
+        label: `Beli ${t.min_qty}${t.max_qty ? ` - ${t.max_qty}` : "+"} ${be.wholesale_unit}`,
+      }))
+    : [
+        {
+          id: `tier-${be.id}-0`,
+          minQty: moq,
+          maxQty: null,
+          pricePerUnit: basePrice,
+          label: `Pesanan Grosir (MOQ: ${moq} ${be.wholesale_unit})`,
+        },
+      ];
+
+  return {
+    id: be.id,
+    sku: be.sku || "KOM-001",
+    name: be.name,
+    sector: "Pertanian",
+    description: be.description || "Komoditas pasokan pangan grosir terverifikasi sistem KUMPUL.",
+    wholesaleUnit: (be.wholesale_unit as WholesaleUnit) || "KARUNG",
+    unitWeightKg: 20,
+    baseMoq: moq,
+    availableStock: stock,
+    leadTimeDays: be.lead_time_days || 1,
+    isActive: be.is_marketplace_active ?? true,
+    priceTiers: tiers,
+    batchTag: {
+      id: `bt-${be.id}`,
+      licenseNumber: `BATCH-${be.sku || be.id.slice(0, 8)}`,
+      productionDate: be.production_date || "2026-10-15",
+      expiryDate: "2027-04-15",
+      storageTemperature: "AMBIENT",
+      originLocation: "Indonesia",
+      hygieneStatus: "TERVERIFIKASI",
+    },
+    imageUrl: be.image_url || undefined,
+    createdAt: be.created_at || new Date().toISOString(),
+  };
+}
+

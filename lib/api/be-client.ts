@@ -1,0 +1,75 @@
+/**
+ * Unified Backend Express API Client Helper
+ */
+
+const DEFAULT_BACKEND_URL = (
+  process.env.BACKEND_API_URL || "http://localhost:3030/api"
+).replace(/\/$/, "");
+
+const FALLBACK_BACKEND_URL = "http://localhost:3000/api";
+
+export interface BEApiResponse<T> {
+  status: "success" | "error";
+  message?: string;
+  data?: T;
+  error_code?: string;
+  error_details?: Array<{ issue?: string; message?: string }>;
+}
+
+export async function beFetch<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<{ success: boolean; data?: T; message?: string; errorCode?: string }> {
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const urls = [
+    `${DEFAULT_BACKEND_URL}${cleanEndpoint}`,
+    `${FALLBACK_BACKEND_URL}${cleanEndpoint}`,
+  ];
+
+  let lastError: Error | null = null;
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+        },
+        cache: "no-store",
+      });
+
+      const json = (await res.json().catch(() => null)) as BEApiResponse<T> | null;
+
+      if (!res.ok || json?.status === "error") {
+        let msg = json?.message || `Request failed with HTTP status ${res.status}`;
+        if (Array.isArray(json?.error_details) && json.error_details.length > 0) {
+          const issues = json.error_details
+            .map((d) => d.issue || d.message)
+            .filter(Boolean);
+          if (issues.length > 0) msg = issues.join(". ");
+        }
+        return {
+          success: false,
+          message: msg,
+          errorCode: json?.error_code,
+        };
+      }
+
+      return {
+        success: true,
+        data: json?.data,
+        message: json?.message,
+      };
+    } catch (err: unknown) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      // Try fallback URL if connection refused
+      continue;
+    }
+  }
+
+  return {
+    success: false,
+    message: lastError ? `Backend unreachable: ${lastError.message}` : "Backend unreachable",
+  };
+}

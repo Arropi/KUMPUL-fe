@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const role = (searchParams.get("role") as UserRole) || "umkm";
-  const defaultPath = role === "supplier" ? "/supplier" : "/umkm";
+  const defaultPath = "/home";
   const next = searchParams.get("next") || defaultPath;
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
@@ -41,34 +41,35 @@ export async function GET(request: Request) {
       });
 
       // Tukar user.id dengan Custom JWT KUMPUL dari Backend Express (Opsi A)
-      const beRole = role === "supplier" ? "SUPPLIER" : "UMKM";
       let beToken = "";
       let beEntityId = "";
+      let effectiveRole = role;
 
       const beRes = await callBackendLogin({
         user_id: data.user.id,
-        role: beRole,
       });
 
       if (
         !beRes.success &&
-        (beRes.errorCode === "ENTITY_NOT_FOUND" || beRes.errorCode === "ROLE_NOT_REGISTERED")
+        (beRes.errorCode === "ROLE_NOT_REGISTERED" ||
+          beRes.errorCode === "BUSINESS_PROFILE_INCOMPLETE" ||
+          beRes.errorCode === "ENTITY_NOT_FOUND")
       ) {
-        const regRes = await callBackendRegister({
-          user_id: data.user.id,
-          role: beRole,
-        });
-        if (regRes.success && regRes.data?.token) {
-          beToken = regRes.data.token;
-          beEntityId = regRes.data.entity_id;
-        }
-      } else if (beRes.success && beRes.data?.token) {
-        beToken = beRes.data.token;
-        beEntityId = beRes.data.entity_id;
+        return NextResponse.redirect(`${origin}/register?step=business`);
       }
 
+      if (beRes.success && beRes.data?.token) {
+        beToken = beRes.data.token;
+        beEntityId = beRes.data.entity_id;
+        const beRoleType = beRes.data.active_role?.role_type;
+        if (beRoleType) {
+          effectiveRole = beRoleType === "SUPPLIER" ? "supplier" : "umkm";
+        }
+      }
+
+      const redirectPath = "/home";
       const response = NextResponse.redirect(
-        `${origin}${next}?login_success=true&role=${encodeURIComponent(role)}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`
+        `${origin}${redirectPath}?login_success=true&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`
       );
 
       // Simpan kumpul_token jika BE token tersedia

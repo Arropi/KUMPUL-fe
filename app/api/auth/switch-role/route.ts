@@ -97,7 +97,8 @@ async function handleSwitchRole(request: Request, targetRole: UserRole, customRe
         const regRes = await callBackendRegister({
           user_id: supabaseUserId,
           role: beRole,
-          sector_type: beSector,
+          sector: beSector,
+          legal_name: activeName,
           storage_capacity: targetRole === "supplier" ? 5000 : 0,
         });
 
@@ -166,7 +167,7 @@ async function handleSwitchRole(request: Request, targetRole: UserRole, customRe
     entityId,
   };
 
-  const defaultDestination = targetRole === "supplier" ? "/supplier" : "/umkm";
+  const defaultDestination = "/home";
   const destination = customRedirect || defaultDestination;
   const redirectUrl = destination.startsWith("http") ? destination : `${origin}${destination}`;
 
