@@ -20,6 +20,8 @@ import {
 import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
 import { UserRole, UserSession } from "@/constants/auth";
 import { Search, ChevronDown, Sparkles } from "lucide-react";
+import { getSupplierCatalogsAction } from "@/actions/supplier-catalog";
+import { mapBEToSupplierCommodity } from "@/modules/supplier/helpers";
 
 const SECTOR_OPTIONS = [
   { value: "ALL", label: "Semua Sektor" },
@@ -40,6 +42,20 @@ export function HomeView({ initialSession }: HomeViewProps) {
   );
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const res = await getSupplierCatalogsAction();
+        if (res.success && res.data && res.data.length > 0) {
+          setCommodities(res.data.map(mapBEToSupplierCommodity));
+        }
+      } catch {
+        // Fallback to initial mock
+      }
+    }
+    load();
+  }, []);
 
   const role: UserRole = initialSession?.role || "umkm";
   const isSupplier = role === "supplier";

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
+import { updateSupplierCommodityAction } from "@/actions/supplier-catalog";
 
 interface DetailKomoditasViewProps {
   initialCommodity: SupplierCommodity;
@@ -20,19 +21,24 @@ export function DetailKomoditasView({
   const [commodity, setCommodity] =
     React.useState<SupplierCommodity>(initialCommodity);
 
-  const handleToggleStatus = () => {
+  const handleToggleStatus = async () => {
     const nextState = !commodity.isActive;
     setCommodity((prev) => ({ ...prev, isActive: nextState }));
-    if (nextState) {
-      toast.success(
-        `Komoditas ${commodity.name} berhasil diaktifkan di bursa pasokan.`,
-        "Komoditas Dipublikasikan"
-      );
-    } else {
-      toast.info(
-        `Komoditas ${commodity.name} kini berstatus nonaktif (draft).`,
-        "Komoditas Dinonaktifkan"
-      );
+    try {
+      await updateSupplierCommodityAction(commodity.id, { isMarketplaceActive: nextState });
+      if (nextState) {
+        toast.success(
+          `Komoditas ${commodity.name} berhasil diaktifkan di bursa pasokan.`,
+          "Komoditas Dipublikasikan"
+        );
+      } else {
+        toast.info(
+          `Komoditas ${commodity.name} kini berstatus nonaktif (draft).`,
+          "Komoditas Dinonaktifkan"
+        );
+      }
+    } catch {
+      toast.error("Gagal memperbarui status di backend.");
     }
   };
 

@@ -9,6 +9,8 @@ import { KomoditasInfoSection } from "@/components/katalog/komoditas-info-sectio
 import { PanenJadwalSection } from "@/components/katalog/panen-jadwal-section";
 import { EceranDanHargaSection } from "@/components/katalog/eceran-dan-harga-section";
 import type { PriceTierRange, KatalogFormErrors } from "./types";
+import { createSupplierCommodityAction } from "@/actions/supplier-catalog";
+import type { BEWholesaleUnit } from "@/lib/api/types";
 
 export function TambahKomoditasForm() {
   const router = useRouter();
@@ -98,7 +100,7 @@ export function TambahKomoditasForm() {
     return Object.keys(err).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validate()) {
@@ -110,18 +112,56 @@ export function TambahKomoditasForm() {
     }
 
     setIsSubmitting(true);
+    try {
+      const normalizedUnit: BEWholesaleUnit =
+        unit.toUpperCase() === "SAK"
+          ? "SAK"
+          : unit.toUpperCase() === "KRAT"
+          ? "KRAT"
+          : unit.toUpperCase() === "PAX"
+          ? "PAX"
+          : unit.toUpperCase() === "BAL"
+          ? "BAL"
+          : "KARUNG";
 
-    setTimeout(() => {
+      const formattedTiers = enablePriceTiers
+        ? priceTiers.map((t) => ({
+            min_qty: Number(t.minQty),
+            max_qty: Number(t.maxQty),
+            tier_price: Number(t.price),
+          }))
+        : [];
+
+      const res = await createSupplierCommodityAction({
+        name: name.trim(),
+        wholesaleUnit: normalizedUnit,
+        basePrice: Number(basePrice),
+        stock: Number(estimatedStock),
+        baseMoq: Number(minOrderQty),
+        leadTimeDays: Number(leadTimeDays) || 1,
+        description: description.trim() || undefined,
+        productionDate: harvestDate || undefined,
+        autoActivateMarketplace: Boolean(autoActivateMarketplace),
+        allowsUnderMoq: Boolean(allowRetail),
+        underMoqPricePerKg: allowRetail ? Number(retailPrice) : undefined,
+        isMarketplaceActive: true,
+        priceTiers: formattedTiers,
+      });
+
+      if (res.success) {
+        toast.success(
+          `Komoditas ${name} berhasil disimpan ke katalog pasokan backend.`,
+          "Katalog Berhasil Ditambahkan",
+        );
+        router.push("/katalog");
+      } else {
+        toast.error(res.message || "Gagal menyimpan komoditas ke backend.");
+      }
+    } catch {
+      toast.error("Terjadi kendala saat menghubungi server.");
+    } finally {
       setIsSubmitting(false);
-      toast.success(
-        `Komoditas ${name} berhasil disimpan ke katalog pasokan.`,
-        "Katalog Berhasil Ditambahkan",
-      );
-
-      setTimeout(() => {
-        router.push("/supplier/katalog");
-      }, 700);
-    }, 600);
+    }
   };
 
   return (

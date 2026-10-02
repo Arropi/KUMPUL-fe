@@ -2,12 +2,12 @@ import * as React from "react";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { UserRole, UserSession } from "@/constants/auth";
-import { SupplierProfilView } from "@/modules/supplier/profil-view";
-import { UmkmProfilView } from "@/modules/umkm/profil-view";
+import { ProfileView } from "@/modules/profile/profile-view";
 
 export const metadata: Metadata = {
   title: "Profil & Rekening Usaha | KUMPUL",
-  description: "Informasi legalitas entitas bisnis terverifikasi, kontak operasional, dan rekening escrow perbankan.",
+  description:
+    "Informasi legalitas entitas bisnis terverifikasi, penambahan dan pengurangan rekening escrow, serta pengaturan kapasitas penyimpanan.",
 };
 
 export default async function ProfilPage() {
@@ -34,7 +34,7 @@ export default async function ProfilPage() {
         </div>
       }
     >
-      {role === "supplier" ? <SupplierProfilView /> : <UmkmProfilView />}
+      <ProfileView initialRole={role} />
     </React.Suspense>
   );
 }

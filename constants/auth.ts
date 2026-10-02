@@ -76,6 +76,7 @@ export interface UserSession {
   supabaseUserId?: string;
   token?: string;
   entityId?: string;
+  roleId?: string;
 }
 
 export interface AuthLogEvent {

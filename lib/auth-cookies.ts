@@ -39,3 +39,25 @@ export async function clearAuthCookies() {
   cookieStore.delete("kumpul_token");
   cookieStore.delete("kumpul_session");
 }
+
+/**
+ * Membaca sesi pengguna aktif dari cookie server
+ */
+export async function getAuthSession(): Promise<UserSession | null> {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("kumpul_session");
+  const tokenCookie = cookieStore.get("kumpul_token");
+
+  if (!sessionCookie?.value) return null;
+
+  try {
+    const session = JSON.parse(sessionCookie.value) as UserSession;
+    if (tokenCookie?.value) {
+      session.token = tokenCookie.value;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+}
+

@@ -18,6 +18,12 @@ import {
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
+import {
+  getSupplierCatalogsAction,
+  updateSupplierCommodityAction,
+} from "@/actions/supplier-catalog";
+import { mapBEToSupplierCommodity } from "./helpers";
+import { RefreshCw } from "lucide-react";
 
 const SECTOR_OPTIONS = [
   { value: "ALL", label: "Semua Sektor" },
@@ -41,33 +47,56 @@ export function SupplierKatalogView() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = React.useState<string>("ALL");
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  const loadData = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await getSupplierCatalogsAction();
+      if (res.success && res.data && res.data.length > 0) {
+        setCommodities(res.data.map(mapBEToSupplierCommodity));
+      }
+    } catch {
+      // Fallback ke mock
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const selectedSectorLabel =
     SECTOR_OPTIONS.find((s) => s.value === selectedSector)?.label || "Semua Sektor";
   const selectedStatusLabel =
     STATUS_OPTIONS.find((s) => s.value === selectedStatus)?.label || "Semua Status";
 
-  const handleToggleStatus = (id: string) => {
+  const handleToggleStatus = async (id: string) => {
+    const target = commodities.find((c) => c.id === id);
+    if (!target) return;
+    const nextState = !target.isActive;
+
     setCommodities((prev) =>
-      prev.map((c) => {
-        if (c.id === id) {
-          const nextState = !c.isActive;
-          if (nextState) {
-            toast.success(
-              `Status publikasi ${c.name} telah diaktifkan di Bursa KUMPUL.`,
-              "Komoditas Dipublikasikan",
-            );
-          } else {
-            toast.info(
-              `Status publikasi ${c.name} telah ditarik dari etalase bursa.`,
-              "Komoditas Dinonaktifkan",
-            );
-          }
-          return { ...c, isActive: nextState };
-        }
-        return c;
-      }),
+      prev.map((c) => (c.id === id ? { ...c, isActive: nextState } : c))
     );
+
+    try {
+      await updateSupplierCommodityAction(id, { isMarketplaceActive: nextState });
+      if (nextState) {
+        toast.success(
+          `Status publikasi ${target.name} telah diaktifkan di Bursa KUMPUL.`,
+          "Komoditas Dipublikasikan",
+        );
+      } else {
+        toast.info(
+          `Status publikasi ${target.name} telah ditarik dari etalase bursa.`,
+          "Komoditas Dinonaktifkan",
+        );
+      }
+    } catch {
+      toast.error("Gagal memperbarui status publikasi di backend.");
+    }
   };
 
   const filteredCommodities = commodities.filter((item) => {
@@ -103,29 +132,43 @@ export function SupplierKatalogView() {
           </p>
         </div>
 
-        <Link href="/supplier/katalog/tambah" className="shrink-0">
+        <div className="flex items-center gap-2.5">
           <Button
-            variant="primary"
+            type="button"
+            variant="outline"
             size="md"
-            className="font-semibold min-h-[44px]"
+            onClick={loadData}
+            disabled={isLoading}
+            className="min-h-[44px] gap-2 font-semibold"
           >
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Tambah Pasokan Komoditas
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Segarkan</span>
           </Button>
-        </Link>
+
+          <Link href="/supplier/katalog/tambah" className="shrink-0">
+            <Button
+              variant="primary"
+              size="md"
+              className="font-semibold min-h-[44px]"
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Tambah Pasokan Komoditas
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filter & Pencarian */}

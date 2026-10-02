@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { createCommodityBatchTagAction } from "@/actions/supplier-catalog";
 
 interface VerifikasiKepatuhanViewProps {
   commodity: SupplierCommodity;
@@ -121,19 +122,31 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
 
     setIsSubmitting(true);
 
-    // Simulasi pengiriman data verifikasi kepatuhan (commodity_batch_tags)
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSuccess(true);
-      toast.success(
-        `Kepatuhan sanitasi dan paspor mutu ${commodity.name} berhasil diajukan untuk verifikasi digital!`,
-        "Verifikasi Terkirim"
-      );
+    try {
+      const res = await createCommodityBatchTagAction({
+        commodityId: commodity.id,
+        supportingFileUrl: uploadedFile ? `https://storage.supabase.co/kumpul-files/docs/${encodeURIComponent(uploadedFile.name)}` : null,
+        storageTemperatureType: storageTemp,
+        isVerified: true,
+      });
 
-      setTimeout(() => {
-        router.push(`/katalog/${commodity.id}`);
-      }, 1200);
-    }, 900);
+      if (res.success) {
+        setIsSuccess(true);
+        toast.success(
+          `Kepatuhan mutu ${commodity.name} berhasil disimpan ke sistem!`,
+          "Verifikasi Berhasil"
+        );
+        setTimeout(() => {
+          router.push(`/katalog/${commodity.id}`);
+        }, 1200);
+      } else {
+        toast.error(res.message || "Gagal menyimpan verifikasi kepatuhan.");
+      }
+    } catch {
+      toast.error("Terjadi kendala koneksi ke server.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
