@@ -238,9 +238,9 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
         </CardHeader>
         <CardContent className="px-6 sm:px-8 pb-7 pt-2">
           <BusinessStep
-            userId={pendingUserId || searchParams.get("userId") || ""}
-            email={email || searchParams.get("email") || ""}
-            initialRole={(searchParams.get("role") as UserRole) || selectedRole || "umkm"}
+            userId={pendingUserId}
+            email={email}
+            initialRole={(searchParams.get("role") as UserRole) || "umkm"}
             onBack={() => setViewMode("AUTH")}
             onSuccess={(target) => {
               window.location.href = target;

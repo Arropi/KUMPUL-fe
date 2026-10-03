@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FloatingInput } from "@/components/ui/floating-input";
+import { InlineDisclosureSelect } from "@/components/ui/inline-disclosure-select";
 import { MapPicker } from "@/components/ui/map-picker";
 import { RoleSwitcher } from "@/modules/auth/role-switcher";
 import { toast } from "@/components/ui/toast";
@@ -29,6 +30,64 @@ const SECTOR_OPTIONS: Array<{ value: BESectorType; label: string }> = [
   { value: "RITEL", label: "Ritel / Grosir / Toko Bahan Baku" },
   { value: "LOGISTIK", label: "Logistik & Pergudangan" },
 ];
+
+/**
+ * Validasi Standar Resmi NPWP / NIB di Indonesia:
+ * - NIB: 13 digit angka (OSS)
+ * - NPWP Lama: 15 digit angka (format XX.XXX.XXX.X-XXX.XXX)
+ * - NPWP Baru: 16 digit angka (PMK-112 berbasis NIK)
+ */
+export function validateNpwpNib(input: string): {
+  isValid: boolean;
+  error?: string;
+  type?: "NIB" | "NPWP15" | "NPWP16";
+} {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return { isValid: false, error: "Nomor NPWP atau NIB usaha wajib diisi." };
+  }
+
+  if (trimmed.toUpperCase().startsWith("PENDING-")) {
+    return {
+      isValid: false,
+      error: "Masukkan nomor NPWP atau NIB resmi, bukan placeholder.",
+    };
+  }
+
+  // Karakter yang diizinkan hanya angka, titik, strip (-), dan spasi
+  if (!/^[0-9.\-\s]+$/.test(trimmed)) {
+    return {
+      isValid: false,
+      error: "Nomor NPWP/NIB hanya boleh berupa angka dan tanda pemisah (. atau -).",
+    };
+  }
+
+  const digits = trimmed.replace(/\D/g, "");
+
+  // Deteksi angka berulang yang tidak wajar (dummy/testing)
+  if (/^(\d)\1+$/.test(digits)) {
+    return {
+      isValid: false,
+      error: "Nomor NPWP/NIB tidak boleh berupa angka berulang.",
+    };
+  }
+
+  // Standar Resmi:
+  if (digits.length === 13) {
+    return { isValid: true, type: "NIB" };
+  }
+  if (digits.length === 15) {
+    return { isValid: true, type: "NPWP15" };
+  }
+  if (digits.length === 16) {
+    return { isValid: true, type: "NPWP16" };
+  }
+
+  return {
+    isValid: false,
+    error: `Nomor tidak valid (${digits.length} digit). Standar resmi: NIB (13 digit) atau NPWP (15–16 digit).`,
+  };
+}
 
 export function BusinessStep({
   userId,
@@ -72,6 +131,12 @@ export function BusinessStep({
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  // Status validasi live untuk NPWP / NIB
+  const npwpStatus = React.useMemo(() => {
+    if (!npwpNib.trim()) return null;
+    return validateNpwpNib(npwpNib);
+  }, [npwpNib]);
+
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
     if (newRole === "supplier" && sectorType === "FNB_PENGOLAHAN") {
@@ -102,13 +167,9 @@ export function BusinessStep({
       nextErrors.legalName = "Nama usaha tidak boleh menggunakan teks default.";
     }
 
-    const trimmedNpwp = npwpNib.trim();
-    if (!trimmedNpwp) {
-      nextErrors.npwpNib = "Nomor NPWP atau NIB wajib diisi.";
-    } else if (trimmedNpwp.length < 5) {
-      nextErrors.npwpNib = "Nomor NPWP atau NIB minimal 5 karakter.";
-    } else if (trimmedNpwp.toUpperCase().startsWith("PENDING-")) {
-      nextErrors.npwpNib = "Masukkan nomor NPWP/NIB resmi, bukan placeholder.";
+    const npwpCheck = validateNpwpNib(npwpNib);
+    if (!npwpCheck.isValid && npwpCheck.error) {
+      nextErrors.npwpNib = npwpCheck.error;
     }
 
     const trimmedAddress = defaultAddress.trim();
@@ -225,29 +286,16 @@ export function BusinessStep({
         <RoleSwitcher activeRole={role} onRoleChange={handleRoleChange} />
       </div>
 
-      {/* Sektor Bisnis Dropdown */}
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="business-sector"
-          className="text-xs font-semibold text-text-secondary"
-        >
-          Sektor Komoditas / Bisnis
-        </label>
-        <div className="relative">
-          <select
-            id="business-sector"
-            value={sectorType}
-            onChange={(e) => setSectorType(e.target.value as BESectorType)}
-            className="w-full rounded-2xl border border-border bg-surface px-3.5 py-2.5 text-sm font-medium text-text-primary focus:border-primary focus:outline-none transition-colors"
-          >
-            {SECTOR_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {/* Sektor Bisnis Dropdown (Hanya untuk Pelaku UMKM) */}
+      {role === "umkm" && (
+        <InlineDisclosureSelect
+          id="business-sector"
+          label="Sektor Komoditas / Bisnis"
+          options={SECTOR_OPTIONS}
+          value={sectorType}
+          onChange={(val) => setSectorType(val as BESectorType)}
+        />
+      )}
 
       {/* Nama Legal Usaha */}
       <FloatingInput
@@ -281,6 +329,27 @@ export function BusinessStep({
           if (errors.npwpNib) clearError("npwpNib");
         }}
         error={errors.npwpNib}
+        helperText={
+          errors.npwpNib
+            ? undefined
+            : "Standar resmi: NIB (13 digit) atau NPWP (15–16 digit angka)."
+        }
+        rightElement={
+          npwpStatus?.isValid ? (
+            <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full flex items-center gap-1 border border-success/20 animate-in fade-in zoom-in-95 duration-150">
+              <svg className="w-3 h-3 text-success shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>
+                {npwpStatus.type === "NIB"
+                  ? "NIB Valid (13 digit)"
+                  : npwpStatus.type === "NPWP15"
+                  ? "NPWP 15-Digit"
+                  : "NPWP Baru (16-Digit)"}
+              </span>
+            </span>
+          ) : null
+        }
         placeholder="01.234.567.8-901.000 / 9120001234567"
         required
       />
