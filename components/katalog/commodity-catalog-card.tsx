@@ -8,20 +8,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import { ShoppingCart, ArrowRight, Sparkles, BarChart2 } from "lucide-react";
 
 interface CommodityCatalogCardProps {
   item: SupplierCommodity;
-  onToggleStatus: (id: string) => void;
+  onToggleStatus?: (id: string) => void;
+  role?: "umkm" | "supplier";
+  recipeTag?: string;
+  benchmarkTag?: string;
+  onPurchase?: (item: SupplierCommodity) => void;
 }
 
 export function CommodityCatalogCard({
   item,
   onToggleStatus,
+  role = "umkm",
+  recipeTag,
+  benchmarkTag,
+  onPurchase,
 }: CommodityCatalogCardProps) {
   const [imgError, setImgError] = React.useState(false);
 
   const primaryPrice = item.priceTiers[0]?.pricePerUnit || 0;
   const isHygienePassed = item.batchTag.hygieneStatus === "TERVERIFIKASI";
+  const isUmkm = role === "umkm";
 
   return (
     <Card className="group flex flex-col rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong p-3.5 sm:p-4">
@@ -62,7 +72,7 @@ export function CommodityCatalogCard({
           <div className="pointer-events-auto">
             {item.isActive ? (
               <Badge variant="success" className="shadow-xs font-semibold backdrop-blur-xs">
-                Aktif di Bursa
+                {isUmkm ? "Siap Dipesan" : "Aktif di Bursa"}
               </Badge>
             ) : (
               <Badge variant="neutral" className="shadow-xs font-semibold bg-neutral-900/80 text-white backdrop-blur-xs">
@@ -71,7 +81,7 @@ export function CommodityCatalogCard({
             )}
           </div>
 
-          {/* Badge Lulus Kesehatan / Mutu */}
+          {/* Badge Lulus Mutu */}
           <div className="pointer-events-auto">
             {isHygienePassed ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
@@ -91,19 +101,7 @@ export function CommodityCatalogCard({
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                <svg
-                  className="size-3 text-white"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Menunggu Audit
+                Audit Higienis
               </span>
             )}
           </div>
@@ -113,6 +111,26 @@ export function CommodityCatalogCard({
       {/* Konten Card */}
       <div className="flex flex-1 flex-col pt-3.5 space-y-3">
         <div>
+          {/* Recipe Match Tag for UMKM */}
+          {recipeTag && (
+            <div className="mb-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg shadow-xs">
+                <Sparkles className="w-3 h-3 text-emerald-600 shrink-0" />
+                <span className="truncate">{recipeTag}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Benchmark Tag for Supplier */}
+          {benchmarkTag && (
+            <div className="mb-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/10 border border-primary/25 px-2.5 py-0.5 rounded-lg shadow-xs">
+                <BarChart2 className="w-3 h-3 text-primary shrink-0" />
+                <span className="truncate">{benchmarkTag}</span>
+              </span>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 text-[11px] text-text-muted mb-1">
             <span className="font-mono font-semibold uppercase">{item.sku}</span>
             <span>&bull;</span>
@@ -126,7 +144,7 @@ export function CommodityCatalogCard({
         {/* Harga Utama */}
         <div className="rounded-xl bg-background p-3 border border-border/80">
           <span className="text-[11px] font-medium text-text-secondary block">
-            Harga Utama
+            Harga Pasokan Grosir
           </span>
           <div className="flex items-baseline gap-1.5 mt-0.5">
             <span className="font-heading font-extrabold text-lg sm:text-xl text-primary tabular-nums">
@@ -159,28 +177,68 @@ export function CommodityCatalogCard({
           </div>
         </div>
 
-        {/* Tombol Aksi: Publish & Detail */}
-        <div className="flex items-center gap-2.5 pt-2 mt-auto">
-          <Button
-            type="button"
-            variant={item.isActive ? "outline" : "primary"}
-            size="sm"
-            onClick={() => onToggleStatus(item.id)}
-            className="flex-1 font-semibold text-xs min-h-[44px]"
-          >
-            {item.isActive ? "Tarik dari Bursa" : "Publikasikan"}
-          </Button>
-
-          <Link href={`/supplier/katalog/${item.id}`} className="flex-1">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="w-full font-semibold text-xs min-h-[44px]"
-            >
-              Detail
-            </Button>
-          </Link>
+        {/* Tombol Aksi: Transaksi & Detail */}
+        <div className="pt-2 mt-auto">
+          {onPurchase ? (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={item.isActive ? "primary" : "secondary"}
+                size="sm"
+                disabled={!item.isActive}
+                onClick={() => item.isActive && onPurchase(item)}
+                className="flex-1 font-bold text-xs min-h-[42px] flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span>{item.isActive ? "Transaksi" : "Belum Aktif"}</span>
+              </Button>
+              <Link href={`/katalog/${item.id}`} className="shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="font-semibold text-xs min-h-[42px] px-3.5 cursor-pointer"
+                >
+                  Detail
+                </Button>
+              </Link>
+            </div>
+          ) : !isUmkm && onToggleStatus ? (
+            <div className="flex items-center gap-2.5">
+              <Button
+                type="button"
+                variant={item.isActive ? "outline" : "primary"}
+                size="sm"
+                onClick={() => onToggleStatus(item.id)}
+                className="flex-1 font-semibold text-xs min-h-[42px]"
+              >
+                {item.isActive ? "Tarik dari Bursa" : "Publikasikan"}
+              </Button>
+              <Link href={`/katalog/${item.id}`} className="flex-1">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full font-semibold text-xs min-h-[42px]"
+                >
+                  Detail Pasar
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <Link href={`/katalog/${item.id}`} className="block w-full">
+              <Button
+                type="button"
+                variant={item.isActive ? "primary" : "outline"}
+                size="sm"
+                className="w-full font-bold text-xs min-h-[42px] flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+              >
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span>{item.isActive ? "Beli / Masuk ke Detail" : "Detail Komoditas (Draft)"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </Card>

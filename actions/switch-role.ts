@@ -3,27 +3,26 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { UserRole, UserSession } from "@/constants/auth";
-import {
-  callBackendLogin,
-  callBackendRegister,
-  callBackendSwitchRole,
-} from "@/lib/be-auth";
+import { callBackendLogin } from "@/lib/be-auth";
 import { saveAuthCookies } from "@/lib/auth-cookies";
 
+export interface SwitchRoleActionResult {
+  success: boolean;
+  requiresBusinessStep?: boolean;
+  user?: UserSession;
+  redirectTo: string;
+  error?: string;
+  autoCreatedInDb?: boolean;
+}
+
 /**
- * Server Action: Beralih Peran (Switch Role) UMKM <-> Supplier tanpa harus login kembali.
- * Worst-case provisioning: Jika akun pada peran target belum pernah terdaftar di database,
- * sistem otomatis mendaftarkan entitas baru ke backend database & menyelaraskan metadata Supabase.
+ * Server Action: Beralih Peran (Switch Role) UMKM <-> Supplier.
+ * Jika peran target belum terdaftar di backend, sistem mengalihkan pengguna
+ * ke business-step pengisian data resmi usaha (tidak membuat peran otomatis dengan data dummy).
  */
 export async function switchRoleAction(
   targetRole: UserRole
-): Promise<{
-  success: boolean;
-  user?: UserSession;
-  redirectTo: string;
-  autoCreatedInDb?: boolean;
-  error?: string;
-}> {
+): Promise<SwitchRoleActionResult> {
   try {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("kumpul_session");
@@ -43,16 +42,24 @@ export async function switchRoleAction(
       data: { user },
     } = await supabase.auth.getUser();
 
-    // 2. Tentukan identitas pengguna (dari Supabase Auth atau cookie sesi sebelumnya)
+    // 2. Tentukan identitas pengguna
     const supabaseUserId =
       user?.id ||
       currentSession?.supabaseUserId ||
-      `usr-kumpul-${Date.now().toString(36)}`;
+      "";
 
     const email =
       user?.email ||
       currentSession?.email ||
-      (targetRole === "supplier" ? "supplier@kumpul.id" : "umkm@kumpul.id");
+      "";
+
+    if (!supabaseUserId) {
+      return {
+        success: false,
+        redirectTo: "/login",
+        error: "Sesi pengguna tidak valid. Silakan login kembali.",
+      };
+    }
 
     const baseName =
       (user?.user_metadata?.full_name as string) ||
@@ -82,73 +89,58 @@ export async function switchRoleAction(
     }
 
     const beRole = targetRole === "supplier" ? "SUPPLIER" : "UMKM";
-    const beSector = targetRole === "supplier" ? "PERTANIAN" : "FNB_PENGOLAHAN";
 
     let beToken = "";
     let entityId = "";
-    let autoCreatedInDb = false;
 
-    // 3. Database Check & Worst-case Auto-Provisioning ke Backend Database KUMPUL
+    // 3. Database Check ke Backend Database KUMPUL melalui /auth/login
     try {
-      const switchRes = await callBackendSwitchRole({
+      const beRes = await callBackendLogin({
         user_id: supabaseUserId,
         role: beRole,
-        sector_type: beSector,
-        storage_capacity: targetRole === "supplier" ? 5000 : 0,
       });
 
-      if (switchRes.success && switchRes.data?.token) {
-        beToken = switchRes.data.token;
-        entityId = switchRes.data.entity_id;
-        autoCreatedInDb = !!switchRes.data.auto_created;
-      } else {
-        const beRes = await callBackendLogin({
-          user_id: supabaseUserId,
-          role: beRole,
-        });
-
-        if (
-          !beRes.success &&
-          (beRes.errorCode === "ENTITY_NOT_FOUND" ||
-            beRes.errorCode === "ROLE_NOT_REGISTERED" ||
-            !beRes.data?.token)
-        ) {
-          const regRes = await callBackendRegister({
-            user_id: supabaseUserId,
-            role: beRole,
-            sector: beSector,
-            legal_name: activeName,
-            storage_capacity: targetRole === "supplier" ? 5000 : 0,
-          });
-
-          if (regRes.success && regRes.data?.token) {
-            beToken = regRes.data.token;
-            entityId = regRes.data.entity_id;
-            autoCreatedInDb = true;
-          }
-        } else if (beRes.success && beRes.data?.token) {
-          beToken = beRes.data.token;
-          entityId = beRes.data.entity_id;
-        }
+      if (
+        !beRes.success &&
+        (beRes.errorCode === "ENTITY_NOT_FOUND" ||
+          beRes.errorCode === "ROLE_NOT_REGISTERED" ||
+          !beRes.data?.token)
+      ) {
+        // Alihkan ke business step dengan email & role agar pengguna mengisi data resmi
+        const destination = `/register?step=business&role=${targetRole}&email=${encodeURIComponent(email)}&userId=${supabaseUserId}`;
+        return {
+          success: false,
+          requiresBusinessStep: true,
+          redirectTo: destination,
+          error: `Peran ${targetRole.toUpperCase()} belum terdaftar. Silakan lengkapi profil usaha Anda terlebih dahulu.`,
+        };
+      } else if (beRes.success && beRes.data?.token) {
+        beToken = beRes.data.token;
+        entityId = beRes.data.entity_id;
       }
     } catch {
-      // Backend offline atau fallback
+      // Backend offline atau error jaringan
+      const destination = `/register?step=business&role=${targetRole}&email=${encodeURIComponent(email)}&userId=${supabaseUserId}`;
+      return {
+        success: false,
+        requiresBusinessStep: true,
+        redirectTo: destination,
+        error: "Gagal memeriksa peran usaha di backend. Silakan lengkapi data profil usaha.",
+      };
     }
 
-    // 4. Fallback token jika backend belum tersedia
-    if (!beToken) {
-      beToken = user?.id
-        ? `session-${user.id}-${targetRole}`
-        : `session-${supabaseUserId}-${targetRole}`;
-    }
-    if (!entityId) {
-      entityId =
-        targetRole === "supplier"
-          ? `sup-ent-${supabaseUserId.slice(-6)}`
-          : `umkm-ent-${supabaseUserId.slice(-6)}`;
+    // Jika tidak memperoleh token backend yang valid, alihkan ke business-step
+    if (!beToken || !entityId) {
+      const destination = `/register?step=business&role=${targetRole}&email=${encodeURIComponent(email)}&userId=${supabaseUserId}`;
+      return {
+        success: false,
+        requiresBusinessStep: true,
+        redirectTo: destination,
+        error: `Peran ${targetRole.toUpperCase()} belum terdaftar di sistem.`,
+      };
     }
 
-    // 5. Sinkronisasi metadata peran di Supabase Auth jika sesi Supabase aktif
+    // 4. Sinkronisasi metadata peran di Supabase Auth jika sesi Supabase aktif
     if (user) {
       try {
         await supabase.auth.updateUser({
@@ -173,7 +165,7 @@ export async function switchRoleAction(
       }
     }
 
-    // 6. Bangun sesi pengguna dengan peran target yang baru
+    // 5. Bangun sesi pengguna dengan peran target yang baru
     const updatedSession: UserSession = {
       email,
       name: activeName,
@@ -189,20 +181,17 @@ export async function switchRoleAction(
       entityId,
     };
 
-    // 7. Simpan cookie sesi terautentikasi di server
+    // 6. Simpan cookie sesi terautentikasi di server
     await saveAuthCookies({
       beToken,
       session: updatedSession,
       maxAgeDays: 7,
     });
 
-    const redirectTo = "/home";
-
     return {
       success: true,
       user: updatedSession,
-      redirectTo,
-      autoCreatedInDb,
+      redirectTo: "/home",
     };
   } catch (err: unknown) {
     const errorMsg =

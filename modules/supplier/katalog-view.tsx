@@ -2,10 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import {
-  MOCK_SUPPLIER_COMMODITIES,
-  SupplierCommodity,
-} from "@/constants/supplier";
+import { SupplierCommodity } from "@/constants/supplier";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,20 +16,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
 import {
-  getSupplierCatalogsAction,
+  getMySupplierCatalogsAction,
   updateSupplierCommodityAction,
 } from "@/actions/supplier-catalog";
 import { mapBEToSupplierCommodity } from "./helpers";
-import { RefreshCw } from "lucide-react";
-
-const SECTOR_OPTIONS = [
-  { value: "ALL", label: "Semua Sektor" },
-  { value: "Pertanian", label: "Pertanian" },
-  { value: "FnB / Pengolahan", label: "FnB / Pengolahan" },
-  { value: "Peternakan", label: "Peternakan" },
-  { value: "Perikanan", label: "Perikanan" },
-  { value: "Perkebunan", label: "Perkebunan" },
-] as const;
+import { PublishCommodityDialog } from "./katalog/publish-commodity-dialog";
+import { Plus, Search, ChevronDown, PackageX } from "lucide-react";
 
 const STATUS_OPTIONS = [
   { value: "ALL", label: "Semua Status" },
@@ -41,23 +30,24 @@ const STATUS_OPTIONS = [
 ] as const;
 
 export function SupplierKatalogView() {
-  const [commodities, setCommodities] = React.useState<SupplierCommodity[]>(
-    MOCK_SUPPLIER_COMMODITIES,
-  );
+  const [commodities, setCommodities] = React.useState<SupplierCommodity[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = React.useState<string>("ALL");
   const [isLoading, setIsLoading] = React.useState(true);
+  const [publishingCommodity, setPublishingCommodity] =
+    React.useState<SupplierCommodity | null>(null);
 
   const loadData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await getSupplierCatalogsAction();
-      if (res.success && res.data && res.data.length > 0) {
+      const res = await getMySupplierCatalogsAction();
+      if (res.success && res.data) {
         setCommodities(res.data.map(mapBEToSupplierCommodity));
+      } else {
+        setCommodities([]);
       }
     } catch {
-      // Fallback ke mock
+      setCommodities([]);
     } finally {
       setIsLoading(false);
     }
@@ -67,164 +57,99 @@ export function SupplierKatalogView() {
     loadData();
   }, [loadData]);
 
-  const selectedSectorLabel =
-    SECTOR_OPTIONS.find((s) => s.value === selectedSector)?.label || "Semua Sektor";
   const selectedStatusLabel =
     STATUS_OPTIONS.find((s) => s.value === selectedStatus)?.label || "Semua Status";
 
   const handleToggleStatus = async (id: string) => {
     const target = commodities.find((c) => c.id === id);
     if (!target) return;
-    const nextState = !target.isActive;
 
+    // Jika belum aktif, buka dialog form sebelum publikasi ke bursa
+    if (!target.isActive) {
+      setPublishingCommodity(target);
+      return;
+    }
+
+    // Jika sudah aktif dan ingin ditarik dari bursa
+    const nextState = false;
     setCommodities((prev) =>
       prev.map((c) => (c.id === id ? { ...c, isActive: nextState } : c))
     );
 
     try {
       await updateSupplierCommodityAction(id, { isMarketplaceActive: nextState });
-      if (nextState) {
-        toast.success(
-          `Status publikasi ${target.name} telah diaktifkan di Bursa KUMPUL.`,
-          "Komoditas Dipublikasikan",
-        );
-      } else {
-        toast.info(
-          `Status publikasi ${target.name} telah ditarik dari etalase bursa.`,
-          "Komoditas Dinonaktifkan",
-        );
-      }
+      toast.info(
+        `Status publikasi ${target.name} telah ditarik dari etalase bursa.`,
+        "Komoditas Dinonaktifkan"
+      );
     } catch {
       toast.error("Gagal memperbarui status publikasi di backend.");
     }
+  };
+
+  const handlePublishSuccess = (updated: SupplierCommodity) => {
+    setCommodities((prev) =>
+      prev.map((c) => (c.id === updated.id ? updated : c))
+    );
   };
 
   const filteredCommodities = commodities.filter((item) => {
     const matchSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.batchTag.licenseNumber
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-
-    const matchSector =
-      selectedSector === "ALL" || item.sector === selectedSector;
+      item.batchTag.licenseNumber.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchStatus =
       selectedStatus === "ALL" ||
       (selectedStatus === "ACTIVE" && item.isActive) ||
       (selectedStatus === "INACTIVE" && !item.isActive);
 
-    return matchSearch && matchSector && matchStatus;
+    return matchSearch && matchStatus;
   });
 
   return (
     <div className="space-y-6">
-      {/* Header Halaman */}
+      {/* Header Halaman (Tanpa Tombol Refresh) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary">
             Katalog Pasokan Komoditas Grosir
           </h1>
           <p className="font-body text-xs sm:text-sm text-text-secondary mt-1">
-            Kelola etalase komoditas, verifikasi paspor mutu kesehatan pangan,
+            Kelola etalase komoditas entitas Anda, verifikasi paspor mutu kesehatan pangan,
             dan pantau status publikasi di bursa.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="md"
-            onClick={loadData}
-            disabled={isLoading}
-            className="min-h-[44px] gap-2 font-semibold"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Segarkan</span>
-          </Button>
-
-          <Link href="/supplier/katalog/tambah" className="shrink-0">
+          <Link href="/katalog/tambah" className="shrink-0">
             <Button
               variant="primary"
               size="md"
-              className="font-semibold min-h-[44px]"
+              className="font-semibold min-h-[44px] cursor-pointer"
             >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Tambah Pasokan Komoditas
+              <Plus className="w-4 h-4 mr-1.5" />
+              <span>Tambah Pasokan Komoditas</span>
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Filter & Pencarian */}
+      {/* Filter & Pencarian (Tanpa Filter Sektor) */}
       <Card className="p-4 sm:p-5 bg-surface border-border shadow-elevation-1 rounded-2xl">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="flex-1 max-w-md">
+          <div className="flex-1 relative max-w-md">
+            <Search className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <Input
               id="search-commodity"
-              placeholder="Cari nama komoditas, SKU, atau nomor izin mutu..."
+              placeholder="Cari nama komoditas, SKU, atau izin mutu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="min-h-[44px]"
+              className="pl-10 min-h-[44px]"
             />
           </div>
 
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 w-full sm:w-auto">
-            {/* Filter Sektor */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="default"
-                  className="h-11 w-full sm:w-auto sm:shrink-0 gap-2 rounded-xl px-3 text-xs sm:text-sm font-semibold shadow-xs justify-between"
-                  aria-label={`Pilih filter sektor: saat ini ${selectedSectorLabel}`}
-                >
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-text-muted font-normal text-xs hidden xs:inline">Sektor:</span>
-                    <span className="font-semibold text-text-primary truncate">{selectedSectorLabel}</span>
-                  </div>
-                  <svg
-                    className="w-3.5 h-3.5 text-text-muted shrink-0 transition-transform duration-200"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-48">
-                <DropdownMenuRadioGroup
-                  value={selectedSector}
-                  onValueChange={setSelectedSector}
-                >
-                  {SECTOR_OPTIONS.map((opt) => (
-                    <DropdownMenuRadioItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
             {/* Filter Status */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -232,23 +157,14 @@ export function SupplierKatalogView() {
                   type="button"
                   variant="secondary"
                   size="default"
-                  className="h-11 w-full sm:w-auto sm:shrink-0 gap-2 rounded-xl px-3 text-xs sm:text-sm font-semibold shadow-xs justify-between"
+                  className="h-11 w-full sm:w-auto sm:shrink-0 gap-2 rounded-xl px-3 text-xs sm:text-sm font-semibold shadow-xs justify-between cursor-pointer"
                   aria-label={`Pilih filter status: saat ini ${selectedStatusLabel}`}
                 >
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-text-muted font-normal text-xs hidden xs:inline">Status:</span>
+                    <span className="text-text-muted font-normal text-xs">Status:</span>
                     <span className="font-semibold text-text-primary truncate">{selectedStatusLabel}</span>
                   </div>
-                  <svg
-                    className="w-3.5 h-3.5 text-text-muted shrink-0 transition-transform duration-200"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <ChevronDown className="w-3.5 h-3.5 text-text-muted shrink-0" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-48">
@@ -277,30 +193,17 @@ export function SupplierKatalogView() {
             </DropdownMenu>
 
             {/* Reset Filter Button */}
-            {(searchQuery ||
-              selectedSector !== "ALL" ||
-              selectedStatus !== "ALL") && (
+            {(searchQuery || selectedStatus !== "ALL") && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => {
                   setSearchQuery("");
-                  setSelectedSector("ALL");
                   setSelectedStatus("ALL");
                 }}
-                className="h-11 col-span-2 sm:col-span-1 text-xs font-semibold text-primary hover:text-primary-hover hover:bg-primary/5 min-h-[44px] px-3 gap-1.5 justify-center sm:justify-start"
+                className="h-11 text-xs font-semibold text-primary hover:text-primary-hover hover:bg-primary/5 min-h-[44px] px-3 gap-1.5 cursor-pointer"
               >
-                <svg
-                  className="w-3.5 h-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  aria-hidden="true"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
                 Reset Filter
               </Button>
             )}
@@ -309,31 +212,29 @@ export function SupplierKatalogView() {
       </Card>
 
       {/* Grid Kartu Komoditas */}
-      {filteredCommodities.length === 0 ? (
-        <div className="bg-surface rounded-2xl border border-dashed border-border p-12 text-center space-y-3 shadow-elevation-1">
-          <div className="w-12 h-12 rounded-xl bg-background text-text-muted flex items-center justify-center mx-auto border border-border">
-            <svg
-              className="size-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-              />
-            </svg>
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-6 rounded-2xl border-border bg-surface animate-pulse h-72" />
+          ))}
+        </div>
+      ) : filteredCommodities.length === 0 ? (
+        <div className="bg-surface rounded-2xl border border-dashed border-border p-12 text-center space-y-4 shadow-elevation-1">
+          <div className="w-14 h-14 rounded-2xl bg-neutral-100 text-text-muted flex items-center justify-center mx-auto border border-border">
+            <PackageX className="w-7 h-7" />
           </div>
-          <h2 className="font-heading font-bold text-base text-text-primary">
-            Tidak ada komoditas yang sesuai kriteria
-          </h2>
-          <p className="font-body text-xs text-text-secondary max-w-sm mx-auto">
-            Ubah kata kunci pencarian atau reset filter untuk menampilkan
-            komoditas yang terdaftar.
-          </p>
+          <div className="space-y-1">
+            <h2 className="font-heading font-bold text-base text-text-primary">
+              {commodities.length === 0
+                ? "Belum ada komoditas di katalog bisnis Anda"
+                : "Tidak ada komoditas yang sesuai filter"}
+            </h2>
+            <p className="font-body text-xs text-text-secondary max-w-sm mx-auto">
+              {commodities.length === 0
+                ? "Tambahkan pasokan komoditas grosir pertama Anda untuk mulai memasarkan bahan baku ke mitra UMKM di bursa."
+                : "Ubah kata kunci pencarian atau reset filter untuk menampilkan komoditas yang terdaftar."}
+            </p>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -341,10 +242,24 @@ export function SupplierKatalogView() {
             <CommodityCatalogCard
               key={item.id}
               item={item}
+              role="supplier"
               onToggleStatus={handleToggleStatus}
             />
           ))}
         </div>
+      )}
+
+      {/* Dialog Konfirmasi Publikasi ke Bursa untuk Supplier */}
+      {publishingCommodity && (
+        <PublishCommodityDialog
+          isOpen={!!publishingCommodity}
+          onClose={() => setPublishingCommodity(null)}
+          commodity={publishingCommodity}
+          onPublishSuccess={(updated) => {
+            handlePublishSuccess(updated);
+            setPublishingCommodity(null);
+          }}
+        />
       )}
     </div>
   );

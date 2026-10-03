@@ -60,7 +60,76 @@ async function resolveSupplierRoleId(providedRoleId?: string): Promise<string | 
 }
 
 /**
- * Server Action: Mengambil daftar komoditas katalog supplier
+ * Server Action: Mengambil katalog komoditas khusus milik entitas Supplier yang login
+ * Endpoint: /supplier-catalogs/entity-id/{entityId}
+ */
+export async function getMySupplierCatalogsAction(): Promise<{
+  success: boolean;
+  data: BESupplierCommodity[];
+  message?: string;
+}> {
+  try {
+    const session = await getAuthSession();
+    if (!session?.entityId) {
+      return {
+        success: true,
+        data: [],
+        message: "Entity ID tidak ditemukan pada sesi pengguna",
+      };
+    }
+
+    const endpoint = `/supplier-catalogs/entity-id/${session.entityId}`;
+    const res = await beFetch<BESupplierCommodity[]>(endpoint);
+
+    if (!res.success) {
+      return {
+        success: false,
+        data: [],
+        message: res.message || "Gagal memuat katalog komoditas entitas Anda",
+      };
+    }
+
+    return {
+      success: true,
+      data: res.data || [],
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      data: [],
+      message: err instanceof Error ? err.message : "Gagal memuat katalog komoditas",
+    };
+  }
+}
+
+/**
+ * Server Action: Mengambil seluruh komoditas bursa/marketplace
+ * Endpoint: /supplier-catalogs
+ */
+export async function getAllMarketplaceCatalogsAction(): Promise<{
+  success: boolean;
+  data: BESupplierCommodity[];
+  message?: string;
+}> {
+  try {
+    const res = await beFetch<BESupplierCommodity[]>("/supplier-catalogs");
+    console.log("ini data", res.data)
+    return {
+      success: res.success,
+      data: res.data || [],
+      message: res.message,
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      data: [],
+      message: err instanceof Error ? err.message : "Gagal memuat katalog bursa",
+    };
+  }
+}
+
+/**
+ * Server Action: Mengambil daftar komoditas katalog supplier (backward-compatible)
  */
 export async function getSupplierCatalogsAction(supplierRoleId?: string): Promise<{
   success: boolean;
@@ -78,18 +147,10 @@ export async function getSupplierCatalogsAction(supplierRoleId?: string): Promis
     }
 
     const res = await beFetch<BESupplierCommodity[]>(endpoint);
-    if (!res.success) {
-      const fallbackRes = await beFetch<BESupplierCommodity[]>("/supplier-catalogs");
-      return {
-        success: fallbackRes.success,
-        data: fallbackRes.data || [],
-        message: fallbackRes.message,
-      };
-    }
-
     return {
-      success: true,
+      success: res.success,
       data: res.data || [],
+      message: res.message,
     };
   } catch (err: unknown) {
     return {
@@ -255,7 +316,7 @@ export async function deleteSupplierCommodityAction(id: string): Promise<{
 export async function createCommodityBatchTagAction(payload: {
   commodityId: string;
   supportingFileUrl?: string | null;
-  storageTemperatureType: BEStorageTemperature;
+  storageTemperatureType?: BEStorageTemperature;
   isVerified?: boolean;
 }): Promise<{
   success: boolean;
@@ -268,7 +329,7 @@ export async function createCommodityBatchTagAction(payload: {
       body: JSON.stringify({
         commodity_id: payload.commodityId,
         supporting_file_url: payload.supportingFileUrl || null,
-        storage_temperature_type: payload.storageTemperatureType,
+        storage_temperature_type: payload.storageTemperatureType || "AMBIENT",
         is_verified: payload.isVerified ?? true,
       }),
     });

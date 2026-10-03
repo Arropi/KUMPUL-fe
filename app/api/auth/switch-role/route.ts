@@ -1,15 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { UserRole, UserSession } from "@/constants/auth";
-import {
-  callBackendLogin,
-  callBackendRegister,
-  callBackendSwitchRole,
-} from "@/lib/be-auth";
+import { callBackendLogin } from "@/lib/be-auth";
 import { cookies } from "next/headers";
 
-async function handleSwitchRole(request: Request, targetRole: UserRole, customRedirect?: string | null) {
+async function handleSwitchRole(
+  request: Request,
+  targetRole: UserRole,
+  customRedirect?: string | null
+) {
   const { origin } = new URL(request.url);
+  const normalizedRole: UserRole = targetRole === "supplier" ? "supplier" : "umkm";
+
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("kumpul_session");
   let currentSession: UserSession | null = null;
@@ -18,7 +20,7 @@ async function handleSwitchRole(request: Request, targetRole: UserRole, customRe
     try {
       currentSession = JSON.parse(sessionCookie.value) as UserSession;
     } catch {
-      // Abaikan jika gagal parse
+      // Abaikan jika parsing gagal
     }
   }
 
@@ -31,22 +33,26 @@ async function handleSwitchRole(request: Request, targetRole: UserRole, customRe
   const supabaseUserId =
     user?.id ||
     currentSession?.supabaseUserId ||
-    `usr-kumpul-${Date.now().toString(36)}`;
+    "";
 
   const email =
     user?.email ||
     currentSession?.email ||
-    (targetRole === "supplier" ? "supplier@kumpul.id" : "umkm@kumpul.id");
+    "";
+
+  if (!supabaseUserId) {
+    return NextResponse.redirect(`${origin}/login`);
+  }
 
   const baseName =
     (user?.user_metadata?.full_name as string) ||
     (user?.user_metadata?.name as string) ||
     currentSession?.name ||
-    email.split("@")[0] ||
+    (email ? email.split("@")[0] : "") ||
     "Mitra";
 
   let activeName: string;
-  if (targetRole === "supplier") {
+  if (normalizedRole === "supplier") {
     activeName =
       (user?.user_metadata?.supplier_business_name as string) ||
       (currentSession?.role === "supplier"
@@ -64,77 +70,53 @@ async function handleSwitchRole(request: Request, targetRole: UserRole, customRe
           : `Warung Makan ${baseName}`);
   }
 
-  const beRole = targetRole === "supplier" ? "SUPPLIER" : "UMKM";
-  const beSector = targetRole === "supplier" ? "PERTANIAN" : "FNB_PENGOLAHAN";
-
+  const beRole = normalizedRole === "supplier" ? "SUPPLIER" : "UMKM";
   let beToken = "";
   let entityId = "";
 
-  // 2. Worst-case auto-provision ke database backend
+  // 2. Verifikasi ketersediaan peran di Backend (tanpa auto-provision dummy)
   try {
-    const switchRes = await callBackendSwitchRole({
+    const beRes = await callBackendLogin({
       user_id: supabaseUserId,
       role: beRole,
-      sector_type: beSector,
-      storage_capacity: targetRole === "supplier" ? 5000 : 0,
     });
 
-    if (switchRes.success && switchRes.data?.token) {
-      beToken = switchRes.data.token;
-      entityId = switchRes.data.entity_id;
-    } else {
-      const beRes = await callBackendLogin({
-        user_id: supabaseUserId,
-        role: beRole,
-      });
-
-      if (
-        !beRes.success &&
-        (beRes.errorCode === "ENTITY_NOT_FOUND" ||
-          beRes.errorCode === "ROLE_NOT_REGISTERED" ||
-          !beRes.data?.token)
-      ) {
-        const regRes = await callBackendRegister({
-          user_id: supabaseUserId,
-          role: beRole,
-          sector: beSector,
-          legal_name: activeName,
-          storage_capacity: targetRole === "supplier" ? 5000 : 0,
-        });
-
-        if (regRes.success && regRes.data?.token) {
-          beToken = regRes.data.token;
-          entityId = regRes.data.entity_id;
-        }
-      } else if (beRes.success && beRes.data?.token) {
-        beToken = beRes.data.token;
-        entityId = beRes.data.entity_id;
+    if (
+      !beRes.success &&
+      (beRes.errorCode === "ENTITY_NOT_FOUND" ||
+        beRes.errorCode === "ROLE_NOT_REGISTERED" ||
+        !beRes.data?.token)
+    ) {
+      // Peran belum terdaftar di database backend: alihkan ke step business agar pengguna mengisi data resmi
+      const businessUrl = `${origin}/register?step=business&role=${normalizedRole}&email=${encodeURIComponent(email)}&userId=${supabaseUserId}`;
+      return NextResponse.redirect(businessUrl);
+    } else if (beRes.success && beRes.data?.token) {
+      beToken = beRes.data.token;
+      entityId = beRes.data.entity_id;
+      if (beRes.data.business_entity?.legal_name) {
+        activeName = beRes.data.business_entity.legal_name as string;
       }
     }
   } catch {
-    // Backend offline / fallback
+    // Backend offline / error koneksi: alihkan ke formulir pendaftaran peran usaha
+    const businessUrl = `${origin}/register?step=business&role=${normalizedRole}&email=${encodeURIComponent(email)}&userId=${supabaseUserId}`;
+    return NextResponse.redirect(businessUrl);
   }
 
-  if (!beToken) {
-    beToken = user?.id
-      ? `session-${user.id}-${targetRole}`
-      : `session-${supabaseUserId}-${targetRole}`;
-  }
-  if (!entityId) {
-    entityId =
-      targetRole === "supplier"
-        ? `sup-ent-${supabaseUserId.slice(-6)}`
-        : `umkm-ent-${supabaseUserId.slice(-6)}`;
+  // Jika tidak memperoleh token backend yang valid, alihkan ke business-step
+  if (!beToken || !entityId) {
+    const businessUrl = `${origin}/register?step=business&role=${normalizedRole}&email=${encodeURIComponent(email)}&userId=${supabaseUserId}`;
+    return NextResponse.redirect(businessUrl);
   }
 
-  // 3. Update Supabase metadata jika ada sesi Supabase
+  // 3. Sinkronisasi metadata di Supabase Auth
   if (user) {
     try {
       await supabase.auth.updateUser({
         data: {
-          role: targetRole,
-          active_role: targetRole,
-          ...(targetRole === "supplier"
+          role: normalizedRole,
+          active_role: normalizedRole,
+          ...(normalizedRole === "supplier"
             ? {
                 has_supplier_profile: true,
                 supplier_entity_id: entityId,
@@ -148,14 +130,15 @@ async function handleSwitchRole(request: Request, targetRole: UserRole, customRe
         },
       });
     } catch {
-      // Abaikan
+      // Abaikan jika update metadata gagal
     }
   }
 
+  // 4. Perbarui sesi pengguna
   const updatedSession: UserSession = {
     email,
     name: activeName,
-    role: targetRole,
+    role: normalizedRole,
     picture:
       (user?.user_metadata?.avatar_url as string) ||
       (user?.user_metadata?.picture as string) ||

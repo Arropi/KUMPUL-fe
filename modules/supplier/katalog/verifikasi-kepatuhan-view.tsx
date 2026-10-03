@@ -12,14 +12,12 @@ import {
   Thermometer,
   Snowflake,
   Sun,
-  AlertCircle,
   ArrowLeft,
   CheckCircle2,
 } from "lucide-react";
 import { SupplierCommodity, StorageTemperature } from "@/constants/supplier";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -41,7 +39,7 @@ const STORAGE_TEMP_OPTIONS: Array<{
     value: "AMBIENT",
     label: "Suhu Ruang (Ambient)",
     range: "20°C - 25°C",
-    desc: "Beras, biji-bijian, minyak goreng, gula, bumbu kering, dan bahan non-perishable.",
+    desc: "Beras, biji-bijian, minyak goreng, gula, bumbu kering, dan bahan pangan non-perishable.",
     icon: Sun,
     accentColor: "border-amber-300 bg-amber-50/50 text-amber-700",
   },
@@ -67,16 +65,7 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
   const router = useRouter();
 
   const [storageTemp, setStorageTemp] = React.useState<StorageTemperature>(
-    (commodity.batchTag.storageTemperature as StorageTemperature) || "AMBIENT"
-  );
-  const [licenseNumber, setLicenseNumber] = React.useState(
-    commodity.batchTag.licenseNumber || ""
-  );
-  const [productionDate, setProductionDate] = React.useState(
-    commodity.batchTag.productionDate || new Date().toISOString().split("T")[0]
-  );
-  const [expiryDate, setExpiryDate] = React.useState(
-    commodity.batchTag.expiryDate || ""
+    (commodity.batchTag?.storageTemperature as StorageTemperature) || "AMBIENT"
   );
   const [uploadedFile, setUploadedFile] = React.useState<{
     name: string;
@@ -100,23 +89,19 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
       size: `${sizeMb} MB`,
       type: file.type || "Dokumen",
     });
-    toast.success(`File "${file.name}" berhasil diunggah.`);
+    toast.success(`Berkas "${file.name}" berhasil dipilih.`);
   };
 
   const handleRemoveFile = () => {
     setUploadedFile(null);
-    toast.info("File lampiran penunjang dihapus.");
+    toast.info("Berkas lampiran penunjang dihapus.");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!uploadedFile) {
-      toast.error("Wajib mengunggah minimal 1 file penunjang sertifikasi / uji lab.");
-      return;
-    }
-    if (!licenseNumber.trim()) {
-      toast.error("Nomor izin / lisensi / CoA mutu wajib diisi.");
+      toast.error("Wajib mengunggah minimal 1 berkas penunjang dokumen sertifikasi / uji lab.");
       return;
     }
 
@@ -125,7 +110,7 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
     try {
       const res = await createCommodityBatchTagAction({
         commodityId: commodity.id,
-        supportingFileUrl: uploadedFile ? `https://storage.supabase.co/kumpul-files/docs/${encodeURIComponent(uploadedFile.name)}` : null,
+        supportingFileUrl: `https://storage.supabase.co/kumpul-files/docs/${encodeURIComponent(uploadedFile.name)}`,
         storageTemperatureType: storageTemp,
         isVerified: true,
       });
@@ -133,7 +118,7 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
       if (res.success) {
         setIsSuccess(true);
         toast.success(
-          `Kepatuhan mutu ${commodity.name} berhasil disimpan ke sistem!`,
+          `Kepatuhan mutu & cara penyimpanan ${commodity.name} berhasil disimpan!`,
           "Verifikasi Berhasil"
         );
         setTimeout(() => {
@@ -150,27 +135,27 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto pb-10">
       {/* Header Navigasi */}
       <div>
         <Link
           href={`/katalog/${commodity.id}`}
-          className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1.5 mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
+          className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1.5 mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Kembali ke Rincian Komoditas
+          <span>Kembali ke Rincian Komoditas</span>
         </Link>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
           <Badge variant="neutral">{commodity.sku}</Badge>
           <Badge variant="neutral">{commodity.sector}</Badge>
           <span className="text-xs font-bold text-text-primary">{commodity.name}</span>
         </div>
-        <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary mt-2 flex items-center gap-2">
+        <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary flex items-center gap-2">
           <ShieldCheck className="w-6 h-6 text-emerald-600" />
-          Verifikasi Kepatuhan Mutu &amp; Rantai Pasok
+          <span>Verifikasi Kepatuhan Mutu &amp; Penyimpanan</span>
         </h1>
         <p className="font-body text-xs sm:text-sm text-text-secondary mt-1">
-          Lengkapi data paspor sanitasi digital, tentukan instruksi suhu penyimpanan rantai dingin, dan unggah dokumen uji laboratorium terakreditasi.
+          Tentukan instruksi cara penyimpanan suhu rantai pasok dan unggah berkas penunjang dokumen sertifikasi mutu untuk komoditas Anda.
         </p>
       </div>
 
@@ -183,20 +168,20 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
             Pengajuan Verifikasi Kepatuhan Berhasil!
           </h2>
           <p className="text-xs text-text-secondary max-w-md mx-auto">
-            Data paspor mutu, instruksi suhu penyimpanan ({storageTemp}), dan dokumen uji lab telah berhasil disimpan. Mengalihkan kembali ke rincian komoditas...
+            Instruksi cara penyimpanan ({storageTemp}) dan berkas penunjang dokumen mutu telah tersimpan di sistem. Mengalihkan kembali ke rincian komoditas...
           </p>
         </Card>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 1. Pengaturan Suhu Penyimpanan (storage_temp_enum) */}
+          {/* 1. Pengaturan Cara / Suhu Penyimpanan (storage_temp_enum) */}
           <Card className="p-5 sm:p-6 bg-surface border-border shadow-elevation-1 rounded-2xl space-y-4">
             <div>
               <h2 className="font-heading font-bold text-sm sm:text-base text-text-primary flex items-center gap-2">
                 <Thermometer className="w-4.5 h-4.5 text-primary" />
-                1. Suhu Penyimpanan Rantai Pasok (Storage Temperature)
+                <span>1. Cara &amp; Suhu Penyimpanan Rantai Pasok</span>
               </h2>
               <p className="text-xs text-text-secondary mt-1">
-                Tentukan kategori suhu penanganan komoditas sesuai regulasi sanitasi keamanan pangan (BPOM/Kementan).
+                Pilih metode dan kategori suhu penyimpanan yang disyaratkan untuk menjaga higienitas dan mutu komoditas.
               </p>
             </div>
 
@@ -236,11 +221,11 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
 
                     <div className="mt-3 pt-2.5 border-t border-border/60 flex items-center justify-between">
                       <span className="font-mono text-[10px] uppercase font-bold text-text-muted">
-                        ENUM: {opt.value}
+                        Kategori: {opt.value}
                       </span>
                       <span
                         className={cn(
-                          "w-2 h-2 rounded-full",
+                          "w-2.5 h-2.5 rounded-full transition-colors",
                           isSelected ? "bg-primary" : "bg-neutral-300"
                         )}
                       />
@@ -256,10 +241,10 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
             <div>
               <h2 className="font-heading font-bold text-sm sm:text-base text-text-primary flex items-center gap-2">
                 <FileCheck className="w-4.5 h-4.5 text-primary" />
-                2. Berkas Penunjang Kepatuhan &amp; Uji Mutu (Supporting Files)
+                <span>2. Berkas Penunjang Dokumen Mutu (Supporting Files)</span>
               </h2>
               <p className="text-xs text-text-secondary mt-1">
-                Unggah salinan dokumen sertifikat uji lab mutu, Certificate of Analysis (CoA), sertifikasi Halal, atau hasil audit higienitas batch komoditas.
+                Unggah salinan dokumen sertifikat uji lab mutu, Certificate of Analysis (CoA), sertifikasi Halal, atau hasil audit higienitas komoditas.
               </p>
             </div>
 
@@ -274,7 +259,7 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
                       {uploadedFile.name}
                     </p>
                     <p className="text-[11px] text-text-muted">
-                      {uploadedFile.size} • Terverifikasi Siap Submit
+                      {uploadedFile.size} &bull; Berkas Siap Diajukan
                     </p>
                   </div>
                 </div>
@@ -289,13 +274,13 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
                 </button>
               </div>
             ) : (
-              <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors bg-background">
+              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors bg-background">
                 <Upload className="w-8 h-8 text-text-muted mx-auto mb-2" />
                 <p className="text-xs font-bold text-text-primary">
                   Tarik &amp; lepas berkas di sini, atau klik untuk memilih file
                 </p>
                 <p className="text-[11px] text-text-muted mt-1">
-                  Format yang didukung: PDF, PNG, JPG (Maksimal 10 MB)
+                  Format dokumen yang didukung: PDF, PNG, JPG, JPEG (Maksimal 10 MB)
                 </p>
                 <input
                   type="file"
@@ -309,62 +294,12 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
                   variant="outline"
                   size="sm"
                   onClick={() => document.getElementById("supporting-file-input")?.click()}
-                  className="mt-3 text-xs font-semibold cursor-pointer"
+                  className="mt-4 text-xs font-semibold cursor-pointer"
                 >
-                  Pilih File Penunjang
+                  Pilih Berkas Dokumen
                 </Button>
               </div>
             )}
-          </Card>
-
-          {/* 3. Parameter Lisensi & Tanggal Operasional */}
-          <Card className="p-5 sm:p-6 bg-surface border-border shadow-elevation-1 rounded-2xl space-y-4">
-            <div>
-              <h2 className="font-heading font-bold text-sm sm:text-base text-text-primary flex items-center gap-2">
-                <AlertCircle className="w-4.5 h-4.5 text-primary" />
-                3. Identitas Lisensi &amp; Masa Edar
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="text-xs font-bold text-text-secondary block mb-1">
-                  Nomor Sertifikat / Lisensi Resmi
-                </label>
-                <Input
-                  placeholder="Contoh: BPOM-RI-MD-12345678"
-                  value={licenseNumber}
-                  onChange={(e) => setLicenseNumber(e.target.value)}
-                  className="text-xs"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-text-secondary block mb-1">
-                  Tanggal Produksi / Panen
-                </label>
-                <Input
-                  type="date"
-                  value={productionDate}
-                  onChange={(e) => setProductionDate(e.target.value)}
-                  className="text-xs"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-text-secondary block mb-1">
-                  Masa Kedaluwarsa (Expired)
-                </label>
-                <Input
-                  type="date"
-                  value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                  className="text-xs"
-                />
-              </div>
-            </div>
           </Card>
 
           {/* Tombol Aksi */}
@@ -378,11 +313,11 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
               type="submit"
               variant="primary"
               size="md"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !uploadedFile}
               className="font-semibold text-xs sm:text-sm min-h-[44px] px-6 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               <ShieldCheck className="w-4 h-4 mr-1.5" />
-              {isSubmitting ? "Memproses Verifikasi..." : "Kirim Pengajuan Verifikasi"}
+              <span>{isSubmitting ? "Memproses Verifikasi..." : "Kirim Verifikasi Kepatuhan"}</span>
             </Button>
           </div>
         </form>

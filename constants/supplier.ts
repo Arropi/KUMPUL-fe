@@ -144,9 +144,13 @@ export interface SupplierCommodity {
   batchTag: CommodityBatchTag;
   imageUrl?: string;
   createdAt: string;
+  allowsUnderMoq?: boolean;
+  underMoqPricePerKg?: number | null;
+  productionDate?: string | null;
+  expiryDate?: string | null;
 }
 
-export type DeliveryMethod = "HEMAT_HUB" | "DIRECT_DOOR_TO_DOOR";
+export type DeliveryMethod = "HEMAT_HUB" | "ON_YOUR_DOOR" | "DIRECT_DOOR_TO_DOOR";
 
 export type POStatus =
   | "ISSUED" // Baru diterbitkan dari pool yang locked
@@ -301,6 +305,10 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
       hygieneStatus: "TERVERIFIKASI",
     },
     createdAt: "2026-09-20",
+    allowsUnderMoq: true,
+    underMoqPricePerKg: 1500,
+    productionDate: "2026-09-18",
+    expiryDate: "2027-03-18",
   },
   {
     id: "com-02",
@@ -343,6 +351,10 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
       hygieneStatus: "TERVERIFIKASI",
     },
     createdAt: "2026-09-21",
+    allowsUnderMoq: false,
+    underMoqPricePerKg: null,
+    productionDate: "2026-09-22",
+    expiryDate: "2027-04-22",
   },
   {
     id: "com-03",
@@ -385,6 +397,10 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
       hygieneStatus: "TERVERIFIKASI",
     },
     createdAt: "2026-09-26",
+    allowsUnderMoq: true,
+    underMoqPricePerKg: 2000,
+    productionDate: "2026-09-25",
+    expiryDate: "2026-12-25",
   },
   {
     id: "com-04",
@@ -427,6 +443,10 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
       hygieneStatus: "MENUNGGU_AUDIT",
     },
     createdAt: "2026-09-28",
+    allowsUnderMoq: true,
+    underMoqPricePerKg: 3000,
+    productionDate: "2026-09-29",
+    expiryDate: "2026-10-06",
   },
 ];
 

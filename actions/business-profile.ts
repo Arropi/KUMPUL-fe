@@ -34,6 +34,7 @@ export async function getBusinessProfileAction(): Promise<{
   try {
     const session = await getAuthSession();
     let entityId = session?.entityId;
+    console.log(entityId, session)
 
     // Jika entityId tidak ada pada sesi, cari entitas pertama yang tersedia
     if (!entityId) {
