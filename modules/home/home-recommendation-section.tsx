@@ -169,17 +169,17 @@ export function HomeRecommendationSection({
           </h2>
           <p className="text-xs text-text-secondary max-w-2xl">
             {isUmkm
-              ? "Bahan pangan pokok yang terhubung dengan menu UMKM Anda untuk memotong HPP via pooling kuota grosir. Klik beli untuk masuk ke detail."
+              ? "Bahan pangan pokok yang terhubung dengan produk UMKM Anda untuk memotong HPP via pooling kuota grosir. Klik beli untuk masuk ke detail."
               : "Pantau komoditas sejenis di bursa untuk tolok ukur harga pasokan (benchmark) dan peluang pasokan konsolidasi."}
           </p>
         </div>
 
         {isUmkm && (
           <Link
-            href="/menu"
+            href="/produk"
             className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1 shrink-0 self-start sm:self-center"
           >
-            <span>Kelola Daftar Menu &amp; Resep</span>
+            <span>Kelola Daftar Produk &amp; Resep</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         )}

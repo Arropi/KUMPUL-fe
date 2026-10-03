@@ -165,8 +165,8 @@ export function ProfileHeroCard({
               </Button>
             ) : (
               <Button asChild variant="primary" size="sm" className="font-bold text-xs h-9">
-                <Link href="/menu">
-                  <span>+ Tambah Menu</span>
+                <Link href="/produk">
+                  <span>+ Tambah Produk</span>
                 </Link>
               </Button>
             )}

@@ -59,11 +59,32 @@ export function DialogContent({ className, children, ...props }: DialogContentPr
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onOpenChange]);
 
+  // Lock background scroll when dialog is active
+  React.useEffect(() => {
+    if (!open) return;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150 overflow-hidden"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onOpenChange(false);
@@ -74,7 +95,7 @@ export function DialogContent({ className, children, ...props }: DialogContentPr
     >
       <div
         className={cn(
-          "relative w-full max-w-lg rounded-3xl bg-surface border border-border p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto",
+          "relative w-full max-w-lg rounded-3xl bg-surface border border-border p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto overscroll-contain",
           className
         )}
         {...props}

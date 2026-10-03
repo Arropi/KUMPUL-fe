@@ -85,6 +85,9 @@ export function Navbar({
     if (item.href === "/home") {
       return pathname === "/home";
     }
+    if (item.href === "/produk" && (pathname === "/menu" || pathname.startsWith("/menu/"))) {
+      return true;
+    }
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   };
 

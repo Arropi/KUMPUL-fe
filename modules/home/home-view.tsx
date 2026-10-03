@@ -111,10 +111,10 @@ export function HomeView({ initialSession }: HomeViewProps) {
               </Button>
             </Link>
           ) : (
-            <Link href="/menu" className="shrink-0">
+            <Link href="/produk" className="shrink-0">
               <Button variant="secondary" size="md" className="font-semibold min-h-[42px] cursor-pointer">
                 <ShoppingBag className="w-4 h-4 mr-1.5 text-primary" />
-                <span>Kelola Kebutuhan Menu</span>
+                <span>Kelola Produk &amp; Resep</span>
               </Button>
             </Link>
           )}

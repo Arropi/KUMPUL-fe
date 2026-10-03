@@ -1,14 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { Utensils, Trash2, ChevronDown, ChevronUp, Layers, TrendingUp, AlertCircle } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import Link from "next/link";
+import { Trash2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import type { BEProduct } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
-import { deleteProductAction, deleteRecipeItemAction } from "@/actions/products";
+import { cn } from "@/lib/utils";
+import { deleteProductAction } from "@/actions/products";
+import { getProductWastePrediction } from "@/lib/ai-waste-prediction";
 
 interface MenuCardProps {
   product: BEProduct;
@@ -17,25 +20,36 @@ interface MenuCardProps {
 }
 
 export function MenuCard({ product, onDeleted }: MenuCardProps) {
-  const [isExpanded, setIsExpanded] = React.useState(true);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const price = typeof product.target_selling_price_per_unit === "number"
-    ? product.target_selling_price_per_unit
-    : parseFloat(product.target_selling_price_per_unit || "0");
+  const price =
+    typeof product.target_selling_price_per_unit === "number"
+      ? product.target_selling_price_per_unit
+      : parseFloat(product.target_selling_price_per_unit || "0");
 
-  const hpp = typeof product.calculated_hpp_per_unit === "number"
-    ? product.calculated_hpp_per_unit
-    : parseFloat(product.calculated_hpp_per_unit || "0");
+  const hpp =
+    typeof product.calculated_hpp_per_unit === "number"
+      ? product.calculated_hpp_per_unit
+      : parseFloat(product.calculated_hpp_per_unit || "0");
 
-  const marginPct = typeof product.projected_margin_percentage === "number"
-    ? product.projected_margin_percentage
-    : parseFloat(product.projected_margin_percentage || "0");
+  const marginPct =
+    typeof product.projected_margin_percentage === "number"
+      ? product.projected_margin_percentage
+      : parseFloat(product.projected_margin_percentage || "0");
 
+  const batchUnits = product.expected_batch_units || 1;
   const recipes = product.recipes || [];
+  const estProfitPerBatch = Math.max(0, (price - hpp) * batchUnits);
 
-  const handleDeleteMenu = async () => {
-    if (!window.confirm(`Hapus menu "${product.product_name}" beserta resepnya?`)) {
+  const wastePrediction = React.useMemo(() => {
+    return getProductWastePrediction(product);
+  }, [product]);
+
+  const handleDeleteProduct = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!window.confirm(`Hapus produk "${product.product_name}" beserta resepnya?`)) {
       return;
     }
 
@@ -43,163 +57,151 @@ export function MenuCard({ product, onDeleted }: MenuCardProps) {
     try {
       const res = await deleteProductAction(product.id);
       if (res.success) {
-        toast.success(`Menu "${product.product_name}" berhasil dihapus.`);
+        toast.success(`Produk "${product.product_name}" berhasil dihapus.`);
         onDeleted(product.id);
       } else {
-        toast.error(res.message || "Gagal menghapus menu.");
+        toast.error(res.message || "Gagal menghapus produk.");
       }
     } catch {
-      toast.error("Terjadi kendala saat menghapus menu.");
+      toast.error("Terjadi kendala saat menghapus produk.");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const handleDeleteRecipe = async (recipeId: string, ingredientName: string) => {
-    try {
-      const res = await deleteRecipeItemAction(recipeId);
-      if (res.success) {
-        toast.success(`Bahan "${ingredientName}" dihapus dari resep.`);
-        onDeleted(product.id); // Trigger refetch
-      } else {
-        toast.error(res.message || "Gagal menghapus bahan.");
-      }
-    } catch {
-      toast.error("Terjadi kendala saat menghapus bahan.");
-    }
-  };
-
   return (
-    <Card className="rounded-2xl border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-all">
-      <CardHeader className="pb-3 flex flex-row items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="p-1.5 rounded-lg bg-primary-light text-primary">
-              <Utensils className="w-4 h-4" />
-            </span>
-            <CardTitle className="text-base sm:text-lg font-bold text-text-primary">
-              {product.product_name}
-            </CardTitle>
-            <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider">
-              {product.unit || "PORSI"}
+    <Card className="group flex flex-col justify-between rounded-2xl border-border bg-surface p-4 sm:p-5 shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong">
+      <div>
+        {/* Header: Meta Badge & Hapus */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Badge variant="primary" className="text-[10px] uppercase font-bold tracking-wider">
+              {product.unit || "Porsi"}
             </Badge>
-          </div>
-          <p className="text-xs text-text-secondary flex items-center gap-2">
-            <span>Siklus Batch: <strong>{product.expected_batch_units} {product.unit || "Unit"}</strong></span>
-            <span>&bull;</span>
-            <span>{recipes.length} Komponen Resep</span>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteMenu}
-            disabled={isDeleting}
-            className="text-text-muted hover:text-red-500 min-h-[36px] min-w-[36px] p-1.5"
-            aria-label="Hapus menu"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Metrik Finansial Hasil Kalkulasi Backend */}
-        <div className="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-surface-subtle/60 border border-border/80 text-xs">
-          <div>
-            <span className="text-[11px] text-text-secondary block">Harga Jual</span>
-            <span className="font-bold text-text-primary text-sm sm:text-base">
-              {formatCurrency(price)}
+            <span className="text-xs text-text-muted truncate">
+              {recipes.length} bahan &bull; {batchUnits} unit/batch
             </span>
           </div>
 
-          <div>
-            <span className="text-[11px] text-text-secondary block">HPP Terhitung</span>
-            <span className="font-bold text-amber-600 text-sm sm:text-base">
-              {formatCurrency(hpp)}
-            </span>
-          </div>
-
-          <div>
-            <span className="text-[11px] text-text-secondary block">Margin Laba</span>
-            <span className={`font-bold text-sm sm:text-base flex items-center gap-1 ${
-              marginPct >= 30 ? "text-emerald-600" : marginPct > 0 ? "text-primary" : "text-red-500"
-            }`}>
-              <TrendingUp className="w-3.5 h-3.5" />
-              {marginPct.toFixed(1)}%
-            </span>
-          </div>
-        </div>
-
-        {/* Collapsible Section Daftar Resep & Kebutuhan Bahan */}
-        <div className="border-t border-border/60 pt-3">
           <button
             type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full flex items-center justify-between text-xs font-bold text-text-secondary hover:text-text-primary transition-colors py-1"
+            onClick={handleDeleteProduct}
+            disabled={isDeleting}
+            className="size-7 flex items-center justify-center rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors cursor-pointer shrink-0 disabled:opacity-50"
+            aria-label="Hapus produk"
+            title="Hapus produk"
           >
-            <span className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-primary" />
-              Daftar Komposisi Resep &amp; Kebutuhan Batch ({recipes.length})
-            </span>
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <Trash2 className="size-3.5" />
           </button>
-
-          {isExpanded && (
-            <div className="mt-2.5 space-y-2">
-              {recipes.length === 0 ? (
-                <div className="p-3 text-center rounded-lg bg-surface text-xs text-text-muted flex items-center justify-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  Belum ada komponen resep yang didaftarkan.
-                </div>
-              ) : (
-                <div className="divide-y divide-border/60 rounded-xl border border-border/70 overflow-hidden bg-surface">
-                  {recipes.map((item) => {
-                    const reqQty = Number(item.required_qty_per_unit) || 0;
-                    const batchQty = Number(item.total_batch_required_qty) || (reqQty * product.expected_batch_units);
-                    const cost = Number(item.estimated_cost_per_unit) || 0;
-
-                    return (
-                      <div
-                        key={item.id}
-                        className="p-2.5 sm:px-3 flex items-center justify-between gap-3 text-xs"
-                      >
-                        <div className="min-w-0">
-                          <p className="font-semibold text-text-primary truncate">
-                            {item.ingredient_name}
-                          </p>
-                          <p className="text-[11px] text-text-secondary">
-                            Kebutuhan: <strong>{reqQty} {item.unit}</strong> per unit &bull; Total Batch: <strong>{batchQty} {item.unit}</strong>
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-3 shrink-0">
-                          {cost > 0 && (
-                            <span className="text-[11px] font-medium text-text-muted">
-                              {formatCurrency(cost)}
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteRecipe(item.id, item.ingredient_name)}
-                            className="text-text-muted hover:text-red-500 p-1"
-                            title="Hapus bahan dari resep"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
-      </CardContent>
+
+        {/* Nama Produk */}
+        <Link
+          href={`/produk/${product.id}`}
+          className="block group-hover:text-primary transition-colors mt-2.5"
+        >
+          <h3
+            className="font-heading font-bold text-base sm:text-lg text-text-primary line-clamp-1 leading-snug group-hover:text-primary transition-colors"
+            title={product.product_name}
+          >
+            {product.product_name}
+          </h3>
+        </Link>
+
+        {/* Snapshot Finansial: Harga Jual & Margin */}
+        <div className="rounded-xl bg-background p-3.5 border border-border/80 space-y-2.5 mt-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <div>
+              <span className="text-[11px] font-medium text-text-secondary block">
+                Harga Jual
+              </span>
+              <div className="flex items-baseline gap-1 mt-0.5">
+                <span className="font-heading font-extrabold text-lg sm:text-xl text-primary tabular-nums">
+                  {formatCurrency(price)}
+                </span>
+                <span className="text-xs font-semibold text-text-muted">
+                  / {product.unit || "Porsi"}
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[11px] font-medium text-text-secondary block">
+                Margin
+              </span>
+              <span
+                className={cn(
+                  "text-sm font-bold tabular-nums inline-block mt-0.5",
+                  marginPct >= 30
+                    ? "text-emerald-700"
+                    : marginPct > 0
+                    ? "text-primary"
+                    : "text-red-600"
+                )}
+              >
+                {marginPct > 0 ? `+${marginPct.toFixed(0)}%` : `${marginPct.toFixed(0)}%`}
+              </span>
+            </div>
+          </div>
+
+          {/* Sub-metrik: HPP & Proyeksi Laba */}
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-xs">
+            <div>
+              <span className="text-[10px] text-text-muted block">HPP Satuan</span>
+              <span className="font-semibold text-text-primary tabular-nums">
+                {formatCurrency(hpp)}
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-text-muted block">Proyeksi Laba</span>
+              <span className="font-semibold text-primary tabular-nums">
+                +{formatCurrency(estProfitPerBatch)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Potensi Residu Sirkular (Kompak & Bersih) */}
+        <div className="rounded-xl bg-circular-waste-light/50 border border-circular-waste/20 px-3 py-2 flex items-center justify-between text-xs mt-3">
+          <div>
+            <span className="text-[10px] text-circular-waste font-semibold block">
+              Potensi Residu Sirkular
+            </span>
+            <span className="text-xs font-medium text-text-secondary tabular-nums">
+              ~{wastePrediction.totalVolumeKg} kg / batch
+            </span>
+          </div>
+          <div className="text-right">
+            <span className="text-[10px] text-text-muted block">Valuasi</span>
+            <span className="text-xs font-bold text-circular-waste tabular-nums">
+              +{formatCurrency(wastePrediction.totalPotentialRevenuePerBatch)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Aksi Navigasi: Rincian Produk & Edit */}
+      <div className="flex items-center gap-2 pt-4 mt-auto">
+        <Link href={`/produk/${product.id}`} className="flex-1">
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            className="w-full font-bold text-xs min-h-[40px] shadow-xs cursor-pointer"
+          >
+            Detail
+          </Button>
+        </Link>
+        <Link href={`/produk/${product.id}/edit`}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="font-semibold text-xs min-h-[40px] px-4 cursor-pointer"
+          >
+            Edit
+          </Button>
+        </Link>
+      </div>
     </Card>
   );
 }
