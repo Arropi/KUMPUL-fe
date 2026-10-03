@@ -223,6 +223,7 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
           <BusinessStep
             userId={pendingUserId}
             email={email}
+            initialRole={(searchParams.get("role") as UserRole) || "umkm"}
             onBack={() => setViewMode("AUTH")}
             onSuccess={(target) => {
               window.location.href = target;
