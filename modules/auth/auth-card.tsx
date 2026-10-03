@@ -19,6 +19,8 @@ import {
   registerWithCredentialsAction,
   initiateGoogleAuthAction,
 } from "@/actions/auth";
+import { UserRole } from "@/constants/auth";
+import { RoleSwitcher } from "./role-switcher";
 import { BusinessStep } from "./business-step";
 
 export type AuthMode = "login" | "register";
@@ -45,6 +47,9 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
     searchParams.get("step") === "business" ? "BUSINESS_STEP" : "AUTH"
   );
   const [pendingUserId, setPendingUserId] = React.useState<string>("");
+  const [selectedRole, setSelectedRole] = React.useState<UserRole>(
+    (searchParams.get("role") as UserRole) || "umkm"
+  );
   const [errors, setErrors] = React.useState<Record<string, string | undefined>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isOAuthLoading, setIsOAuthLoading] = React.useState(false);
@@ -53,7 +58,15 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
   React.useEffect(() => {
     const m = searchParams.get("mode");
     if (m === "register" || m === "login") setMode(m);
-    if (searchParams.get("step") === "business") setViewMode("BUSINESS_STEP");
+    const r = searchParams.get("role");
+    if (r === "supplier" || r === "umkm") setSelectedRole(r);
+    if (searchParams.get("step") === "business") {
+      setViewMode("BUSINESS_STEP");
+      const urlEmail = searchParams.get("email");
+      if (urlEmail) setEmail(urlEmail);
+      const urlUserId = searchParams.get("userId");
+      if (urlUserId) setPendingUserId(urlUserId);
+    }
   }, [searchParams]);
 
   const handleSwitchMode = (targetMode: AuthMode) => {
@@ -116,6 +129,7 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
         const result = await loginWithCredentialsAction({
           email: email.trim(),
           password,
+          role: selectedRole,
           rememberMe,
         });
         setIsSubmitting(false);
@@ -150,7 +164,10 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
   const handleGoogleAuth = async () => {
     setIsOAuthLoading(true);
     try {
-      const result = await initiateGoogleAuthAction({ origin: window.location.origin });
+      const result = await initiateGoogleAuthAction({
+        origin: window.location.origin,
+        role: selectedRole,
+      });
       if (!result.success || !result.url) {
         setIsOAuthLoading(false);
         toast.error(result.error || "Gagal menginisiasi Google OAuth.", "Gagal Google");
@@ -181,8 +198,9 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
         </CardHeader>
         <CardContent className="px-6 sm:px-8 pb-7 pt-2">
           <BusinessStep
-            userId={pendingUserId}
-            email={email}
+            userId={pendingUserId || searchParams.get("userId") || ""}
+            email={email || searchParams.get("email") || ""}
+            initialRole={(searchParams.get("role") as UserRole) || selectedRole || "umkm"}
             onBack={() => setViewMode("AUTH")}
             onSuccess={(target) => {
               window.location.href = target;
@@ -218,6 +236,12 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
         </CardHeader>
 
         <CardContent className="px-6 sm:px-8 pb-7 sm:pb-8 pt-2 flex flex-col gap-3">
+          {mode === "login" && (
+            <div className="pb-1">
+              <RoleSwitcher activeRole={selectedRole} onRoleChange={setSelectedRole} />
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
             <FloatingInput
               id="auth-email"
@@ -337,7 +361,7 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
 
       <ForgotPasswordModal
         isOpen={isForgotPasswordOpen}
-        role="umkm"
+        role={selectedRole}
         onClose={() => setIsForgotPasswordOpen(false)}
         onSuccess={(msg) => toast.success(msg, "Tautan Terkirim")}
       />

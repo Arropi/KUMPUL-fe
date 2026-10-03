@@ -99,6 +99,10 @@ export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommo
     },
     imageUrl: be.image_url || undefined,
     createdAt: be.created_at || new Date().toISOString(),
+    allowsUnderMoq: be.allows_under_moq ?? false,
+    underMoqPricePerKg: be.under_moq_price_per_kg ? Number(be.under_moq_price_per_kg) : null,
+    productionDate: be.production_date || "2026-10-15",
+    expiryDate: "2027-04-15",
   };
 }
 

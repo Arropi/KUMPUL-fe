@@ -153,6 +153,9 @@ export function ProfileRolesCard({
         toast.success(`Berhasil beralih ke portal ${targetRole.toUpperCase()}.`);
         router.push(res.redirectTo);
         router.refresh();
+      } else if (res.requiresBusinessStep && res.redirectTo) {
+        toast.info(res.error || "Silakan lengkapi profil usaha Anda.", "Lengkapi Profil Usaha");
+        router.push(res.redirectTo);
       } else {
         window.location.href = `/api/auth/switch-role?to=${targetRole}&next=/home`;
       }

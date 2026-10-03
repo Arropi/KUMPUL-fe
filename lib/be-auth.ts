@@ -174,38 +174,5 @@ export interface BESwitchRoleResult {
   auto_created?: boolean;
 }
 
-/**
- * Hit POST /auth/switch-role ke Backend Express KUMPUL
- */
-export async function callBackendSwitchRole(payload: {
-  user_id: string;
-  role: "SUPPLIER" | "UMKM";
-  sector_type?: BESectorType;
-  storage_capacity?: number;
-  daily_capacity?: number;
-}): Promise<{ success: boolean; data?: BESwitchRoleResult; error?: string; errorCode?: string }> {
-  try {
-    const res = await fetch(`${BACKEND_API_URL}/auth/switch-role`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      cache: "no-store",
-    });
 
-    const json = await res.json().catch(() => null);
-
-    if (!res.ok || json?.status === "error") {
-      const msg = json?.message || `Switch role di backend gagal (HTTP ${res.status}).`;
-      return { success: false, error: msg, errorCode: json?.error_code };
-    }
-
-    return { success: true, data: json.data };
-  } catch (err: unknown) {
-    const msg =
-      err instanceof Error
-        ? `Gagal terhubung ke backend: ${err.message}`
-        : "Tidak dapat terhubung ke server backend KUMPUL.";
-    return { success: false, error: msg };
-  }
-}
 

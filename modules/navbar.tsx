@@ -9,8 +9,9 @@ import { ArrowLeftRight, LogOut, PanelLeftClose, PanelLeft, X } from "lucide-rea
 import { cn } from "@/lib/utils";
 import { UserRole, UserSession } from "@/constants/auth";
 import { getNavItemsForRole } from "@/constants/navigation";
-import { switchRoleAction, logoutAction } from "@/actions/auth";
+import { logoutAction } from "@/actions/auth";
 import { toast } from "@/components/ui/toast";
+import { switchRoleAction } from "@/actions/switch-role";
 
 export interface NavbarProps {
   role: UserRole;
@@ -46,8 +47,11 @@ export function Navbar({
           `Beralih ke peran ${targetRole === "supplier" ? "Supplier" : "UMKM"}.`,
           "Peran Diubah"
         );
-        router.push("/home");
+        router.push(res.redirectTo || "/home");
         router.refresh();
+      } else if (res.requiresBusinessStep && res.redirectTo) {
+        toast.info(res.error || "Silakan lengkapi profil usaha Anda.", "Lengkapi Profil Usaha");
+        router.push(res.redirectTo);
       } else {
         toast.error(res.error || "Gagal beralih peran usaha.", "Gagal");
       }

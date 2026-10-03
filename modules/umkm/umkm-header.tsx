@@ -27,18 +27,19 @@ export function UmkmHeader({ onToggleMobileNav }: UmkmHeaderProps) {
       const res = await switchRoleAction("supplier");
       if (res.success) {
         toast.success(
-          res.autoCreatedInDb
-            ? "Akun Mitra Supplier baru otomatis dibuat & diaktifkan."
-            : "Berhasil beralih ke portal Mitra Supplier.",
+          "Berhasil beralih ke portal Mitra Supplier.",
           "Beralih Peran Usaha"
         );
         router.push(res.redirectTo);
         router.refresh();
+      } else if (res.requiresBusinessStep && res.redirectTo) {
+        toast.info(res.error || "Silakan lengkapi profil Supplier Anda terlebih dahulu.", "Lengkapi Profil Usaha");
+        router.push(res.redirectTo);
       } else {
-        window.location.href = "/api/auth/switch-role?to=supplier&next=/supplier";
+        window.location.href = "/api/auth/switch-role?to=supplier&next=/home";
       }
     } catch {
-      window.location.href = "/api/auth/switch-role?to=supplier&next=/supplier";
+      window.location.href = "/api/auth/switch-role?to=supplier&next=/home";
     } finally {
       setIsSwitching(false);
     }

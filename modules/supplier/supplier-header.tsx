@@ -26,18 +26,19 @@ export function SupplierHeader({ onToggleMobileNav }: SupplierHeaderProps) {
       const res = await switchRoleAction("umkm");
       if (res.success) {
         toast.success(
-          res.autoCreatedInDb
-            ? "Akun Pelaku UMKM baru otomatis dibuat & diaktifkan."
-            : "Berhasil beralih ke portal Pelaku UMKM.",
+          "Berhasil beralih ke portal Pelaku UMKM.",
           "Beralih Peran Usaha"
         );
         router.push(res.redirectTo);
         router.refresh();
+      } else if (res.requiresBusinessStep && res.redirectTo) {
+        toast.info(res.error || "Silakan lengkapi profil UMKM Anda terlebih dahulu.", "Lengkapi Profil Usaha");
+        router.push(res.redirectTo);
       } else {
-        window.location.href = "/api/auth/switch-role?to=umkm&next=/umkm";
+        window.location.href = "/api/auth/switch-role?to=umkm&next=/home";
       }
     } catch {
-      window.location.href = "/api/auth/switch-role?to=umkm&next=/umkm";
+      window.location.href = "/api/auth/switch-role?to=umkm&next=/home";
     } finally {
       setIsSwitching(false);
     }

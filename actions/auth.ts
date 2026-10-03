@@ -9,7 +9,16 @@ import {
   BESectorType,
 } from "@/lib/be-auth";
 import { saveAuthCookies, clearAuthCookies } from "@/lib/auth-cookies";
-import { switchRoleAction as executeSwitchRole } from "./switch-role";
+import {
+  switchRoleAction as executeSwitchRole,
+  type SwitchRoleActionResult,
+} from "./switch-role";
+
+export async function switchRoleAction(
+  targetRole: UserRole
+): Promise<SwitchRoleActionResult> {
+  return executeSwitchRole(targetRole);
+}
 
 // Server Action: Login dengan Email & Password (Token Exchange Opsi A)
 export async function loginWithCredentialsAction(payload: {
@@ -366,19 +375,4 @@ export async function logoutAction(
   return { success: true, redirectTo };
 }
 
-/**
- * Server Action: Beralih Peran (Switch Role) UMKM <-> Supplier tanpa harus login kembali.
- * Didelegasikan ke actions/switch-role.ts untuk menjaga modularitas kode.
- */
-export async function switchRoleAction(
-  targetRole: UserRole
-): Promise<{
-  success: boolean;
-  user?: UserSession;
-  redirectTo: string;
-  autoCreatedInDb?: boolean;
-  error?: string;
-}> {
-  return executeSwitchRole(targetRole);
-}
 

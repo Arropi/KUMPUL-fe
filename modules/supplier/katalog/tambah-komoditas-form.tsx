@@ -169,7 +169,7 @@ export function TambahKomoditasForm() {
       {/* Header Form */}
       <div>
         <Link
-          href="/supplier/katalog"
+          href="/katalog"
           className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1 mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
         >
           &larr; Kembali ke Katalog
@@ -232,7 +232,7 @@ export function TambahKomoditasForm() {
 
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Link href="/supplier/katalog">
+          <Link href="/katalog">
             <Button
               type="button"
               variant="outline"
