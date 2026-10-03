@@ -250,34 +250,24 @@ export function Navbar({
           {/* Header Controls (Logo from /public/logo / Toggle Action) */}
           <div
             className={cn(
-              "flex w-full items-center shrink-0 min-h-[48px] pb-3 border-b border-border/70",
-              isOpen ? "justify-between gap-2 px-1" : "justify-center"
+              "flex w-full items-center shrink-0 min-h-[56px] pb-3 border-b border-border/70",
+              isOpen ? "justify-between gap-3 px-1.5" : "justify-center"
             )}
           >
             {isOpen && (
               <Link
                 href="/home"
-                className="flex items-center gap-2 min-w-0 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
+                className="flex items-center min-w-0 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-[0.98]"
               >
                 {/* Logo from /public/logo/without-bg.svg */}
                 <Image
                   src="/logo/without-bg.svg"
                   alt="KUMPUL Logo"
-                  width={110}
-                  height={32}
-                  className="h-7 w-auto object-contain shrink-0"
+                  width={160}
+                  height={52}
+                  className="h-11 w-auto max-w-[170px] object-contain shrink-0"
                   priority
                 />
-                <span
-                  className={cn(
-                    "text-[10px] font-heading font-bold px-1.5 py-0.5 rounded-md border shrink-0 uppercase tracking-wider",
-                    isSupplier
-                      ? "bg-accent/10 text-accent border-accent/20"
-                      : "bg-primary-light text-primary border-primary/20"
-                  )}
-                >
-                  {isSupplier ? "Supplier" : "UMKM"}
-                </span>
               </Link>
             )}
 
@@ -319,9 +309,18 @@ export function Navbar({
               transition={{ duration: 0.2 }}
               className="p-3 rounded-xl bg-surface-subtle border border-border/80 shadow-xs space-y-2"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-text-muted">Legalitas</span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-light text-primary border border-primary/20">
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className={cn(
+                    "text-[10px] font-heading font-bold px-2 py-0.5 rounded-md border shrink-0 uppercase tracking-wider",
+                    isSupplier
+                      ? "bg-accent/10 text-accent border-accent/20"
+                      : "bg-primary-light text-primary border-primary/20"
+                  )}
+                >
+                  {isSupplier ? "Supplier" : "UMKM"}
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface text-text-secondary border border-border/80 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   NIB Aktif
                 </span>
@@ -400,33 +399,23 @@ export function Navbar({
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <Link
                   href="/home"
-                  className="flex items-center gap-2"
+                  className="flex items-center min-w-0"
                   onClick={onCloseMobile}
                 >
                   <Image
                     src="/logo/without-bg.svg"
                     alt="KUMPUL Logo"
-                    width={110}
-                    height={32}
-                    className="h-7 w-auto object-contain shrink-0"
+                    width={160}
+                    height={52}
+                    className="h-11 w-auto max-w-[170px] object-contain shrink-0"
                     priority
                   />
-                  <span
-                    className={cn(
-                      "text-[10px] font-heading font-bold px-1.5 py-0.5 rounded-md border shrink-0 uppercase tracking-wider",
-                      isSupplier
-                        ? "bg-accent/10 text-accent border-accent/20"
-                        : "bg-primary-light text-primary border-primary/20"
-                    )}
-                  >
-                    {isSupplier ? "Supplier" : "UMKM"}
-                  </span>
                 </Link>
 
                 <button
                   type="button"
                   onClick={onCloseMobile}
-                  className="p-1.5 rounded-xl text-text-muted hover:text-text-primary min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer transition-colors"
+                  className="p-1.5 rounded-xl text-text-muted hover:text-text-primary min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer transition-colors"
                   aria-label="Tutup menu navigasi"
                 >
                   <X className="w-5 h-5" />
@@ -444,9 +433,18 @@ export function Navbar({
 
             {/* Mobile Footer */}
             <div className="p-3.5 rounded-xl bg-surface-subtle border border-border/80 shadow-xs space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-text-muted">Legalitas</span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-light text-primary border border-primary/20">
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className={cn(
+                    "text-[10px] font-heading font-bold px-2 py-0.5 rounded-md border shrink-0 uppercase tracking-wider",
+                    isSupplier
+                      ? "bg-accent/10 text-accent border-accent/20"
+                      : "bg-primary-light text-primary border-primary/20"
+                  )}
+                >
+                  {isSupplier ? "Supplier" : "UMKM"}
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface text-text-secondary border border-border/80 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   NIB Aktif
                 </span>

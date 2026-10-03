@@ -28,6 +28,63 @@ const FALLBACK_LOCATIONS = [
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
+  const latParam = searchParams.get("lat");
+  const lngParam = searchParams.get("lng");
+
+  // Handler Reverse Geocoding (Koordinat -> Nama Tempat)
+  if (latParam && lngParam) {
+    const lat = parseFloat(latParam);
+    const lng = parseFloat(lngParam);
+
+    if (!isNaN(lat) && !isNaN(lng)) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+        const reverseUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+        const res = await fetch(reverseUrl, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent": "KUMPUL-Platform/1.0 (ICOMFEST Supply Chain Ecosystem; info@kumpul.id)",
+            Accept: "application/json",
+            "Accept-Language": "id-ID,id;q=0.9,en;q=0.8",
+          },
+          next: { revalidate: 3600 },
+        });
+
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.display_name) {
+            const shortName = data.name || data.display_name.split(",")[0];
+            return NextResponse.json({
+              result: {
+                id: String(data.place_id || "reverse"),
+                name: shortName,
+                displayName: data.display_name,
+                lat,
+                lng,
+              },
+            });
+          }
+        }
+      } catch {
+        // Fallback jika nominatim reverse gagal / timeout
+      }
+
+      return NextResponse.json({
+        result: {
+          id: `coord-${lat.toFixed(4)}-${lng.toFixed(4)}`,
+          name: `Lokasi Terpilih (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+          displayName: `Titik Koordinat: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+          lat,
+          lng,
+        },
+      });
+    }
+  }
+
   const query = searchParams.get("q")?.trim() || "";
 
   if (!query || query.length < 2) {
