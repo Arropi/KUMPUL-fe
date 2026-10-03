@@ -30,16 +30,23 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
       onFocus,
       onBlur,
       placeholder,
+      onAnimationStart,
       ...props
     },
     ref
   ) => {
     const generatedId = React.useId();
     const inputId = id || generatedId;
+    const internalRef = React.useRef<HTMLInputElement | null>(null);
+
+    // Hubungkan forwarded ref dengan internal ref
+    React.useImperativeHandle(ref, () => internalRef.current as HTMLInputElement);
+
     const [focused, setFocused] = React.useState(false);
     const [showPassword, setShowPassword] = React.useState(false);
+    const [isAutofilled, setIsAutofilled] = React.useState(false);
 
-    // Deteksi apakah input memiliki nilai
+    // Deteksi awal apakah input memiliki nilai dari prop
     const hasValue =
       value !== undefined
         ? String(value).length > 0
@@ -49,13 +56,65 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
 
     const [hasText, setHasText] = React.useState(hasValue);
 
+    // Sinkronkan nilai DOM dengan state dan notifikasi parent bila browser mengisi via autofill
+    const checkSync = React.useCallback(() => {
+      if (!internalRef.current) return;
+      const el = internalRef.current;
+      const domVal = el.value || "";
+      const hasDomVal = domVal.length > 0;
+
+      let autofilled = false;
+      try {
+        autofilled =
+          el.matches(":-webkit-autofill") ||
+          el.matches(":autofill") ||
+          el.matches(":-moz-autofill");
+      } catch {
+        // Fallback untuk browser yang tidak mendukung selector matches pseudo-class
+      }
+
+      if (hasDomVal || autofilled) {
+        setHasText(true);
+        setIsAutofilled(true);
+
+        // Jika DOM memiliki nilai autofill tapi state parent belum tersinkron
+        if (domVal && domVal !== value && onChange) {
+          const syntheticEvent = {
+            target: el,
+            currentTarget: el,
+          } as React.ChangeEvent<HTMLInputElement>;
+          onChange(syntheticEvent);
+        }
+      } else if (!value && !defaultValue) {
+        setHasText(false);
+        setIsAutofilled(false);
+      }
+    }, [value, defaultValue, onChange]);
+
+    // Pantau perubahan prop value
     React.useEffect(() => {
       if (value !== undefined) {
         setHasText(String(value).length > 0);
       }
     }, [value]);
 
-    const isFloating = focused || hasText;
+    // Timer interval sinkronisasi saat pertama kali mount (untuk mengantisipasi delay autofill browser)
+    React.useEffect(() => {
+      checkSync();
+      const t1 = setTimeout(checkSync, 50);
+      const t2 = setTimeout(checkSync, 200);
+      const t3 = setTimeout(checkSync, 600);
+      const t4 = setTimeout(checkSync, 1200);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        clearTimeout(t4);
+      };
+    }, [checkSync]);
+
+    const isFloating = focused || hasText || isAutofilled;
     const inputType = isPassword ? (showPassword ? "text" : "password") : type;
 
     return (
@@ -63,20 +122,36 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
         <div className="relative flex items-center">
           <input
             id={inputId}
-            ref={ref}
+            ref={internalRef}
             type={inputType}
             value={value}
             defaultValue={defaultValue}
             placeholder={focused ? placeholder || " " : " "}
             data-slot="floating-input"
             aria-invalid={Boolean(error)}
+            onAnimationStart={(e) => {
+              if (
+                e.animationName.includes("onAutoFillStart") ||
+                e.animationName.toLowerCase().includes("autofill")
+              ) {
+                setIsAutofilled(true);
+                setHasText(true);
+                checkSync();
+              } else if (e.animationName.includes("onAutoFillCancel")) {
+                setIsAutofilled(false);
+                checkSync();
+              }
+              onAnimationStart?.(e);
+            }}
             onFocus={(e) => {
               setFocused(true);
+              checkSync();
               onFocus?.(e);
             }}
             onBlur={(e) => {
               setFocused(false);
               setHasText(e.target.value !== "");
+              checkSync();
               onBlur?.(e);
             }}
             onChange={(e) => {
@@ -108,7 +183,8 @@ export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputPro
                 : isFloating
                 ? "text-text-secondary"
                 : "text-text-muted",
-              // Fallback CSS murni untuk browser native autofill
+              // Fallback CSS murni untuk browser native autofill jika render delay
+              "peer-autofill:-top-2.5 peer-autofill:left-2.5 peer-autofill:px-1.5 peer-autofill:text-xs peer-autofill:font-semibold peer-autofill:bg-surface peer-autofill:text-text-secondary",
               "peer-focus:-top-2.5 peer-focus:left-2.5 peer-focus:px-1.5 peer-focus:text-xs peer-focus:font-semibold peer-focus:bg-surface",
               !error && "peer-focus:text-primary",
               "peer-[:not(:placeholder-shown)]:-top-2.5 peer-[:not(:placeholder-shown)]:left-2.5 peer-[:not(:placeholder-shown)]:px-1.5 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold peer-[:not(:placeholder-shown)]:bg-surface"

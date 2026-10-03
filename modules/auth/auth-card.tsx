@@ -69,6 +69,31 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
     }
   }, [searchParams]);
 
+  // Sinkronisasi otomatis saat browser mengisikan email & kata sandi via autofill
+  React.useEffect(() => {
+    const syncAutofillValues = () => {
+      const emailEl = document.getElementById("auth-email") as HTMLInputElement | null;
+      const passEl = document.getElementById("auth-password") as HTMLInputElement | null;
+
+      if (emailEl?.value && emailEl.value !== email) {
+        setEmail(emailEl.value);
+      }
+      if (passEl?.value && passEl.value !== password) {
+        setPassword(passEl.value);
+      }
+    };
+
+    syncAutofillValues();
+    const t1 = setTimeout(syncAutofillValues, 100);
+    const t2 = setTimeout(syncAutofillValues, 300);
+    const t3 = setTimeout(syncAutofillValues, 800);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [email, password]);
+
   const handleSwitchMode = (targetMode: AuthMode) => {
     setMode(targetMode);
     setErrors({});
@@ -78,16 +103,19 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
     router.replace(`?${newParams.toString()}`);
   };
 
-  const validate = () => {
+  const validate = (targetEmail?: string, targetPassword?: string) => {
+    const emailToValidate = (targetEmail !== undefined ? targetEmail : email).trim();
+    const passwordToValidate = targetPassword !== undefined ? targetPassword : password;
+
     const nextErrors: Record<string, string | undefined> = {};
-    if (!email.trim()) {
+    if (!emailToValidate) {
       nextErrors.email = "Alamat email operasional wajib diisi.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailToValidate)) {
       nextErrors.email = "Format alamat email tidak valid.";
     }
-    if (!password) {
+    if (!passwordToValidate) {
       nextErrors.password = "Kata sandi wajib diisi.";
-    } else if (password.length < 6) {
+    } else if (passwordToValidate.length < 6) {
       nextErrors.password = "Kata sandi minimal 6 karakter.";
     }
     setErrors(nextErrors);
@@ -97,15 +125,27 @@ export function AuthCard({ defaultMode = "login" }: AuthCardProps) {
   // Submit Handler: Tetap membedakan function register vs login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+
+    // Baca nilai langsung dari elemen DOM jika browser meng-autofill tanpa event change
+    const form = e.currentTarget as HTMLFormElement;
+    const emailEl = form.querySelector<HTMLInputElement>("#auth-email");
+    const passEl = form.querySelector<HTMLInputElement>("#auth-password");
+
+    const effectiveEmail = (email || emailEl?.value || "").trim();
+    const effectivePassword = password || passEl?.value || "";
+
+    if (effectiveEmail !== email) setEmail(effectiveEmail);
+    if (effectivePassword !== password) setPassword(effectivePassword);
+
+    if (!validate(effectiveEmail, effectivePassword)) return;
     setIsSubmitting(true);
 
     try {
       if (mode === "register") {
         // FUNCTION: Register akun Supabase lalu cek login token BE
         const result = await registerWithCredentialsAction({
-          email: email.trim(),
-          password,
+          email: effectiveEmail,
+          password: effectivePassword,
         });
         setIsSubmitting(false);
 
