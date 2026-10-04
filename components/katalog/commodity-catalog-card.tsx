@@ -8,7 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { ShoppingCart, ArrowRight, Sparkles, BarChart2 } from "lucide-react";
+import { ShoppingCart, ArrowRight, Sparkles, BarChart2, AlertTriangle } from "lucide-react";
+
+export interface CriticalStockNotice {
+  daysRemaining: number;
+  linkedMenu: string;
+  suggestedQty?: number;
+  unit?: string;
+}
 
 interface CommodityCatalogCardProps {
   item: SupplierCommodity;
@@ -16,6 +23,7 @@ interface CommodityCatalogCardProps {
   role?: "umkm" | "supplier";
   recipeTag?: string;
   benchmarkTag?: string;
+  criticalStockNotice?: CriticalStockNotice;
   onPurchase?: (item: SupplierCommodity) => void;
 }
 
@@ -25,6 +33,7 @@ export function CommodityCatalogCard({
   role = "umkm",
   recipeTag,
   benchmarkTag,
+  criticalStockNotice,
   onPurchase,
 }: CommodityCatalogCardProps) {
   const [imgError, setImgError] = React.useState(false);
@@ -111,15 +120,38 @@ export function CommodityCatalogCard({
       {/* Konten Card */}
       <div className="flex flex-1 flex-col pt-3.5 space-y-3">
         <div>
-          {/* Recipe Match Tag for UMKM */}
-          {recipeTag && (
+          {/* Critical Kitchen Stock Notice (brief.md Seksi 4.2) */}
+          {criticalStockNotice ? (
+            <div className="mb-2 space-y-1">
+              <div
+                className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border shadow-xs max-w-full ${
+                  criticalStockNotice.daysRemaining <= 1.0
+                    ? "text-red-700 bg-red-50 border-red-200"
+                    : "text-amber-800 bg-amber-50 border-amber-200"
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-600 animate-pulse" />
+                <span className="truncate">
+                  Stok Kritis Dapur (Sisa {criticalStockNotice.daysRemaining} Hari) &bull; Kebutuhan {criticalStockNotice.linkedMenu}
+                </span>
+              </div>
+              {criticalStockNotice.suggestedQty ? (
+                <div className="flex items-center justify-between text-[10px] text-text-secondary px-0.5 font-medium">
+                  <span>Saran Pengadaan 7 Hari:</span>
+                  <span className="font-bold text-text-primary">
+                    {criticalStockNotice.suggestedQty} {criticalStockNotice.unit || item.wholesaleUnit}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          ) : recipeTag ? (
             <div className="mb-2">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg shadow-xs">
                 <Sparkles className="w-3 h-3 text-emerald-600 shrink-0" />
                 <span className="truncate">{recipeTag}</span>
               </span>
             </div>
-          )}
+          ) : null}
 
           {/* Benchmark Tag for Supplier */}
           {benchmarkTag && (

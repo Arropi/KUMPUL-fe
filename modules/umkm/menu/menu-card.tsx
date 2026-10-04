@@ -1,205 +1,251 @@
 "use client";
 
 import * as React from "react";
-import { Utensils, Trash2, ChevronDown, ChevronUp, Layers, TrendingUp, AlertCircle } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import {
+  Trash2,
+  Pencil,
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog3 } from "@/components/ui/dialog-3";
 import { toast } from "@/components/ui/toast";
 import type { BEProduct } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
-import { deleteProductAction, deleteRecipeItemAction } from "@/actions/products";
+import { deleteProductAction } from "@/actions/products";
+import { calculateCircularMargin } from "@/lib/menu-intelligence";
 
 interface MenuCardProps {
   product: BEProduct;
   onDeleted: (productId: string) => void;
+  onEdit?: (product: BEProduct) => void;
   onRecipeUpdated?: (product: BEProduct) => void;
 }
 
-export function MenuCard({ product, onDeleted }: MenuCardProps) {
-  const [isExpanded, setIsExpanded] = React.useState(true);
+export function MenuCard({ product, onDeleted, onEdit }: MenuCardProps) {
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
-  const price = typeof product.target_selling_price_per_unit === "number"
-    ? product.target_selling_price_per_unit
-    : parseFloat(product.target_selling_price_per_unit || "0");
+  // Komputasi komparasi margin finansial sirkular
+  const fin = React.useMemo(() => {
+    return calculateCircularMargin(product);
+  }, [product]);
 
-  const hpp = typeof product.calculated_hpp_per_unit === "number"
-    ? product.calculated_hpp_per_unit
-    : parseFloat(product.calculated_hpp_per_unit || "0");
+  const batchUnits = product.expected_batch_units || 50;
+  const iterationsPerDay = product.production_iterations_per_day || 2;
+  const dailyOutput = batchUnits * iterationsPerDay;
 
-  const marginPct = typeof product.projected_margin_percentage === "number"
-    ? product.projected_margin_percentage
-    : parseFloat(product.projected_margin_percentage || "0");
-
-  const recipes = product.recipes || [];
-
-  const handleDeleteMenu = async () => {
-    if (!window.confirm(`Hapus menu "${product.product_name}" beserta resepnya?`)) {
-      return;
-    }
-
+  const executeDeleteProduct = async () => {
     setIsDeleting(true);
     try {
       const res = await deleteProductAction(product.id);
       if (res.success) {
-        toast.success(`Menu "${product.product_name}" berhasil dihapus.`);
+        toast.success(`Produk "${product.product_name}" berhasil dihapus.`);
         onDeleted(product.id);
+        setIsDeleteDialogOpen(false);
       } else {
-        toast.error(res.message || "Gagal menghapus menu.");
+        toast.error(res.message || "Gagal menghapus produk.");
       }
     } catch {
-      toast.error("Terjadi kendala saat menghapus menu.");
+      toast.error("Terjadi kendala saat menghapus produk.");
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const handleDeleteRecipe = async (recipeId: string, ingredientName: string) => {
-    try {
-      const res = await deleteRecipeItemAction(recipeId);
-      if (res.success) {
-        toast.success(`Bahan "${ingredientName}" dihapus dari resep.`);
-        onDeleted(product.id); // Trigger refetch
-      } else {
-        toast.error(res.message || "Gagal menghapus bahan.");
-      }
-    } catch {
-      toast.error("Terjadi kendala saat menghapus bahan.");
-    }
-  };
-
   return (
-    <Card className="rounded-2xl border border-border shadow-elevation-1 hover:shadow-elevation-2 transition-all">
-      <CardHeader className="pb-3 flex flex-row items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="p-1.5 rounded-lg bg-primary-light text-primary">
-              <Utensils className="w-4 h-4" />
-            </span>
-            <CardTitle className="text-base sm:text-lg font-bold text-text-primary">
-              {product.product_name}
-            </CardTitle>
-            <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider">
-              {product.unit || "PORSI"}
-            </Badge>
-          </div>
-          <p className="text-xs text-text-secondary flex items-center gap-2">
-            <span>Siklus Batch: <strong>{product.expected_batch_units} {product.unit || "Unit"}</strong></span>
-            <span>&bull;</span>
-            <span>{recipes.length} Komponen Resep</span>
-          </p>
-        </div>
+    <>
+      <Card className="group flex flex-col justify-between rounded-2xl border-border bg-surface p-4 sm:p-5 shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong gap-3.5">
+        <div className="space-y-3">
+          {/* 1. Header: Nama Produk & Tombol Hapus */}
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="min-w-0 flex-1">
+              <Link
+                href={`/produk/${product.id}`}
+                className="block group-hover:text-primary transition-colors"
+              >
+                <h3
+                  className="font-heading font-bold text-base sm:text-lg text-text-primary line-clamp-1 leading-snug group-hover:text-primary transition-colors"
+                  title={product.product_name}
+                >
+                  {product.product_name}
+                </h3>
+              </Link>
+              <span className="text-[11px] text-text-secondary block mt-0.5">
+                {iterationsPerDay} sesi/hari &bull; {batchUnits} {product.unit || "unit"}/sesi ({dailyOutput} {product.unit || "unit"}/hari)
+              </span>
+            </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteMenu}
-            disabled={isDeleting}
-            className="text-text-muted hover:text-red-500 min-h-[36px] min-w-[36px] p-1.5"
-            aria-label="Hapus menu"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Metrik Finansial Hasil Kalkulasi Backend */}
-        <div className="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-surface-subtle/60 border border-border/80 text-xs">
-          <div>
-            <span className="text-[11px] text-text-secondary block">Harga Jual</span>
-            <span className="font-bold text-text-primary text-sm sm:text-base">
-              {formatCurrency(price)}
-            </span>
+            {/* Tombol Hapus Jelas & Terlihat */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDeleteDialogOpen(true);
+              }}
+              disabled={isDeleting}
+              className="size-8.5 rounded-xl flex items-center justify-center bg-red-50 text-red-600 border border-red-200/90 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-all shadow-xs cursor-pointer shrink-0 disabled:opacity-50"
+              aria-label={`Hapus produk ${product.product_name}`}
+              title={`Hapus produk ${product.product_name}`}
+            >
+              <Trash2 className="size-4 text-red-600" />
+            </button>
           </div>
 
-          <div>
-            <span className="text-[11px] text-text-secondary block">HPP Terhitung</span>
-            <span className="font-bold text-amber-600 text-sm sm:text-base">
-              {formatCurrency(hpp)}
-            </span>
-          </div>
+          {/* 2. Analisis Margin Finansial Komparatif (brief.md Seksi 3.2) */}
+          <div className="rounded-xl bg-background border border-border/80 p-3 space-y-2.5">
+            {/* Harga Jual Utama */}
+            <div className="flex items-baseline justify-between gap-2 pb-2 border-b border-border/60">
+              <div>
+                <span className="text-[10px] font-medium text-text-secondary block">
+                  Harga Jual
+                </span>
+                <span className="font-heading font-extrabold text-base sm:text-lg text-primary tabular-nums">
+                  {formatCurrency(fin.sellingPrice)}
+                </span>
+                <span className="text-xs text-text-muted font-normal ml-1">
+                  / {product.unit || "Porsi"}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-medium text-text-secondary block">
+                  HPP Pokok
+                </span>
+                <span className="text-xs font-bold text-text-primary tabular-nums">
+                  {formatCurrency(fin.hppPerUnit)}
+                </span>
+              </div>
+            </div>
 
-          <div>
-            <span className="text-[11px] text-text-secondary block">Margin Laba</span>
-            <span className={`font-bold text-sm sm:text-base flex items-center gap-1 ${
-              marginPct >= 30 ? "text-emerald-600" : marginPct > 0 ? "text-primary" : "text-red-500"
-            }`}>
-              <TrendingUp className="w-3.5 h-3.5" />
-              {marginPct.toFixed(1)}%
-            </span>
-          </div>
-        </div>
-
-        {/* Collapsible Section Daftar Resep & Kebutuhan Bahan */}
-        <div className="border-t border-border/60 pt-3">
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full flex items-center justify-between text-xs font-bold text-text-secondary hover:text-text-primary transition-colors py-1"
-          >
-            <span className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-primary" />
-              Daftar Komposisi Resep &amp; Kebutuhan Batch ({recipes.length})
-            </span>
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-
-          {isExpanded && (
-            <div className="mt-2.5 space-y-2">
-              {recipes.length === 0 ? (
-                <div className="p-3 text-center rounded-lg bg-surface text-xs text-text-muted flex items-center justify-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  Belum ada komponen resep yang didaftarkan.
+            {/* Komparasi 2 Skenario Berdampingan */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {/* Skenario A: Konvensional */}
+              <div className="p-2 rounded-lg bg-surface-subtle/80 border border-border/50 space-y-0.5">
+                <span className="text-[10px] text-text-muted block font-medium">
+                  Margin Murni
+                </span>
+                <div className="flex items-baseline justify-between">
+                  <span className="font-bold text-text-primary tabular-nums text-xs sm:text-sm">
+                    {fin.pureMarginPercentage.toFixed(1)}%
+                  </span>
+                  <span className="text-[10px] text-text-muted tabular-nums">
+                    +{formatCurrency(fin.pureProfitPerUnit)}
+                  </span>
                 </div>
-              ) : (
-                <div className="divide-y divide-border/60 rounded-xl border border-border/70 overflow-hidden bg-surface">
-                  {recipes.map((item) => {
-                    const reqQty = Number(item.required_qty_per_unit) || 0;
-                    const batchQty = Number(item.total_batch_required_qty) || (reqQty * product.expected_batch_units);
-                    const cost = Number(item.estimated_cost_per_unit) || 0;
+              </div>
 
-                    return (
+              {/* Skenario B: Sirkular KUMPUL */}
+              <div className="p-2 rounded-lg bg-circular-waste-light/60 border border-circular-waste/25 space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-circular-waste font-semibold block">
+                    Margin Sirkular
+                  </span>
+                  <span className="text-[9px] font-bold text-circular-waste bg-white/80 px-1 rounded">
+                    +{fin.circularBoostPercentage.toFixed(1)}% Boost
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="font-bold text-circular-waste tabular-nums text-xs sm:text-sm">
+                    {fin.circularMarginPercentage.toFixed(1)}%
+                  </span>
+                  <span className="text-[10px] text-circular-waste tabular-nums">
+                    +{formatCurrency(fin.circularProfitPerUnit)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cashflow Tambahan Limbah Dapur & Rincian Limbah */}
+            <div className="pt-2 border-t border-border/60 space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-text-secondary font-medium">
+                  Cashflow Limbah:
+                </span>
+                <span className="font-bold text-circular-waste tabular-nums">
+                  +{formatCurrency(fin.dailyWasteRevenue)} / hari
+                </span>
+              </div>
+
+              {/* Rincian Limbah yang Dihasilkan */}
+              {fin.wasteItems && fin.wasteItems.length > 0 && (
+                <div className="rounded-lg bg-surface-subtle/80 border border-border/60 p-2 space-y-1 text-[11px]">
+                  <span className="font-semibold text-text-muted text-[10px] uppercase tracking-wider block">
+                    Limbah yang Dihasilkan:
+                  </span>
+                  <div className="space-y-1">
+                    {fin.wasteItems.map((w, idx) => (
                       <div
-                        key={item.id}
-                        className="p-2.5 sm:px-3 flex items-center justify-between gap-3 text-xs"
+                        key={idx}
+                        className="flex items-center justify-between gap-1 text-text-secondary text-[11px]"
                       >
-                        <div className="min-w-0">
-                          <p className="font-semibold text-text-primary truncate">
-                            {item.ingredient_name}
-                          </p>
-                          <p className="text-[11px] text-text-secondary">
-                            Kebutuhan: <strong>{reqQty} {item.unit}</strong> per unit &bull; Total Batch: <strong>{batchQty} {item.unit}</strong>
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-3 shrink-0">
-                          {cost > 0 && (
-                            <span className="text-[11px] font-medium text-text-muted">
-                              {formatCurrency(cost)}
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteRecipe(item.id, item.ingredient_name)}
-                            className="text-text-muted hover:text-red-500 p-1"
-                            title="Hapus bahan dari resep"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <span className="truncate">
+                          &bull; {w.name} ({w.dailyVolume} {w.unit}/hari)
+                        </span>
+                        <span className="font-semibold text-circular-waste shrink-0 tabular-nums">
+                          +{formatCurrency(w.dailyRevenue)}
+                        </span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* 5. Aksi Navigasi: Rincian Produk & Edit Langsung (Modal Edit) */}
+        <div className="flex items-center gap-2 pt-3.5 mt-auto border-t border-border/60">
+          <Button
+            asChild
+            variant="primary"
+            size="sm"
+            className="flex-1"
+          >
+            <Link href={`/produk/${product.id}`}>
+              Detail
+            </Link>
+          </Button>
+
+          {onEdit ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => onEdit(product)}
+              className="px-3.5 gap-1.5"
+            >
+              <Pencil className="size-3.5" />
+              <span>Edit</span>
+            </Button>
+          ) : (
+            <Button
+              asChild
+              variant="secondary"
+              size="sm"
+              className="px-3.5 gap-1.5"
+            >
+              <Link href={`/produk/${product.id}/edit`}>
+                <Pencil className="size-3.5" />
+                <span>Edit</span>
+              </Link>
+            </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </Card>
+
+      {/* Dialog 3 Destructive Confirmation dari Watermelon UI */}
+      <Dialog3
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title={`Hapus Produk "${product.product_name}"?`}
+        description="Tindakan ini permanen dan tidak dapat dibatalkan. Seluruh spesifikasi resep dan kalkulasi HPP terkait akan dihapus."
+        checkboxLabel="Saya paham bahwa tindakan ini tidak dapat dibatalkan"
+        confirmLabel="Hapus Produk"
+        cancelLabel="Batal"
+        isLoading={isDeleting}
+        onConfirm={executeDeleteProduct}
+      />
+    </>
   );
 }

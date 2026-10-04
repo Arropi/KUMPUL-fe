@@ -248,51 +248,53 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
         </div>
 
         {/* Table Watermelon UI */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nama Usaha &amp; Kontak</TableHead>
-              <TableHead>Kuota Dipesan</TableHead>
-              <TableHead>Metode Pengiriman</TableHead>
-              <TableHead>Bagi Ongkir (Split-Bill)</TableHead>
-              <TableHead className="text-right">Subtotal Belanja</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {po.participants.map((part) => (
-              <TableRow key={part.id}>
-                <TableCell className="align-top">
-                  <p className="font-heading font-bold text-sm text-text-primary">{part.umkmName}</p>
-                  <p className="text-[11px] text-text-muted mt-0.5 tabular-nums">{part.ownerName} &bull; {part.phone}</p>
-                </TableCell>
-                <TableCell className="align-top">
-                  <p className="font-bold text-text-primary tabular-nums">{part.orderQtyUnit} {po.wholesaleUnit}</p>
-                  <p className="text-[11px] text-text-muted tabular-nums">{part.orderWeightKg} kg</p>
-                </TableCell>
-                <TableCell className="align-top">
-                  {part.deliveryMethod === "HEMAT_HUB" ? (
-                    <Badge variant="primary">
-                      Opsi Hemat (Hub)
-                    </Badge>
-                  ) : (
-                    <Badge variant="warning">
-                      Direct (Door-to-Door)
-                    </Badge>
-                  )}
-                  <p className="text-[11px] text-text-muted mt-1 line-clamp-1 max-w-xs text-pretty">
-                    {part.destinationAddress}
-                  </p>
-                </TableCell>
-                <TableCell className="align-top font-medium text-text-secondary tabular-nums">
-                  {formatCurrency(part.allocatedShippingFee)}
-                </TableCell>
-                <TableCell className="align-top text-right font-extrabold text-primary tabular-nums">
-                  {formatCurrency(part.subtotalAmount)}
-                </TableCell>
+        <div className="overflow-hidden rounded-xl border border-border shadow-xs bg-surface">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nama Usaha &amp; Kontak</TableHead>
+                <TableHead>Kuota Dipesan</TableHead>
+                <TableHead>Metode Pengiriman</TableHead>
+                <TableHead>Bagi Ongkir (Split-Bill)</TableHead>
+                <TableHead className="text-right">Subtotal Belanja</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {po.participants.map((part) => (
+                <TableRow key={part.id}>
+                  <TableCell className="align-top">
+                    <p className="font-heading font-bold text-sm text-text-primary">{part.umkmName}</p>
+                    <p className="text-[11px] text-text-muted mt-0.5 tabular-nums">{part.ownerName} &bull; {part.phone}</p>
+                  </TableCell>
+                  <TableCell className="align-top">
+                    <p className="font-bold text-text-primary tabular-nums">{part.orderQtyUnit} {po.wholesaleUnit}</p>
+                    <p className="text-[11px] text-text-muted tabular-nums">{part.orderWeightKg} kg</p>
+                  </TableCell>
+                  <TableCell className="align-top">
+                    {part.deliveryMethod === "HEMAT_HUB" ? (
+                      <Badge variant="primary">
+                        Opsi Hemat (Hub)
+                      </Badge>
+                    ) : (
+                      <Badge variant="warning">
+                        Direct (Door-to-Door)
+                      </Badge>
+                    )}
+                    <p className="text-[11px] text-text-muted mt-1 line-clamp-1 max-w-xs text-pretty">
+                      {part.destinationAddress}
+                    </p>
+                  </TableCell>
+                  <TableCell className="align-top font-medium text-text-secondary tabular-nums">
+                    {formatCurrency(part.allocatedShippingFee)}
+                  </TableCell>
+                  <TableCell className="align-top text-right font-extrabold text-primary tabular-nums">
+                    {formatCurrency(part.subtotalAmount)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       {/* Modal Input Resi & Armada (Saat Berangkatkan Pengiriman) */}

@@ -5,6 +5,7 @@ export interface BEProduct {
   unit: string;
   target_selling_price_per_unit: string | number;
   expected_batch_units: number;
+  production_iterations_per_day?: number;
   calculated_hpp_per_unit: string | number;
   projected_margin_percentage: string | number;
   created_at?: string;
