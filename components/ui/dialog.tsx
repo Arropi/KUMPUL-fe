@@ -95,7 +95,7 @@ export function DialogContent({ className, children, ...props }: DialogContentPr
     >
       <div
         className={cn(
-          "relative w-full max-w-lg rounded-3xl bg-surface border border-border p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto overscroll-contain",
+          "relative w-full max-w-lg rounded-3xl bg-surface border border-border p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto overscroll-contain custom-scrollbar",
           className
         )}
         {...props}

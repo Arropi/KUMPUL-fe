@@ -2,29 +2,93 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Search, ShoppingCart } from "lucide-react";
+import { Plus, Search, ShoppingCart, ArrowUpDown, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 import { MenuAddDialog } from "./menu/menu-add-dialog";
 import { MenuCard } from "./menu/menu-card";
+import { KitchenInventorySection } from "./menu/kitchen-inventory-section";
 import { getUmkmProductsAction } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
+import { DEFAULT_SEED_PRODUCTS, calculateCircularMargin } from "@/lib/menu-intelligence";
+
+export type MenuSortOption =
+  | "MARGIN_DESC"
+  | "CIRCULAR_BOOST"
+  | "OUTPUT_DESC"
+  | "PRICE_DESC"
+  | "PRICE_ASC"
+  | "NAME_ASC";
+
+export const MENU_SORT_OPTIONS: { value: MenuSortOption; label: string; description: string }[] = [
+  {
+    value: "MARGIN_DESC",
+    label: "Margin Tertinggi (Prioritas Jual)",
+    description: "Urutkan menu dengan persentase laba bersih terbesar",
+  },
+  {
+    value: "CIRCULAR_BOOST",
+    label: "Laba Sirkular Terbesar (+Limbah)",
+    description: "Urutkan menu dengan potensi tambahan pendapatan residu tertinggi",
+  },
+  {
+    value: "OUTPUT_DESC",
+    label: "Volume Produksi Tertinggi",
+    description: "Urutkan menu dengan kapasitas porsi harian terbanyak",
+  },
+  {
+    value: "PRICE_DESC",
+    label: "Harga Jual Tertinggi",
+    description: "Dari menu harga premium ke ekonomis",
+  },
+  {
+    value: "PRICE_ASC",
+    label: "Harga Jual Terendah",
+    description: "Dari menu harga ekonomis ke premium",
+  },
+  {
+    value: "NAME_ASC",
+    label: "Nama Produk (A - Z)",
+    description: "Urutan alfabetis nama menu",
+  },
+];
 
 export function UmkmMenuView() {
   const [products, setProducts] = React.useState<BEProduct[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [sortBy, setSortBy] = React.useState<MenuSortOption>("MARGIN_DESC");
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [editingProduct, setEditingProduct] = React.useState<BEProduct | null>(null);
 
   const loadProducts = React.useCallback(async () => {
     try {
       const res = await getUmkmProductsAction();
-      if (res.success) {
+      if (res.success && res.data && res.data.length > 0) {
         setProducts(res.data);
       } else {
-        toast.error(res.message || "Gagal memuat daftar produk dari backend");
+        let localMocks: BEProduct[] = [];
+        try {
+          const saved = localStorage.getItem("kumpul_mock_products");
+          if (saved) localMocks = JSON.parse(saved);
+        } catch {}
+        if (localMocks.length > 0) {
+          setProducts(localMocks);
+        } else {
+          setProducts(DEFAULT_SEED_PRODUCTS);
+          try {
+            localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
+          } catch {}
+        }
       }
     } catch {
       toast.error("Gagal terhubung ke backend");
@@ -50,6 +114,12 @@ export function UmkmMenuView() {
             setProducts([...uniqueMocks, ...res.data]);
           } else if (localMocks.length > 0) {
             setProducts(localMocks);
+          } else {
+            // Seed awal produk realistis sesuai brief.md
+            setProducts(DEFAULT_SEED_PRODUCTS);
+            try {
+              localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
+            } catch {}
           }
         }
       })
@@ -57,7 +127,12 @@ export function UmkmMenuView() {
         if (!ignore) {
           try {
             const saved = localStorage.getItem("kumpul_mock_products");
-            if (saved) setProducts(JSON.parse(saved));
+            if (saved) {
+              setProducts(JSON.parse(saved));
+            } else {
+              setProducts(DEFAULT_SEED_PRODUCTS);
+              localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
+            }
           } catch {}
         }
       })
@@ -96,15 +171,54 @@ export function UmkmMenuView() {
     });
   };
 
-  const filteredProducts = React.useMemo(() => {
-    if (!searchQuery.trim()) return products;
-    const q = searchQuery.toLowerCase();
-    return products.filter(
-      (p) =>
-        p.product_name.toLowerCase().includes(q) ||
-        p.recipes?.some((r) => r.ingredient_name.toLowerCase().includes(q))
-    );
-  }, [products, searchQuery]);
+  const handleEditProduct = (prod: BEProduct) => {
+    setEditingProduct(prod);
+    setIsAddModalOpen(true);
+  };
+
+  const processedProducts = React.useMemo(() => {
+    let result = products;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.product_name.toLowerCase().includes(q) ||
+          p.recipes?.some((r) => r.ingredient_name.toLowerCase().includes(q))
+      );
+    }
+
+    return [...result].sort((a, b) => {
+      const finA = calculateCircularMargin(a);
+      const finB = calculateCircularMargin(b);
+
+      switch (sortBy) {
+        case "MARGIN_DESC":
+          return finB.pureMarginPercentage - finA.pureMarginPercentage;
+
+        case "CIRCULAR_BOOST":
+          return finB.dailyWasteRevenue - finA.dailyWasteRevenue;
+
+        case "OUTPUT_DESC": {
+          const outA = (a.expected_batch_units || 50) * (a.production_iterations_per_day || 2);
+          const outB = (b.expected_batch_units || 50) * (b.production_iterations_per_day || 2);
+          return outB - outA;
+        }
+
+        case "PRICE_DESC":
+          return finB.sellingPrice - finA.sellingPrice;
+
+        case "PRICE_ASC":
+          return finA.sellingPrice - finB.sellingPrice;
+
+        case "NAME_ASC":
+          return a.product_name.localeCompare(b.product_name);
+
+        default:
+          return 0;
+      }
+    });
+  }, [products, searchQuery, sortBy]);
 
   return (
     <div className="space-y-6">
@@ -124,7 +238,10 @@ export function UmkmMenuView() {
             type="button"
             variant="primary"
             size="md"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setEditingProduct(null);
+              setIsAddModalOpen(true);
+            }}
             className="min-h-[44px] gap-2 font-semibold px-4 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
@@ -133,9 +250,10 @@ export function UmkmMenuView() {
         </div>
       </div>
 
-      {/* 2. Search & Aggregated Notice */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-        <div className="md:col-span-8 relative">
+      {/* 2. Search, Sort Dropdown & Quick Link */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {/* Kolom Pencarian */}
+        <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <Input
             type="text"
@@ -146,22 +264,66 @@ export function UmkmMenuView() {
           />
         </div>
 
-        <div className="md:col-span-4 flex items-center justify-end">
-          <Link href="/home" className="w-full">
+        {/* Dropdown Sortir Produk */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button
               type="button"
               variant="outline"
               size="md"
-              className="w-full min-h-[44px] text-xs font-semibold gap-2 border-primary/30 text-primary hover:bg-primary-light"
+              className="min-h-[44px] h-11 px-3.5 gap-2 rounded-xl text-xs font-semibold border-border bg-surface hover:bg-surface-subtle shrink-0 cursor-pointer justify-between sm:justify-start"
             >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Beli Pasokan di Bursa</span>
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                <span className="text-text-secondary font-normal">Urutkan:</span>
+                <span className="font-bold text-text-primary">
+                  {MENU_SORT_OPTIONS.find((o) => o.value === sortBy)?.label.split(" (")[0]}
+                </span>
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-text-muted ml-0.5 shrink-0" />
             </Button>
-          </Link>
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72 p-1.5 rounded-2xl shadow-elevation-2">
+            <div className="px-2.5 py-1.5 text-[11px] font-bold text-text-muted uppercase tracking-wider border-b border-border/60 mb-1">
+              Urutkan Produk
+            </div>
+            <DropdownMenuRadioGroup
+              value={sortBy}
+              onValueChange={(val) => setSortBy(val as MenuSortOption)}
+            >
+              {MENU_SORT_OPTIONS.map((opt) => (
+                <DropdownMenuRadioItem
+                  key={opt.value}
+                  value={opt.value}
+                  className="flex flex-col items-start gap-0.5 py-2 px-3 rounded-xl cursor-pointer hover:bg-surface-subtle"
+                >
+                  <span className="font-bold text-xs text-text-primary">
+                    {opt.label}
+                  </span>
+                  <span className="text-[10px] text-text-secondary leading-tight">
+                    {opt.description}
+                  </span>
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Tombol Beli Pasokan di Bursa */}
+        <Link href="/home" className="shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="md"
+            className="w-full sm:w-auto min-h-[44px] h-11 text-xs font-semibold gap-2 border-primary/30 text-primary hover:bg-primary-light rounded-xl px-4 cursor-pointer"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>Beli Pasokan di Bursa</span>
+          </Button>
+        </Link>
       </div>
 
-      {/* 3. Product Cards Grid */}
+      {/* 3. Product Cards Grid (3 cards per row on desktop) */}
       {isLoading ? (
         <div className="min-h-[300px] flex flex-col items-center justify-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -169,7 +331,7 @@ export function UmkmMenuView() {
             Memuat daftar produk dari backend KUMPUL...
           </span>
         </div>
-      ) : filteredProducts.length === 0 ? (
+      ) : processedProducts.length === 0 ? (
         <Card className="rounded-2xl border border-dashed border-border py-12 text-center">
           <CardContent className="space-y-2 max-w-md mx-auto">
             <CardTitle className="text-base font-bold text-text-primary">
@@ -183,23 +345,35 @@ export function UmkmMenuView() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProducts.map((prod) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {processedProducts.map((prod) => (
             <MenuCard
               key={prod.id}
               product={prod}
               onDeleted={handleProductDeleted}
+              onEdit={handleEditProduct}
               onRecipeUpdated={loadProducts}
             />
           ))}
         </div>
       )}
 
-      {/* 4. Dialog Tambah Menu & Resep */}
+      {/* 4. Modul Pengolahan Stok Bahan Baku Dapur (Kitchen Inventory Section) */}
+      <KitchenInventorySection products={products} />
+
+      {/* 5. Dialog Tambah & Edit Menu / Resep */}
       <MenuAddDialog
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={handleProductAdded}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingProduct(null);
+        }}
+        onSuccess={(savedProduct) => {
+          handleProductAdded(savedProduct);
+          setIsAddModalOpen(false);
+          setEditingProduct(null);
+        }}
+        productToEdit={editingProduct}
       />
     </div>
   );

@@ -448,6 +448,144 @@ export const MOCK_SUPPLIER_COMMODITIES: SupplierCommodity[] = [
     productionDate: "2026-09-29",
     expiryDate: "2026-10-06",
   },
+  {
+    id: "com-05",
+    sku: "AGRO-BBK-005",
+    name: "Daging Bebek Karkas Segar Pilihan (0.9 - 1.1 kg)",
+    sector: "Peternakan",
+    description:
+      "Daging bebek karkas utuh higienis siap olah, pemotongan bersertifikat Halal dan Nomor Kontrol Veteriner (NKV), cocok untuk resto bebek goreng & kuliner khas nusantara.",
+    wholesaleUnit: "PETI",
+    unitWeightKg: 25,
+    baseMoq: 3, // 75 kg
+    availableStock: 50,
+    leadTimeDays: 1,
+    isActive: true,
+    imageUrl:
+      "https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=600&q=80",
+    priceTiers: [
+      {
+        id: "tier-bbk-1",
+        minQty: 3,
+        maxQty: 8,
+        pricePerUnit: 1125000, // Rp 45.000/kg
+        label: "Tier 1 (75 s.d. 200 kg)",
+      },
+      {
+        id: "tier-bbk-2",
+        minQty: 9,
+        maxQty: null,
+        pricePerUnit: 1000000, // Rp 40.000/kg (Diskon Pooling)
+        label: "Tier 2 (> 200 kg - Rekomendasi Pool)",
+      },
+    ],
+    batchTag: {
+      id: "tag-05",
+      licenseNumber: "NKV-RPU-3201-1022 & HALAL-ID0022000034",
+      productionDate: "2026-10-01",
+      expiryDate: "2026-10-08",
+      storageTemperature: "CHILLED",
+      originLocation: "Kudus, Jawa Tengah",
+      hygieneStatus: "TERVERIFIKASI",
+    },
+    createdAt: "2026-10-01",
+    allowsUnderMoq: true,
+    underMoqPricePerKg: 3500,
+    productionDate: "2026-10-01",
+    expiryDate: "2026-10-08",
+  },
+  {
+    id: "com-06",
+    sku: "AGRO-CBI-006",
+    name: "Cabai Rawit Merah Super Segar (Grade Super)",
+    sector: "Pertanian",
+    description:
+      "Cabai rawit merah petikan langsung dari petani mitra Kediri, tingkat kepedasan optimal, warna merah menyala, kadar air terjaga untuk bumbu dapur & aneka olahan sambal.",
+    wholesaleUnit: "KRAT",
+    unitWeightKg: 15,
+    baseMoq: 3, // 45 kg
+    availableStock: 60,
+    leadTimeDays: 1,
+    isActive: true,
+    imageUrl:
+      "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&w=600&q=80",
+    priceTiers: [
+      {
+        id: "tier-cbi-1",
+        minQty: 3,
+        maxQty: 10,
+        pricePerUnit: 525000, // Rp 35.000/kg
+        label: "Tier 1 (45 s.d. 150 kg)",
+      },
+      {
+        id: "tier-cbi-2",
+        minQty: 11,
+        maxQty: null,
+        pricePerUnit: 480000, // Rp 32.000/kg
+        label: "Tier 2 (> 150 kg - Rekomendasi Pool)",
+      },
+    ],
+    batchTag: {
+      id: "tag-06",
+      licenseNumber: "MUTU-PANGAN-CBI-098-2026",
+      productionDate: "2026-10-02",
+      expiryDate: "2026-10-16",
+      storageTemperature: "AMBIENT",
+      originLocation: "Kediri, Jawa Timur",
+      hygieneStatus: "TERVERIFIKASI",
+    },
+    createdAt: "2026-10-02",
+    allowsUnderMoq: true,
+    underMoqPricePerKg: 2500,
+    productionDate: "2026-10-02",
+    expiryDate: "2026-10-16",
+  },
+  {
+    id: "com-07",
+    sku: "AGRO-MYK-007",
+    name: "Minyak Goreng Sawit CP8 Higienis (Jeriken 18L)",
+    sector: "FnB / Pengolahan",
+    description:
+      "Minyak goreng kelapa sawit mutu CP8 tersertifikasi SNI dan Halal, titik asap tinggi, jernih dan hemat penggunaan untuk penggorengan berulang di dapur resto & warung makan.",
+    wholesaleUnit: "PAX",
+    unitWeightKg: 18,
+    baseMoq: 4, // 72 Liter
+    availableStock: 85,
+    leadTimeDays: 1,
+    isActive: true,
+    imageUrl:
+      "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80",
+    priceTiers: [
+      {
+        id: "tier-myk-1",
+        minQty: 4,
+        maxQty: 12,
+        pricePerUnit: 270000, // Rp 15.000/L
+        label: "Tier 1 (72 s.d. 216 L)",
+      },
+      {
+        id: "tier-myk-2",
+        minQty: 13,
+        maxQty: null,
+        pricePerUnit: 252000, // Rp 14.000/L
+        label: "Tier 2 (> 216 L - Rekomendasi Pool)",
+      },
+    ],
+    batchTag: {
+      id: "tag-07",
+      licenseNumber: "BPOM-MD-208112001923 & SNI-7709-2019",
+      productionDate: "2026-09-25",
+      expiryDate: "2027-09-25",
+      storageTemperature: "AMBIENT",
+      originLocation: "Bekasi, Jawa Barat",
+      hygieneStatus: "TERVERIFIKASI",
+    },
+    createdAt: "2026-09-26",
+    allowsUnderMoq: true,
+    underMoqPricePerKg: 1500,
+    productionDate: "2026-09-25",
+    expiryDate: "2027-09-25",
+  },
 ];
 
 export const MOCK_CONSOLIDATED_POS: ConsolidatedPO[] = [
