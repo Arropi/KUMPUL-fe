@@ -4,11 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import {
   Trash2,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  Lightbulb,
-  ArrowUpRight,
   Pencil,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -18,10 +13,7 @@ import { toast } from "@/components/ui/toast";
 import type { BEProduct } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
 import { deleteProductAction } from "@/actions/products";
-import {
-  calculateCircularMargin,
-  getProductIngredientAlternatives,
-} from "@/lib/menu-intelligence";
+import { calculateCircularMargin } from "@/lib/menu-intelligence";
 
 interface MenuCardProps {
   product: BEProduct;
@@ -33,17 +25,11 @@ interface MenuCardProps {
 export function MenuCard({ product, onDeleted, onEdit }: MenuCardProps) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  const [showAlternatives, setShowAlternatives] = React.useState(false);
 
   // Komputasi komparasi margin finansial sirkular
   const fin = React.useMemo(() => {
     return calculateCircularMargin(product);
   }, [product]);
-
-  // Rekomendasi alternatif bahan cerdas
-  const alternatives = React.useMemo(() => {
-    return getProductIngredientAlternatives(product.recipes || []);
-  }, [product.recipes]);
 
   const batchUnits = product.expected_batch_units || 50;
   const iterationsPerDay = product.production_iterations_per_day || 2;
@@ -170,99 +156,78 @@ export function MenuCard({ product, onDeleted, onEdit }: MenuCardProps) {
               </div>
             </div>
 
-            {/* Cashflow Tambahan Limbah Dapur */}
-            <div className="pt-1.5 border-t border-border/60 flex items-center justify-between text-[11px]">
-              <span className="text-text-muted flex items-center gap-1">
-                <Sparkles className="size-3 text-circular-waste" />
-                <span>Cashflow Limbah:</span>
-              </span>
-              <span className="font-bold text-circular-waste tabular-nums">
-                +{formatCurrency(fin.dailyWasteRevenue)} / hari
-              </span>
-            </div>
-          </div>
-
-          {/* 4. Rekomendasi Bahan Alternatif Cerdas (brief.md Seksi 6) */}
-          {alternatives.length > 0 && (
-            <div className="rounded-xl border border-border/80 bg-surface-subtle/40 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setShowAlternatives(!showAlternatives)}
-                className="w-full px-3 py-2 flex items-center justify-between text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-1.5 text-primary">
-                  <Lightbulb className="size-3.5" />
-                  <span>Alternatif Bahan Cerdas ({alternatives.length})</span>
+            {/* Cashflow Tambahan Limbah Dapur & Rincian Limbah */}
+            <div className="pt-2 border-t border-border/60 space-y-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-text-secondary font-medium">
+                  Cashflow Limbah:
                 </span>
-                {showAlternatives ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-              </button>
+                <span className="font-bold text-circular-waste tabular-nums">
+                  +{formatCurrency(fin.dailyWasteRevenue)} / hari
+                </span>
+              </div>
 
-              {showAlternatives && (
-                <div className="p-2.5 pt-1 space-y-2 border-t border-border/60 text-xs">
-                  {alternatives.map((alt, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2 rounded-lg bg-surface border border-border/70 space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-text-primary text-[11px]">
-                          {alt.suggestedIngredientName}
+              {/* Rincian Limbah yang Dihasilkan */}
+              {fin.wasteItems && fin.wasteItems.length > 0 && (
+                <div className="rounded-lg bg-surface-subtle/80 border border-border/60 p-2 space-y-1 text-[11px]">
+                  <span className="font-semibold text-text-muted text-[10px] uppercase tracking-wider block">
+                    Limbah yang Dihasilkan:
+                  </span>
+                  <div className="space-y-1">
+                    {fin.wasteItems.map((w, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between gap-1 text-text-secondary text-[11px]"
+                      >
+                        <span className="truncate">
+                          &bull; {w.name} ({w.dailyVolume} {w.unit}/hari)
                         </span>
-                        <span
-                          className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
-                            alt.estimatedCostImpactPercentage < 0
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-blue-50 text-blue-700 border border-blue-200"
-                          }`}
-                        >
-                          {alt.estimatedCostImpactPercentage < 0
-                            ? `Hemat ${Math.abs(alt.estimatedCostImpactPercentage)}%`
-                            : `Premium +${alt.estimatedCostImpactPercentage}%`}
+                        <span className="font-semibold text-circular-waste shrink-0 tabular-nums">
+                          +{formatCurrency(w.dailyRevenue)}
                         </span>
                       </div>
-                      <p className="text-[10px] text-text-secondary leading-snug">
-                        {alt.reason}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* 5. Aksi Navigasi: Rincian Produk & Edit Langsung (Modal Edit) */}
-        <div className="flex items-center gap-2 pt-1 mt-auto">
+        <div className="flex items-center gap-2 pt-3.5 mt-auto border-t border-border/60">
           <Button
             asChild
             variant="primary"
             size="sm"
-            className="flex-1 font-bold text-xs min-h-[42px] rounded-xl shadow-xs cursor-pointer"
+            className="flex-1"
           >
             <Link href={`/produk/${product.id}`}>
-              Detail Produk
+              Detail
             </Link>
           </Button>
 
           {onEdit ? (
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => onEdit(product)}
-              className="font-semibold text-xs min-h-[42px] px-4 rounded-xl cursor-pointer"
+              className="px-3.5 gap-1.5"
             >
-              Edit Menu
+              <Pencil className="size-3.5" />
+              <span>Edit</span>
             </Button>
           ) : (
             <Button
               asChild
-              variant="outline"
+              variant="secondary"
               size="sm"
-              className="font-semibold text-xs min-h-[42px] px-4 rounded-xl cursor-pointer"
+              className="px-3.5 gap-1.5"
             >
               <Link href={`/produk/${product.id}/edit`}>
-                Edit Menu
+                <Pencil className="size-3.5" />
+                <span>Edit</span>
               </Link>
             </Button>
           )}

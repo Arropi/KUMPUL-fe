@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Trash2, ChevronDown, PackagePlus, AlertCircle, Sparkles } from "lucide-react";
+import { Plus, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
@@ -256,20 +256,13 @@ export function MenuAddDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl sm:max-w-3xl p-0 overflow-hidden rounded-3xl border border-border bg-surface shadow-2xl flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="px-6 py-5 border-b border-border/80 bg-surface shrink-0 flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary-light flex items-center justify-center text-primary shrink-0 border border-primary/20">
-              <PackagePlus className="w-5 h-5" />
-            </div>
-            <div>
-              <DialogTitle className="text-base sm:text-lg font-heading font-bold text-text-primary leading-tight">
-                {isEditMode ? "Edit Spesifikasi Menu & Resep" : "Tambah Produk & Resep Bahan Baku"}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-text-secondary mt-0.5">
-                Konfigurasi ritme produksi harian, takaran resep bahan baku, dan komparasi margin sirkular.
-              </DialogDescription>
-            </div>
-          </div>
+        <div className="px-6 py-5 pr-16 border-b border-border/80 bg-surface shrink-0">
+          <DialogTitle className="text-base sm:text-lg font-heading font-bold text-text-primary leading-tight">
+            {isEditMode ? "Edit Spesifikasi Menu & Resep" : "Tambah Produk & Resep Bahan Baku"}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-text-secondary mt-1">
+            Konfigurasi ritme produksi harian, takaran resep bahan baku, dan komparasi margin sirkular.
+          </DialogDescription>
         </div>
 
         {/* Scrollable Form Body */}
@@ -298,15 +291,15 @@ export function MenuAddDialog({
                 </div>
 
                 {/* Satuan Produk (11 Opsi Riil) */}
-                <div className="sm:col-span-4 flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-text-secondary">
+                <div className="sm:col-span-4 flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-text-primary">
                     Satuan Output *
                   </label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="w-full h-[52px] px-3.5 rounded-2xl border border-border bg-surface hover:bg-surface-subtle text-xs sm:text-sm font-medium text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all flex items-center justify-between cursor-pointer"
+                        className="w-full min-h-[44px] h-[44px] px-3.5 rounded-xl border border-border bg-surface hover:bg-surface-subtle text-xs sm:text-sm font-medium text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all flex items-center justify-between cursor-pointer shadow-elevation-1"
                       >
                         <span className="truncate">
                           {PRODUCT_UNIT_OPTIONS.find((o) => o.value === productUnit)?.label || productUnit}
@@ -314,13 +307,13 @@ export function MenuAddDialog({
                         <ChevronDown className="w-4 h-4 text-text-muted shrink-0 ml-1" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-64 max-h-60 overflow-y-auto rounded-2xl border border-border bg-surface p-1 shadow-elevation-2 custom-scrollbar">
+                    <DropdownMenuContent className="w-64 max-h-60 overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-elevation-2 custom-scrollbar">
                       <DropdownMenuRadioGroup value={productUnit} onValueChange={setProductUnit}>
                         {PRODUCT_UNIT_OPTIONS.map((opt) => (
                           <DropdownMenuRadioItem
                             key={opt.value}
                             value={opt.value}
-                            className="rounded-xl text-xs py-2 px-3 font-medium cursor-pointer"
+                            className="rounded-lg text-xs py-2 px-3 font-medium cursor-pointer"
                           >
                             {opt.label}
                           </DropdownMenuRadioItem>
@@ -395,12 +388,21 @@ export function MenuAddDialog({
                 </Button>
               </div>
 
+              {/* Label Kolom Tabel (Desktop) */}
+              <div className="hidden sm:grid grid-cols-12 gap-2 px-3 text-[11px] font-semibold text-text-secondary">
+                <span className="col-span-5">Nama Bahan Baku *</span>
+                <span className="col-span-2 text-right">Takaran / {productUnit} *</span>
+                <span className="col-span-2">Satuan</span>
+                <span className="col-span-2 text-right">Biaya Modal (Rp)</span>
+                <span className="col-span-1 text-center">Hapus</span>
+              </div>
+
               {/* Tabel Input Resep */}
               <div className="space-y-2">
                 {ingredients.map((ing, idx) => (
                   <div
                     key={idx}
-                    className="grid grid-cols-12 gap-2 p-2.5 rounded-xl border border-border/80 bg-surface items-center hover:border-primary/40 transition-colors"
+                    className="grid grid-cols-12 gap-2 p-2.5 sm:p-2 rounded-xl border border-border bg-surface items-center hover:border-border-strong transition-all shadow-xs"
                   >
                     {/* Nama Bahan */}
                     <div className="col-span-12 sm:col-span-5">
@@ -409,7 +411,7 @@ export function MenuAddDialog({
                         placeholder="Nama bahan (contoh: Daging Bebek, Minyak Goreng)"
                         value={ing.name}
                         onChange={(e) => handleIngredientChange(idx, "name", e.target.value)}
-                        className="w-full h-10 px-3 text-xs rounded-lg border border-border bg-surface-subtle/50 text-text-primary focus:outline-none focus:border-primary"
+                        className="w-full h-10 px-3 text-xs rounded-lg border border-border bg-surface-subtle/50 text-text-primary focus:outline-none focus:border-primary focus:bg-surface"
                         required
                       />
                     </div>
@@ -423,7 +425,7 @@ export function MenuAddDialog({
                         placeholder="Takaran"
                         value={ing.amountPerPortion}
                         onChange={(e) => handleIngredientChange(idx, "amountPerPortion", parseFloat(e.target.value) || 0)}
-                        className="w-full h-10 px-2.5 text-xs text-right rounded-lg border border-border bg-surface-subtle/50 text-text-primary focus:outline-none focus:border-primary tabular-nums"
+                        className="w-full h-10 px-2.5 text-xs text-right rounded-lg border border-border bg-surface-subtle/50 text-text-primary focus:outline-none focus:border-primary focus:bg-surface tabular-nums"
                         required
                       />
                     </div>
@@ -434,13 +436,13 @@ export function MenuAddDialog({
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
-                            className="w-full h-10 px-2 text-xs rounded-lg border border-border bg-surface-subtle/50 flex items-center justify-between text-text-primary hover:bg-surface-subtle"
+                            className="w-full h-10 px-2 text-xs rounded-lg border border-border bg-surface-subtle/50 flex items-center justify-between text-text-primary hover:bg-surface-subtle focus:border-primary cursor-pointer"
                           >
                             <span className="truncate">{ing.unit}</span>
-                            <ChevronDown className="w-3 h-3 text-text-muted shrink-0" />
+                            <ChevronDown className="w-3.5 h-3.5 text-text-muted shrink-0" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-48 max-h-56 overflow-y-auto rounded-xl p-1 bg-surface border border-border">
+                        <DropdownMenuContent className="w-48 max-h-56 overflow-y-auto rounded-xl p-1 bg-surface border border-border shadow-elevation-2 custom-scrollbar">
                           <DropdownMenuRadioGroup
                             value={ing.unit}
                             onValueChange={(val) => handleIngredientChange(idx, "unit", val)}
@@ -468,7 +470,7 @@ export function MenuAddDialog({
                         placeholder="Biaya Rp"
                         value={ing.estimatedCost || ""}
                         onChange={(e) => handleIngredientChange(idx, "estimatedCost", parseInt(e.target.value) || 0)}
-                        className="w-full h-10 px-2 text-xs text-right rounded-lg border border-border bg-surface-subtle/50 text-text-primary focus:outline-none focus:border-primary tabular-nums"
+                        className="w-full h-10 px-2 text-xs text-right rounded-lg border border-border bg-surface-subtle/50 text-text-primary focus:outline-none focus:border-primary focus:bg-surface tabular-nums"
                       />
                     </div>
 
@@ -478,7 +480,9 @@ export function MenuAddDialog({
                         type="button"
                         onClick={() => handleRemoveIngredientRow(idx)}
                         disabled={ingredients.length <= 1}
-                        className="size-8 flex items-center justify-center rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50 disabled:opacity-30 cursor-pointer"
+                        className="size-8 flex items-center justify-center rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50 disabled:opacity-25 transition-colors cursor-pointer"
+                        title="Hapus baris bahan"
+                        aria-label="Hapus baris bahan"
                       >
                         <Trash2 className="size-3.5" />
                       </button>
@@ -491,8 +495,7 @@ export function MenuAddDialog({
             {/* Bagian 3: Komparasi Margin Sirkular Live Preview (brief.md Seksi 3.2) */}
             <div className="p-4 rounded-2xl bg-surface-subtle/70 border border-border/80 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold font-heading text-text-primary uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="size-3.5 text-primary" />
+                <span className="text-xs font-bold font-heading text-text-primary uppercase tracking-wider">
                   3. Analisis Finansial Komparatif (Live Preview)
                 </span>
                 <span className="text-[11px] font-bold text-circular-waste bg-circular-waste-light px-2 py-0.5 rounded-md border border-circular-waste/20">

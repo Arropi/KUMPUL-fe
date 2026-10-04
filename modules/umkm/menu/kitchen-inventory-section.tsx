@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Package,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -105,18 +104,10 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded-lg bg-primary/10 text-primary">
-              <Package className="size-4" />
-            </span>
-            <span className="text-[11px] font-bold text-primary uppercase tracking-wider font-heading">
-              Kitchen Inventory Intelligence
-            </span>
-          </div>
-          <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary mt-1">
+          <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
             Pengolahan Stok Bahan Baku Dapur (Agregat Resep)
           </h2>
-          <p className="font-body text-xs text-text-secondary mt-0.5">
+          <p className="font-body text-xs text-text-secondary mt-1">
             Pantau ketersediaan bahan terhadap laju produksi harian dan sinkronkan pengadaan ke Bursa.
           </p>
         </div>
@@ -254,18 +245,15 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
 
                     <td className="py-3 px-4 text-center">
                       {isKritis ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">
-                          <span className="size-1.5 rounded-full bg-red-600 animate-pulse" />
+                        <span className="inline-block text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-md">
                           KRITIS
                         </span>
                       ) : isMenipis ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                          <span className="size-1.5 rounded-full bg-amber-600" />
+                        <span className="inline-block text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-md">
                           MENIPIS
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                          <span className="size-1.5 rounded-full bg-emerald-600" />
+                        <span className="inline-block text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-md">
                           AMAN
                         </span>
                       )}

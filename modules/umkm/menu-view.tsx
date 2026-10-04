@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MenuAddDialog } from "./menu/menu-add-dialog";
 import { MenuCard } from "./menu/menu-card";
-import { KitchenInventorySection } from "./menu/kitchen-inventory-section";
+import { Pagination15 } from "@/components/ui/pagination";
 import { getUmkmProductsAction } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
 import { DEFAULT_SEED_PRODUCTS, calculateCircularMargin } from "@/lib/menu-intelligence";
@@ -69,6 +69,15 @@ export function UmkmMenuView() {
   const [sortBy, setSortBy] = React.useState<MenuSortOption>("MARGIN_DESC");
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<BEProduct | null>(null);
+
+  // Pagination state (Watermelon UI Pagination-15)
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(6);
+
+  // Reset page when filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortBy]);
 
   const loadProducts = React.useCallback(async () => {
     try {
@@ -220,6 +229,12 @@ export function UmkmMenuView() {
     });
   }, [products, searchQuery, sortBy]);
 
+  const totalPages = Math.ceil(processedProducts.length / pageSize) || 1;
+  const paginatedProducts = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return processedProducts.slice(start, start + pageSize);
+  }, [processedProducts, currentPage, pageSize]);
+
   return (
     <div className="space-y-6">
       {/* 1. Header Section */}
@@ -345,23 +360,36 @@ export function UmkmMenuView() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {processedProducts.map((prod) => (
-            <MenuCard
-              key={prod.id}
-              product={prod}
-              onDeleted={handleProductDeleted}
-              onEdit={handleEditProduct}
-              onRecipeUpdated={loadProducts}
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {paginatedProducts.map((prod) => (
+              <MenuCard
+                key={prod.id}
+                product={prod}
+                onDeleted={handleProductDeleted}
+                onEdit={handleEditProduct}
+                onRecipeUpdated={loadProducts}
+              />
+            ))}
+          </div>
+
+          {/* Watermelon UI Pagination-15 Component */}
+          {processedProducts.length > 0 && (
+            <Pagination15
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={processedProducts.length}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[6, 9, 12, 24]}
+              itemLabel="produk"
             />
-          ))}
+          )}
         </div>
       )}
 
-      {/* 4. Modul Pengolahan Stok Bahan Baku Dapur (Kitchen Inventory Section) */}
-      <KitchenInventorySection products={products} />
-
-      {/* 5. Dialog Tambah & Edit Menu / Resep */}
+      {/* 4. Dialog Tambah & Edit Menu / Resep */}
       <MenuAddDialog
         isOpen={isAddModalOpen}
         onClose={() => {

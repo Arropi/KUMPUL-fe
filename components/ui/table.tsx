@@ -22,7 +22,7 @@ export const TableHeader = React.forwardRef<
   <thead
     ref={ref}
     className={cn(
-      "border-b border-border bg-surface-subtle text-text-secondary font-heading text-xs font-semibold",
+      "border-b border-border bg-surface-subtle/80 shadow-[inset_0px_1px_2px_0px_rgba(255,255,255,1),inset_0px_-1px_4px_0px_rgba(0,0,0,0.05)] text-text-secondary font-heading text-xs font-semibold",
       className
     )}
     {...props}
@@ -36,7 +36,7 @@ export const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tbody
     ref={ref}
-    className={cn("divide-y divide-border bg-surface", className)}
+    className={cn("divide-y divide-border/60 bg-surface", className)}
     {...props}
   />
 ));
@@ -49,7 +49,7 @@ export const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t border-border bg-surface-subtle font-semibold text-text-primary",
+      "border-t border-border bg-surface-subtle/80 shadow-[inset_0px_1px_2px_0px_rgba(255,255,255,1),inset_0px_-1px_4px_0px_rgba(0,0,0,0.05)] font-semibold text-text-primary text-xs",
       className
     )}
     {...props}
@@ -64,7 +64,7 @@ export const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "transition-colors duration-150 hover:bg-primary-light/40 data-[state=selected]:bg-primary-light/60",
+      "transition-colors duration-150 hover:bg-surface-subtle/60 data-[state=selected]:bg-surface-subtle",
       className
     )}
     {...props}
@@ -79,7 +79,7 @@ export const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-10 px-4 text-left align-middle font-semibold text-text-secondary text-[11px]",
+      "h-10 px-3.5 text-left align-middle font-semibold text-text-secondary text-xs",
       className
     )}
     {...props}
@@ -93,7 +93,7 @@ export const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-4 align-middle font-sans text-xs text-text-primary leading-normal", className)}
+    className={cn("p-3.5 align-middle font-sans text-xs text-text-primary leading-normal", className)}
     {...props}
   />
 ));

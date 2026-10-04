@@ -103,15 +103,16 @@ export function DialogContent({ className, children, ...props }: DialogContentPr
         <button
           type="button"
           onClick={() => onOpenChange(false)}
-          className="absolute top-4 right-4 w-8 h-8 rounded-xl flex items-center justify-center text-text-muted hover:text-text hover:bg-surface-elevated transition-colors"
+          className="absolute top-4.5 right-4.5 size-9 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-border/60 border border-border/80 transition-all shadow-xs z-30 cursor-pointer"
           aria-label="Tutup dialog"
+          title="Tutup dialog (Esc)"
         >
           <svg
-            className="w-4 h-4"
+            className="size-4.5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            strokeWidth={2}
+            strokeWidth={2.25}
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>

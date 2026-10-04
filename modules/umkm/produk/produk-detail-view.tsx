@@ -5,30 +5,46 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Utensils,
   Trash2,
   Plus,
   Sparkles,
-  Leaf,
   Coins,
   TrendingUp,
   AlertCircle,
-  Layers,
   ArrowRight,
   ShieldCheck,
-  Building2,
-  RefreshCw,
   Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "@/components/ui/toast";
+import { Dialog3 } from "@/components/ui/dialog-3";
 import type { BEProduct, BERecipe } from "@/lib/api/types";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/format";
 import { getProductByIdAction, deleteProductAction, addRecipeItemAction, deleteRecipeItemAction } from "@/actions/products";
 import { getProductWastePrediction } from "@/lib/ai-waste-prediction";
+import { getProductIngredientAlternatives } from "@/lib/menu-intelligence";
 
 interface ProdukDetailViewProps {
   productId: string;
@@ -40,8 +56,10 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
   const [product, setProduct] = React.useState<BEProduct | null>(initialProduct || null);
   const [isLoading, setIsLoading] = React.useState(!initialProduct);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
-  // Form tambah bahan baku baru
+  // Form & Sheet tambah bahan baku baru
+  const [isAddIngredientOpen, setIsAddIngredientOpen] = React.useState(false);
   const [newIngName, setNewIngName] = React.useState("");
   const [newIngQty, setNewIngQty] = React.useState<number>(0.1);
   const [newIngUnit, setNewIngUnit] = React.useState("KG");
@@ -112,12 +130,14 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
   const costPerBatch = hpp * batchUnits;
   const grossProfitPerBatch = Math.max(0, revenuePerBatch - costPerBatch);
 
-  // Aksi Hapus Produk
-  const handleDeleteProduct = async () => {
+  // Alternatif bahan baku cerdas
+  const alternatives = React.useMemo(() => {
+    return getProductIngredientAlternatives(recipes);
+  }, [recipes]);
+
+  // Aksi Hapus Produk (menggunakan Dialog3 konfirmasi destruktif)
+  const executeDeleteProduct = async () => {
     if (!product) return;
-    if (!window.confirm(`Hapus produk "${product.product_name}" beserta seluruh resepnya?`)) {
-      return;
-    }
 
     setIsDeleting(true);
     try {
@@ -134,6 +154,7 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
         } catch {}
 
         toast.success(`Produk "${product.product_name}" berhasil dihapus.`);
+        setIsDeleteDialogOpen(false);
         router.push("/produk");
       } else {
         toast.error(res.message || "Gagal menghapus produk");
@@ -238,6 +259,7 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
         setNewIngName("");
         setNewIngQty(0.1);
         setNewIngCost(1000);
+        setIsAddIngredientOpen(false);
       } else {
         toast.error(res.message || "Gagal menambahkan bahan");
       }
@@ -313,63 +335,45 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
           </Button>
 
           <Button
-            asChild
-            variant="soft"
-            size="sm"
-            className="rounded-xl cursor-pointer gap-1.5"
-          >
-            <Link href="/limbah">
-              <Leaf className="w-4 h-4 text-circular-waste" />
-              <span>Buka Bursa Limbah</span>
-            </Link>
-          </Button>
-
-          <Button
             type="button"
-            variant="ghost"
+            variant="destructive"
             size="sm"
-            onClick={handleDeleteProduct}
+            onClick={() => setIsDeleteDialogOpen(true)}
             disabled={isDeleting}
-            className="text-error hover:bg-error/10 rounded-xl cursor-pointer gap-1.5"
+            className="rounded-xl cursor-pointer gap-1.5 font-bold shadow-xs"
           >
-            <Trash2 className="w-4 h-4 text-error" />
+            <Trash2 className="w-3.5 h-3.5" />
             <span>Hapus Produk</span>
           </Button>
         </div>
       </div>
 
       {/* 2. Hero Header Card */}
-      <Card className="rounded-2xl border border-border bg-surface p-6 shadow-elevation-1">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary-light flex items-center justify-center text-primary shrink-0 shadow-sm">
-              <Utensils className="w-7 h-7" />
+      <Card className="rounded-2xl border border-border bg-surface p-5 sm:p-6 shadow-elevation-1">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary">
+                {product.product_name}
+              </h1>
+              <Badge variant="primary" className="text-xs uppercase font-bold tracking-wider">
+                {product.unit || "PORSI"}
+              </Badge>
+              <Badge variant="secondary" className="text-xs font-semibold">
+                Iterasi: {batchUnits} {product.unit || "Porsi"} / Batch
+              </Badge>
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary">
-                  {product.product_name}
-                </h1>
-                <Badge variant="primary" className="text-xs uppercase font-bold tracking-wider">
-                  {product.unit || "PORSI"}
-                </Badge>
-                <Badge variant="secondary" className="text-xs font-semibold">
-                  Iterasi: {batchUnits} {product.unit || "Porsi"} / Batch
-                </Badge>
-              </div>
-
-              <p className="text-xs text-text-secondary flex items-center gap-2 flex-wrap">
-                <span>Didaftarkan: {formatDate(product.created_at || new Date())}</span>
-                <span>&bull;</span>
-                <span>{recipes.length} Komposisi Bahan Baku</span>
-                <span>&bull;</span>
-                <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Kalkulasi HPP Aktif
-                </span>
-              </p>
-            </div>
+            <p className="text-xs text-text-secondary flex items-center gap-2 flex-wrap">
+              <span>Didaftarkan: {formatDate(product.created_at || new Date())}</span>
+              <span>&bull;</span>
+              <span>{recipes.length} Komposisi Bahan Baku</span>
+              <span>&bull;</span>
+              <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Kalkulasi HPP Aktif
+              </span>
+            </p>
           </div>
 
           <div className="flex items-center gap-3 bg-surface-subtle p-3 rounded-2xl border border-border/80 self-start md:self-auto shrink-0">
@@ -464,25 +468,11 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
 
       {/* 4. Bagian Analisis Prediksi Limbah Sirkular AI */}
       {wastePrediction && (
-        <Card className="rounded-2xl border border-circular-waste/30 bg-gradient-to-br from-circular-waste-light/80 to-surface p-6 shadow-elevation-1 space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-circular-waste/20">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="p-2 rounded-xl bg-circular-waste/15 text-circular-waste">
-                  <Sparkles className="w-5 h-5 text-circular-waste" />
-                </span>
-                <h3 className="font-heading font-bold text-base sm:text-lg text-text-primary">
-                  Analisis Prediksi Limbah Sirkular (AI Eco-Engine)
-                </h3>
-                <Badge variant="waste" className="text-xs font-bold gap-1">
-                  <Leaf className="w-3.5 h-3.5" />
-                  {wastePrediction.aiConfidencePct}% Akurasi Prediksi
-                </Badge>
-              </div>
-              <p className="text-xs text-text-secondary">
-                Estimasi residu produktif yang dihasilkan dari bahan baku menu ini dan potensi monetisasinya di Bursa Limbah KUMPUL.
-              </p>
-            </div>
+        <Card className="rounded-2xl border border-border bg-surface p-6 shadow-elevation-1 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-border">
+            <h3 className="font-heading font-bold text-base sm:text-lg text-text-primary">
+              Analisis Prediksi Limbah Sirkular (AI Eco-Engine)
+            </h3>
 
             <Button
               asChild
@@ -499,7 +489,7 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
 
           {/* 3 Metric Card Dampak & Valuasi */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div className="bg-surface rounded-xl p-4 border border-circular-waste/20 shadow-sm space-y-1">
+            <div className="bg-surface-subtle/80 rounded-xl p-4 border border-border/80 shadow-xs space-y-1">
               <span className="text-[11px] text-text-secondary font-medium block">
                 Total Estimasi Limbah per Batch
               </span>
@@ -511,7 +501,7 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
               </p>
             </div>
 
-            <div className="bg-surface rounded-xl p-4 border border-circular-waste/20 shadow-sm space-y-1">
+            <div className="bg-surface-subtle/80 rounded-xl p-4 border border-border/80 shadow-xs space-y-1">
               <span className="text-[11px] text-text-secondary font-medium block flex items-center gap-1.5">
                 <Coins className="w-3.5 h-3.5 text-accent" />
                 Potensi Pendapatan Tambahan
@@ -524,7 +514,7 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
               </p>
             </div>
 
-            <div className="bg-surface rounded-xl p-4 border border-circular-waste/20 shadow-sm space-y-1">
+            <div className="bg-surface-subtle/80 rounded-xl p-4 border border-border/80 shadow-xs space-y-1">
               <span className="text-[11px] text-text-secondary font-medium block">
                 Dampak Lingkungan (ESG)
               </span>
@@ -540,63 +530,68 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
           {/* Tabel Rincian Residu Terdeteksi */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">
-              Rincian Fraksi Limbah &amp; Rekomendasi Offtaker
+              Rincian Fraksi Limbah Terprediksi
             </h4>
 
-            <div className="rounded-xl border border-circular-waste/25 bg-surface overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-circular-waste-light/50 border-b border-circular-waste/20 text-text-secondary font-semibold">
-                    <tr>
-                      <th className="py-2.5 px-3">Jenis Limbah Terprediksi</th>
-                      <th className="py-2.5 px-3">Est. Volume / Batch</th>
-                      <th className="py-2.5 px-3">Harga Patokan Offtaker</th>
-                      <th className="py-2.5 px-3">Potensi Nilai</th>
-                      <th className="py-2.5 px-3">Rekomendasi Mitra Penerima</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/60">
-                    {wastePrediction.items.map((item) => (
-                      <tr key={item.id} className="hover:bg-surface-subtle/50 transition-colors">
-                        <td className="py-3 px-3 font-semibold text-text-primary">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-circular-waste shrink-0" />
-                            <span>{item.name}</span>
-                          </div>
-                          <span className="text-[10px] text-text-muted font-normal block pl-4 mt-0.5">
-                            {item.handlingNote}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 font-bold text-text-primary tabular-nums">
-                          {item.estimatedVolumePerBatch} {item.unit}
-                        </td>
-                        <td className="py-3 px-3 text-text-secondary tabular-nums">
-                          {formatCurrency(item.pricePerUnit)} / {item.unit}
-                        </td>
-                        <td className="py-3 px-3 font-bold text-circular-waste tabular-nums">
-                          +{formatCurrency(item.potentialRevenue)}
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className="inline-flex items-center gap-1 font-medium text-[11px] text-text-primary">
-                            <Building2 className="w-3 h-3 text-text-muted shrink-0" />
-                            {item.recommendedOfftaker}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="overflow-hidden rounded-xl border border-border shadow-xs bg-surface">
+              <Table>
+                <TableHeader className="bg-surface-subtle/80 shadow-[inset_0px_1px_2px_0px_rgba(255,255,255,1),inset_0px_-1px_4px_0px_rgba(0,0,0,0.05)]">
+                  <TableRow>
+                    <TableHead>Jenis Limbah Terprediksi</TableHead>
+                    <TableHead>Est. Volume / Batch</TableHead>
+                    <TableHead>Harga Patokan Offtaker</TableHead>
+                    <TableHead className="text-right">Potensi Nilai</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {wastePrediction.items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-semibold text-text-primary">
+                        <span className="font-semibold text-text-primary">{item.name}</span>
+                        <span className="text-[11px] text-text-muted font-normal block mt-0.5">
+                          {item.handlingNote}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-bold text-text-primary tabular-nums">
+                        {item.estimatedVolumePerBatch} {item.unit}
+                      </TableCell>
+                      <TableCell className="text-text-secondary tabular-nums">
+                        {formatCurrency(item.pricePerUnit)} / {item.unit}
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-circular-waste tabular-nums">
+                        +{formatCurrency(item.potentialRevenue)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableFooter className="shadow-[inset_0px_1px_2px_0px_rgba(255,255,255,1),inset_0px_-1px_4px_0px_rgba(0,0,0,0.05)] bg-surface-subtle/80">
+                  <TableRow>
+                    <TableCell colSpan={3} className="font-bold text-text-primary">
+                      Total Potensi Valuasi Limbah per Batch ({batchUnits} Porsi)
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-circular-waste tabular-nums text-sm">
+                      +{formatCurrency(wastePrediction.totalPotentialRevenuePerBatch)}
+                    </TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
             </div>
 
-            {/* AI Recommendation Alert */}
-            <div className="p-3.5 rounded-xl bg-surface border border-circular-waste/20 flex items-start gap-2.5 text-xs">
-              <Sparkles className="w-4 h-4 text-circular-waste shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                <span className="font-semibold text-text-primary">
-                  Rekomendasi Optimalisasi AI:
-                </span>
-                <p className="text-text-secondary leading-relaxed">
+            {/* Rekomendasi Optimalisasi AI - Noticeable, Bold & Elegant */}
+            <div className="p-4 sm:p-4.5 rounded-xl bg-surface-subtle/90 border border-border border-l-4 border-l-primary shadow-xs flex items-start gap-3.5">
+              <div className="size-9 rounded-xl bg-surface border border-border shadow-2xs flex items-center justify-center shrink-0 mt-0.5 text-primary">
+                <Sparkles className="size-4.5" />
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h5 className="font-heading font-bold text-sm sm:text-[15px] text-text-primary tracking-tight">
+                    Rekomendasi Optimalisasi Sirkular
+                  </h5>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-surface border border-border text-primary">
+                    AI Insight
+                  </span>
+                </div>
+                <p className="text-text-secondary text-xs sm:text-[13px] leading-relaxed">
                   {wastePrediction.aiRecommendation}
                 </p>
               </div>
@@ -607,174 +602,288 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
 
       {/* 5. Bill of Materials (BOM) / Resep Bahan Baku */}
       <Card className="rounded-2xl border border-border bg-surface p-6 shadow-elevation-1 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-border">
-          <div>
-            <h3 className="font-heading font-bold text-base sm:text-lg text-text-primary flex items-center gap-2">
-              <Layers className="w-5 h-5 text-primary" />
-              Komposisi Resep &amp; Bill of Materials (BOM)
-            </h3>
-            <p className="text-xs text-text-secondary mt-0.5">
-              Kebutuhan bahan baku per 1 porsi dan kalkulasi otomatis untuk 1 batch ({batchUnits} unit).
-            </p>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-border gap-3">
+          <h3 className="font-heading font-bold text-base sm:text-lg text-text-primary">
+            Komposisi Resep &amp; Bill of Materials (BOM)
+          </h3>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => setIsAddIngredientOpen(true)}
+            className="rounded-xl font-bold gap-1.5 cursor-pointer self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Bahan Baku</span>
+          </Button>
         </div>
 
         {recipes.length === 0 ? (
-          <div className="p-6 text-center rounded-xl bg-surface-subtle text-xs text-text-muted border border-dashed border-border space-y-1">
+          <div className="p-8 text-center rounded-xl bg-surface-subtle text-xs text-text-muted border border-dashed border-border space-y-3">
             <AlertCircle className="w-6 h-6 mx-auto text-amber-600 mb-1" />
-            <p className="font-semibold text-text-primary">Belum ada bahan baku terdaftar</p>
-            <p>Tambahkan bahan baku di bawah untuk memulai simulasi HPP dan prediksi limbah.</p>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-surface-subtle border-b border-border text-text-secondary font-semibold">
-                  <tr>
-                    <th className="py-2.5 px-3">Nama Bahan Baku</th>
-                    <th className="py-2.5 px-3">Kebutuhan / Porsi</th>
-                    <th className="py-2.5 px-3">Kebutuhan 1 Batch ({batchUnits} Porsi)</th>
-                    <th className="py-2.5 px-3">Biaya Est. / Porsi</th>
-                    <th className="py-2.5 px-3">Porsi Biaya</th>
-                    <th className="py-2.5 px-3 text-center">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {recipes.map((item) => {
-                    const reqQty = Number(item.required_qty_per_unit) || 0;
-                    const totalBatchQty =
-                      Number(item.total_batch_required_qty) || reqQty * batchUnits;
-                    const cost = Number(item.estimated_cost_per_unit) || 0;
-                    const costShare = hpp > 0 ? (cost / hpp) * 100 : 0;
-
-                    return (
-                      <tr key={item.id} className="hover:bg-surface-subtle/50 transition-colors">
-                        <td className="py-3 px-3 font-semibold text-text-primary">
-                          {item.ingredient_name}
-                        </td>
-                        <td className="py-3 px-3 tabular-nums">
-                          {reqQty} {item.unit}
-                        </td>
-                        <td className="py-3 px-3 font-medium text-text-primary tabular-nums">
-                          {totalBatchQty} {item.unit}
-                        </td>
-                        <td className="py-3 px-3 font-bold text-text-primary tabular-nums">
-                          {formatCurrency(cost)}
-                        </td>
-                        <td className="py-3 px-3 text-text-secondary tabular-nums">
-                          <div className="flex items-center gap-2">
-                            <div className="w-12 h-1.5 rounded-full bg-border overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full"
-                                style={{ width: `${Math.min(100, costShare)}%` }}
-                              />
-                            </div>
-                            <span className="text-[11px]">{costShare.toFixed(0)}%</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteRecipe(item.id, item.ingredient_name)}
-                            className="p-1.5 rounded-lg text-error hover:bg-error/10 transition-colors cursor-pointer inline-flex items-center justify-center"
-                            title="Hapus bahan"
-                          >
-                            <Trash2 className="w-4 h-4 text-error" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Add Ingredient Form */}
-        <form
-          onSubmit={handleAddRecipeItem}
-          className="p-4 rounded-xl bg-surface-subtle/70 border border-border space-y-3"
-        >
-          <div className="flex items-center gap-2">
-            <Plus className="w-4 h-4 text-primary" />
-            <h4 className="text-xs font-bold text-text-primary">
-              Tambah Komponen Bahan Baku Baru ke Resep
-            </h4>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-            <div className="sm:col-span-5">
-              <Input
-                label="Nama Bahan *"
-                placeholder="Contoh: Bawang Merah Brebes"
-                value={newIngName}
-                onChange={(e) => setNewIngName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <Input
-                label="Kebutuhan / Porsi *"
-                type="number"
-                min="0"
-                step="any"
-                value={newIngQty}
-                onChange={(e) => setNewIngQty(parseFloat(e.target.value) || 0)}
-                required
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <Input
-                label="Satuan *"
-                placeholder="KG / LITER"
-                value={newIngUnit}
-                onChange={(e) => setNewIngUnit(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="sm:col-span-3">
-              <Input
-                label="Biaya Est. / Porsi (Rp) *"
-                type="number"
-                min="0"
-                step="any"
-                value={newIngCost}
-                onChange={(e) => setNewIngCost(parseFloat(e.target.value) || 0)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-1">
+            <p className="font-semibold text-text-primary text-sm">Belum ada bahan baku terdaftar</p>
+            <p className="max-w-md mx-auto">
+              Tambahkan komponen bahan baku untuk memulai penghitungan otomatis HPP, estimasi porsi, dan analisis prediksi fraksi limbah.
+            </p>
             <Button
-              type="submit"
-              variant="primary"
+              type="button"
+              variant="outline"
               size="sm"
-              isLoading={isAddingIngredient}
-              className="rounded-xl font-bold cursor-pointer min-h-[40px] px-5"
+              onClick={() => setIsAddIngredientOpen(true)}
+              className="rounded-xl font-semibold gap-1.5 mt-2 cursor-pointer"
             >
-              Simpan ke Resep
+              <Plus className="w-4 h-4 text-primary" />
+              <span>Tambah Bahan Pertama</span>
             </Button>
           </div>
-        </form>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-border shadow-xs bg-surface">
+            <Table>
+              <TableHeader className="bg-surface-subtle/80 shadow-[inset_0px_1px_2px_0px_rgba(255,255,255,1),inset_0px_-1px_4px_0px_rgba(0,0,0,0.05)]">
+                <TableRow>
+                  <TableHead>Nama Bahan Baku</TableHead>
+                  <TableHead>Kebutuhan / Porsi</TableHead>
+                  <TableHead>Kebutuhan 1 Batch ({batchUnits} Porsi)</TableHead>
+                  <TableHead>Biaya Est. / Porsi</TableHead>
+                  <TableHead>Porsi Biaya</TableHead>
+                  <TableHead className="text-center w-16">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recipes.map((item) => {
+                  const reqQty = Number(item.required_qty_per_unit) || 0;
+                  const totalBatchQty =
+                    Number(item.total_batch_required_qty) || reqQty * batchUnits;
+                  const cost = Number(item.estimated_cost_per_unit) || 0;
+                  const costShare = hpp > 0 ? (cost / hpp) * 100 : 0;
+
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-semibold text-text-primary">
+                        {item.ingredient_name}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {reqQty} {item.unit}
+                      </TableCell>
+                      <TableCell className="font-medium text-text-primary tabular-nums">
+                        {totalBatchQty} {item.unit}
+                      </TableCell>
+                      <TableCell className="font-bold text-text-primary tabular-nums">
+                        {formatCurrency(cost)}
+                      </TableCell>
+                      <TableCell className="text-text-secondary tabular-nums">
+                        <div className="flex items-center gap-2">
+                          <div className="w-12 h-1.5 rounded-full bg-border overflow-hidden">
+                            <div
+                              className="h-full bg-primary rounded-full"
+                              style={{ width: `${Math.min(100, costShare)}%` }}
+                            />
+                          </div>
+                          <span className="text-[11px]">{costShare.toFixed(0)}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRecipe(item.id, item.ingredient_name)}
+                          className="p-1.5 rounded-lg text-error hover:bg-error/10 transition-colors cursor-pointer inline-flex items-center justify-center"
+                          title="Hapus bahan"
+                        >
+                          <Trash2 className="w-4 h-4 text-error" />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+              <TableFooter className="shadow-[inset_0px_1px_2px_0px_rgba(255,255,255,1),inset_0px_-1px_4px_0px_rgba(0,0,0,0.05)] bg-surface-subtle/80">
+                <TableRow>
+                  <TableCell colSpan={3} className="font-bold text-text-primary">
+                    Total HPP Pokok (Estimasi Biaya Bahan per Porsi)
+                  </TableCell>
+                  <TableCell className="font-bold text-primary tabular-nums text-sm">
+                    {formatCurrency(hpp)}
+                  </TableCell>
+                  <TableCell colSpan={2} className="text-xs text-text-muted">
+                    100% Alokasi Bahan
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </div>
+        )}
       </Card>
+
+      {/* Sheet Tambah Bahan Baku (Watermelon UI Sheet-5 pattern) */}
+      <Sheet open={isAddIngredientOpen} onOpenChange={setIsAddIngredientOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-hidden p-0">
+          <form onSubmit={handleAddRecipeItem} className="flex flex-col h-full">
+            <SheetHeader>
+              <SheetTitle>Tambah Bahan Baku Resep</SheetTitle>
+              <SheetDescription>
+                Masukkan spesifikasi bahan baku, takaran per porsi, dan estimasi biaya untuk menghitung HPP &amp; simulasi limbah secara otomatis.
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="ingredient-name" className="text-xs font-semibold text-text-primary">
+                  Nama Bahan Baku *
+                </Label>
+                <Input
+                  id="ingredient-name"
+                  placeholder="Contoh: Bawang Merah Brebes"
+                  value={newIngName}
+                  onChange={(e) => setNewIngName(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ingredient-qty" className="text-xs font-semibold text-text-primary">
+                    Kebutuhan / Porsi *
+                  </Label>
+                  <Input
+                    id="ingredient-qty"
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="0.1"
+                    value={newIngQty}
+                    onChange={(e) => setNewIngQty(parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="ingredient-unit" className="text-xs font-semibold text-text-primary">
+                    Satuan Takar *
+                  </Label>
+                  <Input
+                    id="ingredient-unit"
+                    placeholder="KG / LITER"
+                    value={newIngUnit}
+                    onChange={(e) => setNewIngUnit(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="ingredient-cost" className="text-xs font-semibold text-text-primary">
+                  Biaya Est. per Porsi (Rp) *
+                </Label>
+                <Input
+                  id="ingredient-cost"
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="1000"
+                  value={newIngCost}
+                  onChange={(e) => setNewIngCost(parseFloat(e.target.value) || 0)}
+                  required
+                />
+                <p className="text-[11px] text-text-muted">
+                  Estimasi biaya bahan yang dialokasikan untuk 1 porsi menu jadi.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-surface-subtle p-3.5 text-xs text-text-secondary space-y-1">
+                <div className="font-semibold text-text-primary flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-circular-waste" />
+                  Kalkulasi Otomatis
+                </div>
+                <p className="text-[11px] text-text-muted leading-relaxed">
+                  Setelah disimpan, HPP produk dan simulasi margin kotor akan dihitung ulang secara real-time.
+                </p>
+              </div>
+            </div>
+
+            <SheetFooter>
+              <SheetClose asChild>
+                <Button type="button" variant="outline" size="sm" className="rounded-xl cursor-pointer">
+                  Batal
+                </Button>
+              </SheetClose>
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                isLoading={isAddingIngredient}
+                className="rounded-xl font-bold cursor-pointer"
+              >
+                Simpan ke Resep
+              </Button>
+            </SheetFooter>
+          </form>
+        </SheetContent>
+      </Sheet>
+
+      {/* 5.1 Rekomendasi Bahan Baku Alternatif Cerdas */}
+      {alternatives.length > 0 && (
+        <Card className="rounded-2xl border border-border bg-surface p-6 shadow-elevation-1 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-border">
+            <h3 className="font-heading font-bold text-base sm:text-lg text-text-primary">
+              Rekomendasi Alternatif Bahan Baku Cerdas ({alternatives.length})
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {alternatives.map((alt, idx) => (
+              <div
+                key={idx}
+                className="p-4 rounded-xl border border-border bg-surface-subtle/50 space-y-2 hover:border-border-strong transition-all"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] text-text-muted block font-medium">
+                      Bahan Asli: {alt.originalIngredientName}
+                    </span>
+                    <h4 className="font-bold text-sm text-text-primary mt-0.5">
+                      {alt.suggestedIngredientName}
+                    </h4>
+                  </div>
+                  <span
+                    className={`text-xs font-bold px-2 py-0.5 rounded-lg shrink-0 ${
+                      alt.estimatedCostImpactPercentage < 0
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : "bg-blue-50 text-blue-700 border border-blue-200"
+                    }`}
+                  >
+                    {alt.estimatedCostImpactPercentage < 0
+                      ? `Hemat ${Math.abs(alt.estimatedCostImpactPercentage)}%`
+                      : `Premium +${alt.estimatedCostImpactPercentage}%`}
+                  </span>
+                </div>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  {alt.reason}
+                </p>
+                {alt.healthBadges && alt.healthBadges.length > 0 && (
+                  <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                    {alt.healthBadges.map((badge, bIdx) => (
+                      <span
+                        key={bIdx}
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white border border-border text-text-primary"
+                      >
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* 6. Batch Production & Waste Monetization Simulator */}
       <Card className="rounded-2xl border border-border bg-surface p-6 shadow-elevation-1 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-border">
-          <div>
-            <h3 className="font-heading font-bold text-base sm:text-lg text-text-primary flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-accent" />
-              Kalkulator Simulasi Produksi &amp; Monetisasi Limbah
-            </h3>
-            <p className="text-xs text-text-secondary mt-0.5">
-              Simulasikan beberapa kali iterasi batch produksi untuk melihat akumulasi kebutuhan bahan baku dan nilai limbah yang bisa dimonetisasi.
-            </p>
-          </div>
+          <h3 className="font-heading font-bold text-base sm:text-lg text-text-primary">
+            Kalkulator Simulasi Produksi &amp; Monetisasi Limbah
+          </h3>
 
           <div className="flex items-center gap-2 bg-surface-subtle px-3 py-1.5 rounded-xl border border-border">
             <span className="text-xs font-semibold text-text-secondary">Iterasi Batch:</span>
@@ -842,6 +951,19 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
           </div>
         </div>
       </Card>
+
+      {/* Dialog 3 Destructive Confirmation dari Watermelon UI */}
+      <Dialog3
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title={`Hapus Produk "${product.product_name}"?`}
+        description="Tindakan ini permanen dan tidak dapat dibatalkan. Seluruh spesifikasi resep dan kalkulasi HPP terkait akan dihapus."
+        checkboxLabel="Saya paham bahwa tindakan ini tidak dapat dibatalkan"
+        confirmLabel="Hapus Produk"
+        cancelLabel="Batal"
+        isLoading={isDeleting}
+        onConfirm={executeDeleteProduct}
+      />
     </div>
   );
 }

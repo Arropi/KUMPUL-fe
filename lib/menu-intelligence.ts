@@ -49,6 +49,13 @@ export interface CircularMarginComparison {
   circularBoostPercentage: number;
   dailyWasteRevenue: number;
   monthlyWasteRevenue: number;
+  wasteItems: Array<{
+    name: string;
+    dailyVolume: number;
+    unit: string;
+    dailyRevenue: number;
+    offtaker: string;
+  }>;
 }
 
 export interface KitchenStockItem {
@@ -96,6 +103,14 @@ export function calculateCircularMargin(product: BEProduct): CircularMarginCompa
   const dailyWasteRev = wasteRevenuePerUnit * dailyOutputUnits;
   const monthlyWasteRev = dailyWasteRev * 30;
 
+  const wasteItems = (waste.items || []).map((item) => ({
+    name: item.name,
+    dailyVolume: Math.round(item.estimatedVolumePerBatch * iterationsPerDay * 10) / 10,
+    unit: item.unit,
+    dailyRevenue: Math.round(item.potentialRevenue * iterationsPerDay),
+    offtaker: item.recommendedOfftaker || item.offtakerType,
+  }));
+
   return {
     sellingPrice,
     hppPerUnit: hpp,
@@ -107,6 +122,7 @@ export function calculateCircularMargin(product: BEProduct): CircularMarginCompa
     circularBoostPercentage: circularBoostPct,
     dailyWasteRevenue: dailyWasteRev,
     monthlyWasteRevenue: monthlyWasteRev,
+    wasteItems,
   };
 }
 
