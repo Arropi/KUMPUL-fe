@@ -18,6 +18,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { BEProduct } from "@/lib/api/types";
 import {
   aggregateKitchenInventory,
@@ -179,59 +187,59 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
             : "Belum ada kebutuhan bahan baku terdaftar dari menu aktif."}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border/80 bg-surface">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-surface-subtle/80 border-b border-border/80 text-[11px] font-bold text-text-secondary">
-                <th className="py-3 px-4">Bahan Baku Dapur</th>
-                <th className="py-3 px-4">Sektor Asal</th>
-                <th className="py-3 px-4 text-right">Kebutuhan Harian</th>
-                <th className="py-3 px-4 text-right">Stok Dapur</th>
-                <th className="py-3 px-4 text-center">Ketahanan</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60 font-medium text-text-primary">
+        <div className="overflow-hidden rounded-xl border border-border shadow-xs bg-surface">
+          <Table>
+            <TableHeader className="bg-surface-subtle/80 shadow-[inset_0px_1px_2px_0px_rgba(255,255,255,1),inset_0px_-1px_4px_0px_rgba(0,0,0,0.05)]">
+              <TableRow>
+                <TableHead>Bahan Baku Dapur</TableHead>
+                <TableHead>Sektor Asal</TableHead>
+                <TableHead className="text-right">Kebutuhan Harian</TableHead>
+                <TableHead className="text-right">Stok Dapur</TableHead>
+                <TableHead className="text-center">Ketahanan</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredItems.map((item) => {
                 const isKritis = item.status === "KRITIS";
                 const isMenipis = item.status === "MENIPIS";
 
                 return (
-                  <tr
+                  <TableRow
                     key={item.id}
-                    className={`hover:bg-surface-subtle/40 transition-colors ${
+                    className={`hover:bg-surface-subtle/50 transition-colors ${
                       isKritis ? "bg-red-50/20" : isMenipis ? "bg-amber-50/15" : ""
                     }`}
                   >
-                    <td className="py-3 px-4">
+                    <TableCell>
                       <span className="font-bold text-text-primary block">
                         {item.ingredientName}
                       </span>
-                    </td>
+                    </TableCell>
 
-                    <td className="py-3 px-4">
+                    <TableCell>
                       <span className="text-[11px] font-semibold text-text-secondary bg-surface-subtle px-2 py-0.5 rounded border border-border/60">
                         {item.sector}
                       </span>
-                    </td>
+                    </TableCell>
 
-                    <td className="py-3 px-4 text-right tabular-nums">
-                      <span className="font-semibold">
+                    <TableCell className="text-right tabular-nums">
+                      <span className="font-semibold text-text-primary">
                         {item.dailyConsumption} {item.unit}
                       </span>
                       <span className="text-[10px] text-text-muted block">/ hari</span>
-                    </td>
+                    </TableCell>
 
-                    <td className="py-3 px-4 text-right tabular-nums">
+                    <TableCell className="text-right tabular-nums">
                       <span className="font-bold text-text-primary">
                         {item.currentStock} {item.unit}
                       </span>
-                    </td>
+                    </TableCell>
 
-                    <td className="py-3 px-4 text-center tabular-nums">
+                    <TableCell className="text-center tabular-nums">
                       <span
-                        className={`inline-block font-bold text-xs px-2 py-0.5 rounded-md ${
+                        className={`inline-block font-bold text-xs px-2.5 py-0.5 rounded-md ${
                           isKritis
                             ? "bg-red-100 text-red-700"
                             : isMenipis
@@ -241,9 +249,9 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
                       >
                         {item.daysRemaining > 30 ? "> 30 Hari" : `${item.daysRemaining} Hari`}
                       </span>
-                    </td>
+                    </TableCell>
 
-                    <td className="py-3 px-4 text-center">
+                    <TableCell className="text-center">
                       {isKritis ? (
                         <span className="inline-block text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-md">
                           KRITIS
@@ -257,9 +265,9 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
                           AMAN
                         </span>
                       )}
-                    </td>
+                    </TableCell>
 
-                    <td className="py-3 px-4 text-right">
+                    <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
@@ -277,19 +285,19 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
                               type="button"
                               variant="primary"
                               size="sm"
-                              className="text-[11px] font-bold px-2.5 py-1 min-h-[30px] rounded-lg shadow-xs"
+                              className="text-[11px] font-bold px-2.5 py-1 min-h-[30px] rounded-lg shadow-xs cursor-pointer"
                             >
                               Restock
                             </Button>
                           </Link>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
