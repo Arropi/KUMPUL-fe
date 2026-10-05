@@ -92,8 +92,6 @@ export function BankSampahMapSection() {
           <div style="position: relative; width: 34px; height: 44px; cursor: pointer; user-select: none;">
             <!-- Ground Contact Shadow -->
             <div style="position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); width: 16px; height: 4px; border-radius: 50%; background: rgba(13, 59, 46, 0.3); filter: blur(0.8px);"></div>
-            <!-- Radar Beacon Pulsing Ring -->
-            <div style="position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%) translateY(50%); width: 14px; height: 14px; border-radius: 9999px; background: rgba(13, 59, 46, 0.2); border: 1.5px solid #0D3B2E; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
             <!-- Teardrop Pin Head -->
             <div style="position: absolute; top: 0; left: 0; width: 34px; height: 42px; filter: drop-shadow(0 4px 8px rgba(13, 59, 46, 0.4));">
               <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -232,7 +230,6 @@ export function BankSampahMapSection() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-circular-waste animate-pulse" />
             <span className="font-heading text-xs font-semibold text-text-muted">
               Peta Lokasi Drop-Off Mandiri
             </span>
@@ -241,9 +238,6 @@ export function BankSampahMapSection() {
             <Building2 className="size-5 text-circular-waste shrink-0" />
             <span>Titik Bank Sampah Terdekat</span>
           </h2>
-          <p className="font-sans text-xs text-text-secondary text-pretty mt-0.5">
-            Navigasi peta titik Bank Sampah terdekat untuk mengantar langsung hasil limbah dapur secara mandiri.
-          </p>
         </div>
 
         {/* Search Bar Sederhana & Tombol Recenter */}
@@ -282,7 +276,6 @@ export function BankSampahMapSection() {
 
             {/* Floating Top HUD: Status Wilayah & Radius */}
             <div className="absolute top-3 left-3 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface/90 backdrop-blur-md border border-border shadow-elevation-1 pointer-events-none">
-              <span className="w-2 h-2 rounded-full bg-circular-waste animate-pulse" />
               <span className="font-heading text-[11px] font-bold text-text-primary">
                 Area Surabaya Timur
               </span>
@@ -306,11 +299,11 @@ export function BankSampahMapSection() {
             {/* Floating Bottom-Left Legend: Natural Tone */}
             <div className="absolute bottom-3 left-3 z-[400] flex items-center gap-3 p-2 px-3 rounded-xl bg-surface/90 backdrop-blur-md border border-border shadow-elevation-1 text-[11px] font-semibold text-text-primary pointer-events-none">
               <div className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-[#0D3B2E]" />
+                <span className="size-2.5 rounded-xs bg-[#0D3B2E]" />
                 <span>Dapur Saya</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full bg-[#2D6A4F]" />
+                <span className="size-2.5 rounded-xs bg-[#2D6A4F]" />
                 <span>Bank Sampah</span>
               </div>
             </div>
