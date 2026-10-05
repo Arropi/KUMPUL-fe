@@ -229,11 +229,17 @@ export function MapPicker({
 
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-        maxZoom: 19,
-      }).addTo(map);
+      // OpenStreetMap Tiles Resmi (100% Gratis, Tanpa API Key)
+      const osmLayer = L.tileLayer(
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          maxZoom: 19,
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
+        }
+      );
+
+      osmLayer.addTo(map);
 
       // Icon Pin Modern KUMPUL: Ramping, Ringkas, Flat-Modern, dan Proporsional
       const customPinIcon = L.divIcon({
@@ -481,7 +487,7 @@ export function MapPicker({
 
       {/* Frame Peta Interaktif Leaflet dengan Pin Fleksibel */}
       <div className="relative w-full h-[220px] rounded-xl overflow-hidden border border-border bg-surface-subtle shadow-inner isolate z-0">
-        <div ref={mapContainerRef} className="w-full h-full" />
+        <div ref={mapContainerRef} className="kumpul-leaflet-map w-full h-full" />
 
         {/* Pin Location Badge */}
         <div className="absolute top-2 left-2 z-10 max-w-[85%] bg-surface/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-border shadow-xs flex items-center gap-1.5 text-[10px] text-text-primary font-medium pointer-events-none">

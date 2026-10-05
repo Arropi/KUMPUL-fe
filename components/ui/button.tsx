@@ -28,7 +28,7 @@ const buttonVariants = cva(
         accent:
           "bg-gradient-to-b from-[#D97706] to-[#B45309] text-white font-bold border border-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),inset_0_-2px_0_rgba(0,0,0,0.2),0_4px_14px_rgba(180,83,9,0.3)] hover:brightness-105 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_6px_20px_rgba(180,83,9,0.4)] active:scale-[0.98] active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)]",
         destructive:
-          "bg-gradient-to-b from-[#EF4444] to-[#DC2626] text-white font-bold border border-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),inset_0_-2px_0_rgba(0,0,0,0.2),0_4px_14px_rgba(220,38,38,0.3)] hover:brightness-105 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_6px_20px_rgba(220,38,38,0.4)] active:scale-[0.98] active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)]",
+          "bg-[#8B1E1E] text-white font-bold border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),inset_0_-2px_0_rgba(0,0,0,0.25),0_4px_14px_rgba(139,30,30,0.32)] hover:bg-[#731919] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_6px_20px_rgba(139,30,30,0.42)] active:scale-[0.98] active:translate-y-[0.5px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]",
         ghost:
           "bg-transparent text-text-secondary hover:bg-surface-subtle hover:text-text-primary shadow-none active:scale-[0.98]",
         link:

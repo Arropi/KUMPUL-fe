@@ -89,14 +89,14 @@ export function UmkmMenuView() {
         try {
           const saved = localStorage.getItem("kumpul_mock_products");
           if (saved) localMocks = JSON.parse(saved);
-        } catch {}
+        } catch { }
         if (localMocks.length > 0) {
           setProducts(localMocks);
         } else {
           setProducts(DEFAULT_SEED_PRODUCTS);
           try {
             localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
-          } catch {}
+          } catch { }
         }
       }
     } catch {
@@ -114,7 +114,7 @@ export function UmkmMenuView() {
         try {
           const saved = localStorage.getItem("kumpul_mock_products");
           if (saved) localMocks = JSON.parse(saved);
-        } catch {}
+        } catch { }
 
         if (!ignore) {
           if (res.success && res.data && res.data.length > 0) {
@@ -128,7 +128,7 @@ export function UmkmMenuView() {
             setProducts(DEFAULT_SEED_PRODUCTS);
             try {
               localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
-            } catch {}
+            } catch { }
           }
         }
       })
@@ -142,7 +142,7 @@ export function UmkmMenuView() {
               setProducts(DEFAULT_SEED_PRODUCTS);
               localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
             }
-          } catch {}
+          } catch { }
         }
       })
       .finally(() => {
@@ -162,7 +162,7 @@ export function UmkmMenuView() {
           "kumpul_mock_products",
           JSON.stringify(updated.filter((p) => p.id.startsWith("mock-")))
         );
-      } catch {}
+      } catch { }
       return updated;
     });
   };
@@ -175,7 +175,7 @@ export function UmkmMenuView() {
           "kumpul_mock_products",
           JSON.stringify(updated.filter((p) => p.id.startsWith("mock-")))
         );
-      } catch {}
+      } catch { }
       return updated;
     });
   };
