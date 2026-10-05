@@ -40,17 +40,14 @@ import {
   ChevronDown,
   ShoppingBag,
   AlertTriangle,
-  Clock,
   Recycle,
-  CheckCircle2,
   Plus,
-  Calendar,
   Phone,
   Wallet,
   ArrowRight,
   ExternalLink,
-  Users,
 } from "lucide-react";
+import { toast } from "@/components/ui/toast";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
 
 interface WasteBenchmark {
@@ -267,9 +264,6 @@ export function UmkmSirkularView() {
   const [products, setProducts] = React.useState<BEProduct[]>([]);
   const [activeFilter, setActiveFilter] = React.useState<FilterTab>("SEMUA");
 
-  // Notification Banner
-  const [toastMessage, setToastMessage] = React.useState<{ text: string; type: "success" | "info" } | null>(null);
-
   // Form State Modal Tambah Listing
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState("");
@@ -350,7 +344,7 @@ export function UmkmSirkularView() {
       reason: `Dihitung untuk ${newVolume} ${newUnit} ${matchedBenchmark.name} (${conditionData.label}). Target: ${matchedBenchmark.targetBuyer}.`,
     });
 
-    showToast(`Saran harga AI ${formatCurrency(conditionData.price)}/${newUnit} berhasil diterapkan!`);
+    toast.success(`Saran harga AI ${formatCurrency(conditionData.price)}/${newUnit} berhasil diterapkan!`, "Rekomendasi AI");
   };
 
   // Load produk UMKM untuk integrasi asal limbah
@@ -381,13 +375,6 @@ export function UmkmSirkularView() {
     }
     loadProducts();
   }, []);
-
-  const showToast = (text: string, type: "success" | "info" = "success") => {
-    setToastMessage({ text, type });
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 4500);
-  };
 
   // Helper kalkulasi sisa hari kadaluarsa
   const getExpiryDiffDays = (dateStr?: string): number => {
@@ -459,7 +446,7 @@ export function UmkmSirkularView() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 4 * 1024 * 1024) {
-        showToast("Ukuran foto maksimal 4MB", "info");
+        toast.info("Ukuran foto maksimal 4MB", "Unggah Foto");
         return;
       }
       const reader = new FileReader();
@@ -521,7 +508,7 @@ export function UmkmSirkularView() {
     setNewImageUrl("");
     setNewDescription("");
     setAiPriceInsight(null);
-    showToast("Listing limbah berhasil ditayangkan! Pantau pesanan masuk di menu Pesanan.");
+    toast.success("Listing limbah berhasil ditayangkan! Pantau pesanan masuk di menu Pesanan.", "Listing Dibuat");
   };
 
   // Filter listings
@@ -544,14 +531,6 @@ export function UmkmSirkularView() {
 
   return (
     <div className="space-y-6">
-      {/* Toast Feedback */}
-      {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 p-4 rounded-2xl bg-neutral-900 text-white shadow-elevation-2 text-xs font-semibold animate-in fade-in slide-in-from-top-3 border border-white/10 max-w-md">
-          <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
-          <span className="leading-snug">{toastMessage.text}</span>
-        </div>
-      )}
-
       {/* 1. Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1 border-b border-border/70">
         <div>
@@ -599,35 +578,32 @@ export function UmkmSirkularView() {
             <button
               type="button"
               onClick={() => setActiveFilter("ADA_PEMBELI")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${activeFilter === "ADA_PEMBELI"
-                ? "bg-accent-light text-accent shadow-xs border border-accent/20"
-                : "text-amber-800 hover:text-amber-900 hover:bg-surface/50"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "ADA_PEMBELI"
+                ? "bg-surface text-text-primary shadow-xs border border-border/60"
+                : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
             >
-              <ShoppingBag className="size-3" />
-              <span>Ada Pembeli ({listingsWithOrdersCount})</span>
+              Ada Pembeli ({listingsWithOrdersCount})
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter("LEWAT_KADALUARSA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${activeFilter === "LEWAT_KADALUARSA"
-                ? "bg-[#8B1E1E]/10 text-[#8B1E1E] shadow-xs border border-[#8B1E1E]/30"
-                : "text-[#8B1E1E] hover:text-[#731919] hover:bg-[#8B1E1E]/5"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "LEWAT_KADALUARSA"
+                ? "bg-surface text-text-primary shadow-xs border border-border/60"
+                : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
             >
-              <AlertTriangle className="size-3 text-[#8B1E1E]" />
-              <span>Lewat Kadaluwarsa ({pastDueCount})</span>
+              Lewat Kadaluwarsa ({pastDueCount})
             </button>
             <button
               type="button"
               onClick={() => setActiveFilter("MENDEKATI_KADALUARSA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${activeFilter === "MENDEKATI_KADALUARSA"
-                ? "bg-amber-50 text-amber-800 shadow-xs border border-amber-200"
-                : "text-amber-800 hover:text-amber-900 hover:bg-surface/50"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "MENDEKATI_KADALUARSA"
+                ? "bg-surface text-text-primary shadow-xs border border-border/60"
+                : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
             >
-              <Clock className="size-3 text-amber-600" />
-              <span>Mendekati Tempo ({expiringSoonCount})</span>
+              Mendekati Tempo ({expiringSoonCount})
             </button>
             <button
               type="button"
@@ -709,8 +685,12 @@ export function UmkmSirkularView() {
                     <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1.5 pointer-events-none z-10 max-w-[85%]">
                       {isPastDue ? (
                         <>
-                          <Badge className="bg-[#8B1E1E] text-white border border-white/20 font-bold shadow-[0_2px_8px_rgba(139,30,30,0.35)] text-[10px] py-0.5 px-2.5">
-                            Lewat Jatuh Tempo
+                          <Badge
+                            variant="neutral"
+                            className="bg-red-50/95 backdrop-blur-xs text-[#8B1E1E] border border-[#8B1E1E]/40 font-bold shadow-md text-[10px] py-0.5 px-2.5 flex items-center gap-1"
+                          >
+                            <AlertTriangle className="size-3 text-[#8B1E1E] shrink-0" />
+                            <span>Lewat Jatuh Tempo</span>
                           </Badge>
                           {hasUnconfirmed ? (
                             <Badge variant="accent" className="gap-1 font-bold shadow-md text-[10px] py-0.5 px-2.5">
@@ -718,7 +698,10 @@ export function UmkmSirkularView() {
                               <span>{unconfirmedOrders.length} Pesanan Tertunda</span>
                             </Badge>
                           ) : (
-                            <Badge className="bg-[#8B1E1E]/20 backdrop-blur-xs border border-[#8B1E1E]/40 text-white font-semibold shadow-md text-[10px] py-0.5 px-2.5">
+                            <Badge
+                              variant="neutral"
+                              className="bg-surface/95 backdrop-blur-xs text-text-secondary border border-border font-semibold shadow-md text-[10px] py-0.5 px-2.5"
+                            >
                               Listing Ditutup
                             </Badge>
                           )}
@@ -808,8 +791,7 @@ export function UmkmSirkularView() {
                             ? "bg-[#8B1E1E]/[0.05] border-[#8B1E1E]/30"
                             : "bg-surface-subtle border-border"
                         }`}>
-                          <div className="flex items-center gap-1.5 text-text-muted text-[10px]">
-                            <Calendar className={`size-3.5 shrink-0 ${isPastDue ? "text-[#8B1E1E]" : "text-text-secondary"}`} />
+                          <div className="text-text-muted text-[10px]">
                             <span className={`font-medium ${isPastDue ? "text-[#8B1E1E] font-semibold" : ""}`}>Kadaluwarsa</span>
                           </div>
                           <div>
@@ -834,8 +816,7 @@ export function UmkmSirkularView() {
 
                         {/* Transaksi Pembeli */}
                         <div className="p-2.5 rounded-xl bg-surface-subtle border border-border flex flex-col justify-between min-h-[64px] gap-1">
-                          <div className="flex items-center gap-1.5 text-text-muted text-[10px]">
-                            <Users className="size-3.5 shrink-0 text-text-secondary" />
+                          <div className="text-text-muted text-[10px]">
                             <span className="font-medium">Transaksi</span>
                           </div>
                           <div>
@@ -906,7 +887,7 @@ export function UmkmSirkularView() {
                               const elem = document.getElementById("bank-sampah-map-section");
                               elem?.scrollIntoView({ behavior: "smooth" });
                               if (isPastDue) {
-                                showToast("Residu telah lewat tempo. Silakan drop ke titik Bank Sampah terdekat.");
+                                toast.info("Residu telah lewat tempo. Silakan drop ke titik Bank Sampah terdekat.", "Bursa Limbah");
                               }
                             }}
                             className="font-bold cursor-pointer gap-1.5"
