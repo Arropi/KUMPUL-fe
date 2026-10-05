@@ -63,17 +63,35 @@ export interface UMKMPurchaseHistory {
   hubPickupCode?: string;
 }
 
+export interface WasteOrderInfo {
+  buyerName: string;
+  buyerType: string;
+  buyerPhone?: string;
+  orderedVolume: number;
+  orderedUnit: string;
+  totalPrice: number;
+  orderDate: string;
+  pickupScheduledDate: string;
+  status: "MENUNGGU_KONFIRMASI" | "DIJADWALKAN_JEMPUT" | "SELESAI";
+  notes?: string;
+}
+
 export interface WasteListing {
   id: string;
   title: string;
-  category: "Ampas Kedelai / Tahu" | "Minyak Jelantah (UCO)" | "Kulit Buah & Sayur" | "Cangkang Telur";
+  category?: string;
+  sourceProductId?: string;
+  sourceProductName?: string;
   volumeKg: number;
+  unit?: string;
   pricePerKg: number;
   location: string;
-  expiryTimeHours: number;
+  expiryTimeHours?: number;
+  expiryDate?: string;
   status: "TERSEDIA" | "DIBOOKING" | "DIJEMPUT_OFFTAKER";
   potentialRevenue: number;
   suitableOfftaker: string;
+  orderInfo?: WasteOrderInfo;
 }
 
 export const MOCK_UMKM_PROFILE: UMKMBusinessProfile = {
@@ -305,6 +323,29 @@ export interface CircularOfftaker {
   minPickupKg: number;
   pickupService: boolean;
   priceEstimateInfo: string;
+}
+
+export interface BankSampahPoint {
+  id: string;
+  name: string;
+  category: "Bank Sampah Induk Kota" | "Unit Bank Sampah Kelurahan" | "Pusat Daur Ulang Komunal";
+  address: string;
+  subdistrict: string;
+  distanceKm: number;
+  rating: number;
+  userRatingsTotal: number;
+  operatingHours: string;
+  openStatus: "Buka Sekarang" | "Tutup Sementara";
+  acceptedCommodities: string[];
+  contactPerson: string;
+  phone: string;
+  hasDropbox24h: boolean;
+  googleMapsUrl: string;
+  serviceFeatures: string[];
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export const MOCK_CATALOG_COMMODITIES: CatalogCommodity[] = [
@@ -596,36 +637,274 @@ export const MOCK_WASTE_LISTINGS: WasteListing[] = [
     id: "waste-01",
     title: "Ampas Kedelai Perasan Tahu Segar",
     category: "Ampas Kedelai / Tahu",
+    sourceProductId: "mock-seed-tahu-walik",
+    sourceProductName: "Tahu Walik Crispy Daun Jeruk",
     volumeKg: 120,
+    unit: "Kg",
     pricePerKg: 1200,
     location: "Rungkut, Surabaya",
     expiryTimeHours: 24,
-    status: "TERSEDIA",
+    expiryDate: "2026-10-06",
+    status: "DIBOOKING",
     potentialRevenue: 144000,
     suitableOfftaker: "Peternak Bebek & Ikan Lele Sidoarjo",
+    orderInfo: {
+      buyerName: "UD Berkah Peternakan Bebek & Lele",
+      buyerType: "Pabrik Pakan Ternak",
+      buyerPhone: "0813-8899-2311",
+      orderedVolume: 120,
+      orderedUnit: "Kg",
+      totalPrice: 144000,
+      orderDate: "05 Okt 2026, 09:30 WIB",
+      pickupScheduledDate: "Besok (06 Okt 2026), 08:30 WIB",
+      status: "MENUNGGU_KONFIRMASI",
+      notes: "Mohon ampas dikemas dalam karung plastik rapat agar tidak tumpah di bak pick-up.",
+    },
   },
   {
     id: "waste-02",
     title: "Minyak Jelantah Bekas Katering (UCO)",
     category: "Minyak Jelantah (UCO)",
+    sourceProductId: "mock-seed-bebek-goreng",
+    sourceProductName: "Bebek Goreng Kremes Sambal Korek",
     volumeKg: 65,
+    unit: "Liter",
     pricePerKg: 7500,
     location: "Rungkut, Surabaya",
     expiryTimeHours: 72,
-    status: "TERSEDIA",
+    expiryDate: "2026-10-08",
+    status: "DIBOOKING",
     potentialRevenue: 487500,
     suitableOfftaker: "Off-Taker Biodiesel Ekspor & Bank Sampah Induk",
+    orderInfo: {
+      buyerName: "PT Hijau Bioenergi Nusantara",
+      buyerType: "Offtaker Industri Biodiesel",
+      buyerPhone: "0812-9988-7711",
+      orderedVolume: 65,
+      orderedUnit: "Liter",
+      totalPrice: 487500,
+      orderDate: "05 Okt 2026, 08:15 WIB",
+      pickupScheduledDate: "Rabu (07 Okt 2026), 10:00 WIB",
+      status: "DIJADWALKAN_JEMPUT",
+      notes: "Driver membawa 4 jeriken penukar 20L bertutup segel resmi SNI.",
+    },
   },
   {
     id: "waste-03",
     title: "Cangkang Telur Ayam Kering Cacah",
     category: "Cangkang Telur",
+    sourceProductId: "mock-seed-martabak-telur",
+    sourceProductName: "Martabak Telur Daging Sapi Super",
     volumeKg: 25,
+    unit: "Kg",
     pricePerKg: 2000,
     location: "Rungkut, Surabaya",
-    expiryTimeHours: 120,
+    expiryTimeHours: 168,
+    expiryDate: "2026-10-14",
     status: "TERSEDIA",
     potentialRevenue: 50000,
     suitableOfftaker: "Produsen Pupuk Kalsium Organik",
+  },
+  {
+    id: "waste-04",
+    title: "Residu Trimming Lemak & Tulang Sapi Bersih",
+    category: "Biomassa Organik Lainnya",
+    sourceProductId: "mock-seed-rice-bowl-sapi",
+    sourceProductName: "Rice Bowl Daging Sapi Lada Hitam",
+    volumeKg: 35,
+    unit: "Kg",
+    pricePerKg: 3000,
+    location: "Rungkut, Surabaya",
+    expiryTimeHours: 48,
+    expiryDate: "2026-10-07",
+    status: "TERSEDIA",
+    potentialRevenue: 105000,
+    suitableOfftaker: "Biokonversi Maggot BSF SIER Tenggilis",
+  },
+];
+
+export const MOCK_BANK_SAMPAH_POINTS: BankSampahPoint[] = [
+  {
+    id: "bs-01",
+    name: "Bank Sampah Induk Surabaya (BSIS)",
+    category: "Bank Sampah Induk Kota",
+    address: "Jl. Menur Pumpungan No. 32, Menur Pumpungan, Sukolilo",
+    subdistrict: "Sukolilo, Surabaya",
+    distanceKm: 2.4,
+    rating: 4.8,
+    userRatingsTotal: 142,
+    operatingHours: "Senin - Sabtu: 08.00 - 16.00 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Minyak Jelantah (UCO)",
+      "Cangkang Telur Kering",
+      "Kardus / Box Makanan",
+      "Plastik Botol & Jeriken",
+    ],
+    contactPerson: "Bpk. Bambang Irawan",
+    phone: "0812-3011-8844",
+    hasDropbox24h: true,
+    googleMapsUrl: "https://maps.google.com/?q=Bank+Sampah+Induk+Surabaya",
+    serviceFeatures: [
+      "Penimbangan Digital Akurat",
+      "Area Parkir Pick-up Luas",
+      "Dropbox Pintar 24 Jam",
+    ],
+    coordinates: {
+      lat: -7.2882,
+      lng: 112.7663,
+    },
+  },
+  {
+    id: "bs-02",
+    name: "Bank Sampah Resik Mandiri Rungkut",
+    category: "Unit Bank Sampah Kelurahan",
+    address: "Balai RW 05, Jl. Rungkut Asri Timur No. 8, Rungkut Kidul",
+    subdistrict: "Rungkut, Surabaya",
+    distanceKm: 0.8,
+    rating: 4.9,
+    userRatingsTotal: 88,
+    operatingHours: "Setiap Hari: 07.30 - 17.00 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Ampas Kedelai / Tahu",
+      "Kulit Buah & Sayur",
+      "Minyak Jelantah (UCO)",
+      "Sisa Makanan Katering",
+    ],
+    contactPerson: "Ibu Sri Wahyuni",
+    phone: "0813-3342-9901",
+    hasDropbox24h: true,
+    googleMapsUrl: "https://maps.google.com/?q=Rungkut+Asri+Timur+Surabaya",
+    serviceFeatures: [
+      "Jarak Sangat Dekat (< 1 km)",
+      "Drop-box 24 Jam",
+      "Akses Motor & Tossa",
+    ],
+    coordinates: {
+      lat: -7.3225,
+      lng: 112.7788,
+    },
+  },
+  {
+    id: "bs-03",
+    name: "Bank Sampah Bintang Mangrove Wonorejo",
+    category: "Pusat Daur Ulang Komunal",
+    address: "Jl. Wonorejo Timur No. 12, Wonorejo, Rungkut",
+    subdistrict: "Rungkut, Surabaya",
+    distanceKm: 3.1,
+    rating: 4.7,
+    userRatingsTotal: 65,
+    operatingHours: "Senin - Jumat: 08.30 - 15.30 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Minyak Jelantah (UCO)",
+      "Ampas Kopi & Teh",
+      "Cangkang Telur",
+      "Sisa Organik Basah",
+    ],
+    contactPerson: "Mas Hendra Prasetyo",
+    phone: "0811-3489-021",
+    hasDropbox24h: false,
+    googleMapsUrl: "https://maps.google.com/?q=Wonorejo+Rungkut+Surabaya",
+    serviceFeatures: [
+      "Sertifikasi ISCC Daur Ulang",
+      "Edukasi Kompos Mandiri",
+      "Area Parkir Nyaman",
+    ],
+    coordinates: {
+      lat: -7.311,
+      lng: 112.8021,
+    },
+  },
+  {
+    id: "bs-04",
+    name: "Pusat Pengolahan Organik SIER Tenggilis",
+    category: "Pusat Daur Ulang Komunal",
+    address: "Kawasan Industri SIER Blok D-4, Tenggilis Mejoyo",
+    subdistrict: "Tenggilis Mejoyo, Surabaya",
+    distanceKm: 3.7,
+    rating: 4.6,
+    userRatingsTotal: 53,
+    operatingHours: "Senin - Sabtu: 08.00 - 17.00 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Residu Trimming Daging & Tulang",
+      "Ampas Kedelai / Tahu",
+      "Sisa Sayur & Nasi",
+    ],
+    contactPerson: "Drs. Eko Purwanto",
+    phone: "0812-4455-6677",
+    hasDropbox24h: false,
+    googleMapsUrl: "https://maps.google.com/?q=Kawasan+Industri+SIER+Surabaya",
+    serviceFeatures: [
+      "Penerimaan Residu Skala Besar",
+      "Khusus Residu Daging & Tulang",
+      "Timbangan Truk / Pick-up",
+    ],
+    coordinates: {
+      lat: -7.3312,
+      lng: 112.7554,
+    },
+  },
+  {
+    id: "bs-05",
+    name: "Bank Sampah Surya Mandiri Jemursari",
+    category: "Unit Bank Sampah Kelurahan",
+    address: "Jl. Jemursari Selatan IV No. 16, Jemur Wonosari",
+    subdistrict: "Wonocolo, Surabaya",
+    distanceKm: 4.2,
+    rating: 4.8,
+    userRatingsTotal: 92,
+    operatingHours: "Senin - Sabtu: 08.00 - 16.30 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Minyak Jelantah (UCO)",
+      "Wadah Plastik & Jeriken",
+      "Kardus Kemasan",
+    ],
+    contactPerson: "Ibu Ratna Dewi",
+    phone: "0812-3211-9988",
+    hasDropbox24h: true,
+    googleMapsUrl: "https://maps.google.com/?q=Jemursari+Surabaya",
+    serviceFeatures: [
+      "Penerimaan Drop-off Langsung UMKM",
+      "Dropbox 24 Jam",
+      "Area Dekat Jalan Raya",
+    ],
+    coordinates: {
+      lat: -7.318,
+      lng: 112.748,
+    },
+  },
+  {
+    id: "bs-06",
+    name: "Bank Sampah Bratang Binangun",
+    category: "Unit Bank Sampah Kelurahan",
+    address: "Jl. Bratang Binangun No. 22, Baratajaya, Gubeng",
+    subdistrict: "Gubeng, Surabaya",
+    distanceKm: 4.8,
+    rating: 4.7,
+    userRatingsTotal: 74,
+    operatingHours: "Senin - Sabtu: 08.00 - 16.00 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Minyak Jelantah (UCO)",
+      "Cangkang Telur",
+      "Kardus Kemasan Makanan",
+    ],
+    contactPerson: "Bpk. Agus Santoso",
+    phone: "0813-9088-1234",
+    hasDropbox24h: false,
+    googleMapsUrl: "https://maps.google.com/?q=Bratang+Binangun+Surabaya",
+    serviceFeatures: [
+      "Tersedia Parkir Pick-up",
+      "Pelayanan Ramah & Cepat",
+      "Penimbangan Digital",
+    ],
+    coordinates: {
+      lat: -7.2965,
+      lng: 112.754,
+    },
   },
 ];
