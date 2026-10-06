@@ -58,9 +58,12 @@ export interface UMKMPurchaseHistory {
   marketPriceComparison: number;
   savingsAmount: number;
   status: "TERKUNCI" | "DIPROSES_SUPPLIER" | "TIBA_DI_HUB" | "SELESAI";
-  deliveryMethod: "HEMAT_HUB" | "DIRECT_DELIVERY";
+  deliveryMethod: "HEMAT_HUB" | "DIRECT_DELIVERY" | "ON_YOUR_DOOR";
   orderDate: string;
   hubPickupCode?: string;
+  orderType?: "POOLING_UNDER_MOQ" | "DIRECT_OVER_MOQ" | "CIRCULAR_WASTE";
+  supplierOrSellerName?: string;
+  deliveryLocation?: string;
 }
 
 export interface WasteBuyerOrder {
@@ -98,6 +101,27 @@ export interface WasteSaleOrder {
 }
 
 export interface WasteOrderInfo extends WasteBuyerOrder {}
+
+export interface WastePurchaseOrder {
+  id: string;
+  orderNumber: string;
+  listingId: string;
+  listingTitle: string;
+  listingCategory?: string;
+  listingImageUrl?: string;
+  sellerName: string;
+  sellerType: string;
+  sellerPhone?: string;
+  sellerLocation: string;
+  orderedVolume: number;
+  orderedUnit: string;
+  pricePerUnit: number;
+  totalPrice: number;
+  orderDate: string;
+  pickupScheduledDate: string;
+  status: "MENUNGGU_KONFIRMASI" | "DIKONFIRMASI" | "SELESAI" | "DIBATALKAN";
+  notes?: string;
+}
 
 export interface WasteListing {
   id: string;
@@ -248,20 +272,6 @@ export const MOCK_ACTIVE_POOLS: ActivePoolItem[] = [
 
 export const MOCK_UMKM_PURCHASE_HISTORY: UMKMPurchaseHistory[] = [
   {
-    id: "po-hist-01",
-    orderNumber: "POOL-KMPL-2026-081",
-    commodityName: "Beras Rojolele Super Premium",
-    volumeKg: 150,
-    unit: "3 Karung (50 kg)",
-    totalWholesalePaid: 1875000,
-    marketPriceComparison: 2280000,
-    savingsAmount: 405000,
-    status: "SELESAI",
-    deliveryMethod: "HEMAT_HUB",
-    orderDate: "28 Sep 2026",
-    hubPickupCode: "HUB-SBY-8821",
-  },
-  {
     id: "po-hist-02",
     orderNumber: "POOL-KMPL-2026-088",
     commodityName: "Bawang Merah Brebes Super",
@@ -272,8 +282,27 @@ export const MOCK_UMKM_PURCHASE_HISTORY: UMKMPurchaseHistory[] = [
     savingsAmount: 360000,
     status: "TIBA_DI_HUB",
     deliveryMethod: "HEMAT_HUB",
+    orderType: "POOLING_UNDER_MOQ",
     orderDate: "30 Sep 2026",
     hubPickupCode: "HUB-RKT-4410",
+    deliveryLocation: "Hemat Hub Rungkut, Surabaya",
+    supplierOrSellerName: "Gapoktan Bawang Brebes Lestari",
+  },
+  {
+    id: "po-hist-04",
+    orderNumber: "DIR-KMPL-2026-042",
+    commodityName: "Gula Pasir Rafinasi Kristal Putih",
+    volumeKg: 250,
+    unit: "5 Karung (50 kg)",
+    totalWholesalePaid: 3625000,
+    marketPriceComparison: 4250000,
+    savingsAmount: 625000,
+    status: "DIPROSES_SUPPLIER",
+    deliveryMethod: "ON_YOUR_DOOR",
+    orderType: "DIRECT_OVER_MOQ",
+    orderDate: "02 Okt 2026",
+    deliveryLocation: "Antar ke Pintu Dapur (Rungkut Mapan)",
+    supplierOrSellerName: "PT Agro Manis Nusantara",
   },
   {
     id: "po-hist-03",
@@ -286,7 +315,43 @@ export const MOCK_UMKM_PURCHASE_HISTORY: UMKMPurchaseHistory[] = [
     savingsAmount: 264000,
     status: "DIPROSES_SUPPLIER",
     deliveryMethod: "HEMAT_HUB",
+    orderType: "POOLING_UNDER_MOQ",
     orderDate: "01 Okt 2026",
+    deliveryLocation: "Hemat Hub Rungkut, Surabaya",
+    supplierOrSellerName: "CV Sumber Pangan Sejahtera",
+  },
+  {
+    id: "po-hist-05",
+    orderNumber: "CIR-KMPL-2026-015",
+    commodityName: "Minyak Jelantah Dapur B2B (UCO Tersaring)",
+    volumeKg: 100,
+    unit: "5 Jeriken (20 Liter)",
+    totalWholesalePaid: 750000,
+    marketPriceComparison: 900000,
+    savingsAmount: 150000,
+    status: "SELESAI",
+    deliveryMethod: "DIRECT_DELIVERY",
+    orderType: "CIRCULAR_WASTE",
+    orderDate: "29 Sep 2026",
+    deliveryLocation: "Pick-up Mandiri Dapur Penjual (Jemursari)",
+    supplierOrSellerName: "Dapur Ayam Goreng Pemuda",
+  },
+  {
+    id: "po-hist-01",
+    orderNumber: "POOL-KMPL-2026-081",
+    commodityName: "Beras Rojolele Super Premium",
+    volumeKg: 150,
+    unit: "3 Karung (50 kg)",
+    totalWholesalePaid: 1875000,
+    marketPriceComparison: 2280000,
+    savingsAmount: 405000,
+    status: "SELESAI",
+    deliveryMethod: "HEMAT_HUB",
+    orderType: "POOLING_UNDER_MOQ",
+    orderDate: "28 Sep 2026",
+    hubPickupCode: "HUB-SBY-8821",
+    deliveryLocation: "Hemat Hub Rungkut, Surabaya",
+    supplierOrSellerName: "UD Beras Tani Makmur",
   },
 ];
 
@@ -827,6 +892,67 @@ export const MOCK_WASTE_LISTINGS: WasteListing[] = [
     realizedRevenue: 0,
     suitableOfftaker: "Bank Sampah Bratang & Rumah Kompos (Pupuk Organik)",
     buyerOrders: [],
+  },
+];
+
+export const MOCK_WASTE_PURCHASE_ORDERS: WastePurchaseOrder[] = [
+  {
+    id: "buy-wst-01",
+    orderNumber: "KMPL-WBUY-2026-0031",
+    listingId: "ext-waste-01",
+    listingTitle: "Kulit Singkong & Ampas Ubi Segar",
+    listingCategory: "Residu Buah & Sayuran",
+    listingImageUrl: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=800&q=80",
+    sellerName: "Dapur Catering Pak Harto",
+    sellerType: "UMKM Katering",
+    sellerPhone: "0812-7788-9900",
+    sellerLocation: "Wonokromo, Surabaya",
+    orderedVolume: 30,
+    orderedUnit: "Kg",
+    pricePerUnit: 800,
+    totalPrice: 24000,
+    orderDate: "05 Okt 2026, 10:00 WIB",
+    pickupScheduledDate: "Besok (06 Okt 2026), 09:00 WIB",
+    status: "DIKONFIRMASI",
+    notes: "Saya akan datang sendiri bawa karung. Mohon disiapkan di depan.",
+  },
+  {
+    id: "buy-wst-02",
+    orderNumber: "KMPL-WBUY-2026-0028",
+    listingId: "ext-waste-02",
+    listingTitle: "Ampas Kopi Robusta Segar (Espresso Bar)",
+    listingCategory: "Ampas Kopi & Teh",
+    listingImageUrl: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80",
+    sellerName: "Kedai Kopi Rungkut Corner",
+    sellerType: "Kedai Kopi & Minuman",
+    sellerPhone: "0813-5544-2211",
+    sellerLocation: "Rungkut, Surabaya",
+    orderedVolume: 15,
+    orderedUnit: "Kg",
+    pricePerUnit: 1200,
+    totalPrice: 18000,
+    orderDate: "04 Okt 2026, 14:30 WIB",
+    pickupScheduledDate: "05 Okt 2026, 08:00 WIB",
+    status: "SELESAI",
+    notes: "Ampas disimpan dalam kantung plastik food-grade rapat. Sudah diambil.",
+  },
+  {
+    id: "buy-wst-03",
+    orderNumber: "KMPL-WBUY-2026-0019",
+    listingId: "ext-waste-03",
+    listingTitle: "Cangkang Telur Kering Sortir Bersih",
+    listingCategory: "Cangkang Telur",
+    sellerName: "Warung Martabak Bu Dewi",
+    sellerType: "Warung Makan UMKM",
+    sellerPhone: "0857-6655-1122",
+    sellerLocation: "Jemursari, Surabaya",
+    orderedVolume: 8,
+    orderedUnit: "Kg",
+    pricePerUnit: 2000,
+    totalPrice: 16000,
+    orderDate: "01 Okt 2026, 09:00 WIB",
+    pickupScheduledDate: "02 Okt 2026, 10:00 WIB",
+    status: "SELESAI",
   },
 ];
 
