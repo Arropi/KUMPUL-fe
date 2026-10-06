@@ -27,6 +27,13 @@ export function HomeRecommendationSection({
 }: HomeRecommendationSectionProps) {
   const isUmkm = role === "umkm";
   const [umkmProducts, setUmkmProducts] = React.useState<BEProduct[]>([]);
+  const [criticalStockItems, setCriticalStockItems] = React.useState<
+    Array<{
+      name: string;
+      status: "KRITIS" | "MENIPIS";
+      daysRemaining: number;
+    }>
+  >([]);
 
   React.useEffect(() => {
     if (!isUmkm) return;
@@ -41,14 +48,47 @@ export function HomeRecommendationSection({
       }
     }
     loadProducts();
+
+    // Muat data status stok kritis dapur dari localStorage
+    try {
+      const saved = localStorage.getItem("kumpul_kitchen_critical_items");
+      if (saved) {
+        setCriticalStockItems(JSON.parse(saved));
+      }
+    } catch {
+      // Ignore storage error
+    }
   }, [isUmkm]);
 
-  // Compute recommendations for UMKM based on Recipe Ingredients
+  // Compute recommendations for UMKM based on Recipe Ingredients & Critical Kitchen Stocks
   const umkmRecommendations: MatchedCommodity[] = React.useMemo(() => {
     if (!isUmkm) return [];
 
     const matches: MatchedCommodity[] = [];
     const seenCommodityIds = new Set<string>();
+
+    // 0. PRIORITAS UTAMA: Bahan Baku dengan Stok Dapur Kritis & Menipis
+    if (criticalStockItems.length > 0) {
+      for (const crit of criticalStockItems) {
+        const cName = crit.name.toLowerCase();
+        const found = commodities.find(
+          (c) =>
+            !seenCommodityIds.has(c.id) &&
+            (c.name.toLowerCase().includes(cName) ||
+              cName.includes(c.name.toLowerCase().split(" ")[0]))
+        );
+        if (found) {
+          seenCommodityIds.add(found.id);
+          matches.push({
+            commodity: found,
+            recipeTag:
+              crit.status === "KRITIS"
+                ? `⚠️ Stok Kritis Dapur (Sisa ${crit.daysRemaining} Hari) • Segera Restock`
+                : `⚡ Stok Dapur Menipis (Sisa ${crit.daysRemaining} Hari) • Restock`,
+          });
+        }
+      }
+    }
 
     // 1. If products exist with recipes in DB
     if (umkmProducts.length > 0) {

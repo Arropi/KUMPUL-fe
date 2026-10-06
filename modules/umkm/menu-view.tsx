@@ -2,21 +2,25 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Utensils, Search, RefreshCw, ShoppingCart } from "lucide-react";
+import { Plus, Utensils, Search, RefreshCw, ShoppingCart, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 import { MenuAddDialog } from "./menu/menu-add-dialog";
 import { MenuCard } from "./menu/menu-card";
+import { KitchenInventorySection } from "./menu/kitchen-inventory-section";
 import { getUmkmProductsAction } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
+import { MENU_CATEGORIES } from "./menu/menu-types";
 
 export function UmkmMenuView() {
   const [products, setProducts] = React.useState<BEProduct[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedCategory, setSelectedCategory] = React.useState<string>("Semua");
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [editingProduct, setEditingProduct] = React.useState<BEProduct | null>(null);
 
   const loadProducts = React.useCallback(async () => {
     setIsLoading(true);
@@ -38,26 +42,64 @@ export function UmkmMenuView() {
     loadProducts();
   }, [loadProducts]);
 
-  const handleProductAdded = (newProduct: BEProduct) => {
-    setProducts((prev) => [newProduct, ...prev.filter((p) => p.id !== newProduct.id)]);
+  const handleProductSaved = (savedProduct: BEProduct) => {
+    setProducts((prev) => [
+      savedProduct,
+      ...prev.filter((p) => p.id !== savedProduct.id),
+    ]);
+    setEditingProduct(null);
   };
 
   const handleProductDeleted = (deletedId: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== deletedId));
   };
 
+  const handleOpenAdd = () => {
+    setEditingProduct(null);
+    setIsAddModalOpen(true);
+  };
+
+  const handleOpenEdit = (product: BEProduct) => {
+    setEditingProduct(product);
+    setIsAddModalOpen(true);
+  };
+
+  // Filter Grouping Menu Berdasarkan Kategori & Pencarian
   const filteredProducts = React.useMemo(() => {
-    if (!searchQuery.trim()) return products;
-    const q = searchQuery.toLowerCase();
-    return products.filter(
-      (p) =>
-        p.product_name.toLowerCase().includes(q) ||
-        p.recipes?.some((r) => r.ingredient_name.toLowerCase().includes(q))
-    );
-  }, [products, searchQuery]);
+    let result = products;
+
+    // Filter Kategori Grouping
+    if (selectedCategory !== "Semua") {
+      result = result.filter((p) => {
+        const name = p.product_name.toLowerCase();
+        if (selectedCategory === "Makanan Utama") {
+          return !name.includes("es ") && !name.includes("kopi") && !name.includes("teh") && !name.includes("snack");
+        } else if (selectedCategory === "Minuman") {
+          return name.includes("es ") || name.includes("kopi") || name.includes("teh") || name.includes("jus") || name.includes("minum");
+        } else if (selectedCategory === "Snack & Camilan") {
+          return name.includes("snack") || name.includes("keripik") || name.includes("camilan") || name.includes("gorengan");
+        } else if (selectedCategory === "Paket Katering") {
+          return name.includes("paket") || name.includes("bento") || name.includes("box") || name.includes("pax");
+        }
+        return true;
+      });
+    }
+
+    // Filter Search Text
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.product_name.toLowerCase().includes(q) ||
+          p.recipes?.some((r) => r.ingredient_name.toLowerCase().includes(q))
+      );
+    }
+
+    return result;
+  }, [products, selectedCategory, searchQuery]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* 1. Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
@@ -71,7 +113,7 @@ export function UmkmMenuView() {
             Menu Usaha &amp; Kebutuhan Bahan Baku
           </h1>
           <p className="font-body text-xs sm:text-sm text-text-secondary mt-1">
-            Daftarkan menu masakan atau produk olahan Anda beserta rincian resep bahan baku untuk agregasi pengadaan grosir otomatis.
+            Kelola menu produk, sesuaikan iterasi hari produksi dapur, pantau valuasi margin limbah sirkular, dan jaga ketahanan stok bahan baku.
           </p>
         </div>
 
@@ -93,7 +135,7 @@ export function UmkmMenuView() {
             type="button"
             variant="primary"
             size="md"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={handleOpenAdd}
             className="min-h-[44px] gap-2 font-semibold px-4"
           >
             <Plus className="w-4 h-4" />
@@ -102,13 +144,41 @@ export function UmkmMenuView() {
         </div>
       </div>
 
-      {/* 2. Search & Aggregated Notice */}
+      {/* 2. Grouping per Kategori Menu (Tabs / Filter Pills) */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-text-secondary uppercase tracking-wider">
+          <Filter className="w-3.5 h-3.5 text-primary" />
+          <span>Pengelompokan Menu Usaha:</span>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {MENU_CATEGORIES.map((cat) => {
+            const isSelected = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  isSelected
+                    ? "bg-primary text-white shadow-sm"
+                    : "bg-surface border border-border text-text-secondary hover:border-primary/50 hover:text-text-primary"
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. Search & Bursa Pasokan Quick Action */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
         <div className="md:col-span-8 relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <Input
             type="text"
-            placeholder="Cari berdasarkan nama menu atau bahan baku..."
+            placeholder="Cari berdasarkan nama menu olahan atau bahan baku..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-11 text-xs sm:text-sm bg-surface rounded-xl"
@@ -130,36 +200,38 @@ export function UmkmMenuView() {
         </div>
       </div>
 
-      {/* 3. Product Cards Grid */}
+      {/* 4. Product Cards Grid (Dengan Tombol Edit & Analisis Limbah) */}
       {isLoading ? (
-        <div className="min-h-[300px] flex flex-col items-center justify-center gap-3">
+        <div className="min-h-[250px] flex flex-col items-center justify-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           <span className="text-xs text-text-muted font-medium">
             Memuat daftar menu dari backend KUMPUL...
           </span>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <Card className="rounded-2xl border border-dashed border-border py-12 text-center">
+        <Card className="rounded-2xl border border-dashed border-border py-12 text-center bg-surface">
           <CardContent className="space-y-4 max-w-md mx-auto">
             <div className="w-12 h-12 rounded-2xl bg-primary-light text-primary flex items-center justify-center mx-auto">
               <Utensils className="w-6 h-6" />
             </div>
             <div className="space-y-1">
               <CardTitle className="text-base font-bold text-text-primary">
-                {searchQuery ? "Menu Tidak Ditemukan" : "Belum Ada Menu Masakan"}
+                {searchQuery || selectedCategory !== "Semua"
+                  ? "Menu Tidak Ditemukan"
+                  : "Belum Ada Menu Masakan"}
               </CardTitle>
               <p className="text-xs text-text-secondary">
-                {searchQuery
-                  ? `Tidak ada menu atau bahan baku yang cocok dengan kata kunci "${searchQuery}".`
+                {searchQuery || selectedCategory !== "Semua"
+                  ? `Tidak ada menu pada kelompok "${selectedCategory}" yang cocok dengan kata kunci.`
                   : "Daftarkan menu olahan kuliner Anda dan tentukan bahan baku kebutuhan produksinya untuk menghitung HPP otomatis."}
               </p>
             </div>
-            {!searchQuery && (
+            {!searchQuery && selectedCategory === "Semua" && (
               <Button
                 type="button"
                 variant="primary"
                 size="md"
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={handleOpenAdd}
                 className="gap-2 font-semibold min-h-[44px]"
               >
                 <Plus className="w-4 h-4" />
@@ -169,23 +241,32 @@ export function UmkmMenuView() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {filteredProducts.map((prod) => (
             <MenuCard
               key={prod.id}
               product={prod}
               onDeleted={handleProductDeleted}
-              onRecipeUpdated={loadProducts}
+              onEdit={handleOpenEdit}
             />
           ))}
         </div>
       )}
 
-      {/* 4. Dialog Tambah Menu & Resep */}
+      {/* 5. BAGIAN PENGOLAHAN STOK BAHAN BAKU DAPUR (TERHUBUNG KE REKOMENDASI HOME) */}
+      <div className="pt-4">
+        <KitchenInventorySection products={products} />
+      </div>
+
+      {/* 6. Dialog Tambah & Edit Menu */}
       <MenuAddDialog
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={handleProductAdded}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingProduct(null);
+        }}
+        onSuccess={handleProductSaved}
+        initialProduct={editingProduct}
       />
     </div>
   );
