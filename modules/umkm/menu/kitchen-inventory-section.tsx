@@ -3,439 +3,373 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Package,
   AlertTriangle,
   CheckCircle2,
   Clock,
-  ShoppingCart,
-  Edit3,
+  ArrowRight,
+  SlidersHorizontal,
   RefreshCw,
   Search,
+  ShoppingCart,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { BEProduct } from "@/lib/api/types";
-import { SECTOR_OPTIONS, type SectorType, type KitchenStockItem } from "./menu-types";
+import {
+  aggregateKitchenInventory,
+  KitchenStockItem,
+} from "@/lib/menu-intelligence";
 
 interface KitchenInventorySectionProps {
   products: BEProduct[];
 }
 
-const STORAGE_KEY = "kumpul_kitchen_stock_data";
-export const CRITICAL_STOCK_KEY = "kumpul_kitchen_critical_items";
+const STORAGE_KEY = "kumpul_kitchen_inventory_stock";
 
 export function KitchenInventorySection({ products }: KitchenInventorySectionProps) {
+  const [stockMap, setStockMap] = React.useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [editingItemId, setEditingItemId] = React.useState<string | null>(null);
-  const [editStockValue, setEditStockValue] = React.useState<number>(0);
-  const [manualStockOverrides, setManualStockOverrides] = React.useState<Record<string, number>>({});
+  const [statusFilter, setStatusFilter] = React.useState<string>("ALL");
+  const [editingItem, setEditingItem] = React.useState<KitchenStockItem | null>(null);
+  const [newStockValue, setNewStockValue] = React.useState<string>("");
 
-  // Muat override stok dari localStorage jika ada
+  // Muat stok fisik dari localStorage
   React.useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        setManualStockOverrides(JSON.parse(saved));
+        setStockMap(JSON.parse(saved));
       }
-    } catch {
-      // Ignore storage error
-    }
+    } catch {}
   }, []);
 
-  // Agregasi Bahan Baku dari Seluruh Menu Aktif
-  const inventoryItems: KitchenStockItem[] = React.useMemo(() => {
-    const map = new Map<string, {
-      name: string;
-      sector: SectorType;
-      unit: string;
-      dailyConsumption: number;
-      linkedProducts: Set<string>;
-    }>();
+  // Simpan stok saat diperbarui
+  const handleSaveStock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
 
-    // 1. Kumpulkan dari seluruh resep produk
-    products.forEach((prod) => {
-      const batchUnits = Number(prod.expected_batch_units) || 50;
-      (prod.recipes || []).forEach((r) => {
-        const rawName = r.ingredient_name.trim();
-        const key = rawName.toLowerCase();
-        const reqPerUnit = Number(r.required_qty_per_unit) || 0.1;
-        const totalDaily = reqPerUnit * batchUnits;
-
-        let sec: SectorType = "PERTANIAN";
-        if (key.includes("ayam") || key.includes("daging") || key.includes("telur") || key.includes("susu")) {
-          sec = "PETERNAKAN";
-        } else if (key.includes("ikan") || key.includes("udang") || key.includes("cumi")) {
-          sec = "PERIKANAN";
-        } else if (key.includes("kopi") || key.includes("teh") || key.includes("kelapa") || key.includes("aren")) {
-          sec = "PERKEBUNAN";
-        } else if (key.includes("minyak") || key.includes("tepung") || key.includes("saus") || key.includes("bumbu")) {
-          sec = "FNB_PENGOLAHAN";
-        } else if (key.includes("box") || key.includes("bowl") || key.includes("cup") || key.includes("kemasan")) {
-          sec = "RITEL";
-        }
-
-        if (map.has(key)) {
-          const item = map.get(key)!;
-          item.dailyConsumption += totalDaily;
-          item.linkedProducts.add(prod.product_name);
-        } else {
-          map.set(key, {
-            name: rawName,
-            sector: sec,
-            unit: r.unit || "KG",
-            dailyConsumption: totalDaily,
-            linkedProducts: new Set([prod.product_name]),
-          });
-        }
-      });
-    });
-
-    // Fallback bahan demo jika produk kosong
-    if (map.size === 0) {
-      map.set("daging ayam", {
-        name: "Daging Ayam Broiler Fillet",
-        sector: "PETERNAKAN",
-        unit: "KG",
-        dailyConsumption: 20,
-        linkedProducts: new Set(["Bebek & Ayam Goreng"]),
-      });
-      map.set("minyak sawit", {
-        name: "Minyak Goreng Sawit",
-        sector: "FNB_PENGOLAHAN",
-        unit: "LITER",
-        dailyConsumption: 6,
-        linkedProducts: new Set(["Menu Gorengan & Sambal"]),
-      });
-      map.set("cabai rawit", {
-        name: "Cabai Rawit Merah",
-        sector: "PERTANIAN",
-        unit: "KG",
-        dailyConsumption: 4,
-        linkedProducts: new Set(["Sambal Korek Spesial"]),
-      });
+    const val = parseFloat(newStockValue);
+    if (isNaN(val) || val < 0) {
+      toast.error("Masukkan angka stok yang valid.");
+      return;
     }
 
-    // 2. Hitung Sisa Stok & Status Ketahanan
-    const items: KitchenStockItem[] = [];
-    map.forEach((val, key) => {
-      const id = `item-${key.replace(/\s+/g, "-")}`;
-      // Jika ada override di state, pakai itu. Kalau belum ada, beri mock realistis (misal 1.2 x harian)
-      const currentStock =
-        manualStockOverrides[id] !== undefined
-          ? manualStockOverrides[id]
-          : key.includes("ayam")
-          ? 14 // Stok kritis (0.7 hari)
-          : key.includes("minyak")
-          ? 9 // Stok menipis (1.5 hari)
-          : Math.round(val.dailyConsumption * 3.5); // Stok aman
-
-      const daysRemaining =
-        val.dailyConsumption > 0 ? currentStock / val.dailyConsumption : 99;
-
-      let status: "KRITIS" | "MENIPIS" | "AMAN" = "AMAN";
-      if (daysRemaining <= 1.0) {
-        status = "KRITIS";
-      } else if (daysRemaining <= 2.5) {
-        status = "MENIPIS";
-      }
-
-      items.push({
-        id,
-        ingredientName: val.name,
-        sector: val.sector,
-        dailyConsumption: Math.round(val.dailyConsumption * 10) / 10,
-        unit: val.unit,
-        currentStock: Math.round(currentStock * 10) / 10,
-        daysRemaining: Math.round(daysRemaining * 10) / 10,
-        status,
-        linkedProducts: Array.from(val.linkedProducts),
-      });
-    });
-
-    return items;
-  }, [products, manualStockOverrides]);
-
-  // Sinkronkan bahan yang KRITIS & MENIPIS ke localStorage agar dapat dibaca oleh Home
-  React.useEffect(() => {
-    const criticalList = inventoryItems
-      .filter((i) => i.status === "KRITIS" || i.status === "MENIPIS")
-      .map((i) => ({
-        name: i.ingredientName,
-        status: i.status,
-        daysRemaining: i.daysRemaining,
-        unit: i.unit,
-        sector: i.sector,
-      }));
-
-    try {
-      localStorage.setItem(CRITICAL_STOCK_KEY, JSON.stringify(criticalList));
-    } catch {
-      // Ignore storage error
-    }
-  }, [inventoryItems]);
-
-  const handleSaveStock = (id: string) => {
-    const updated = { ...manualStockOverrides, [id]: Math.max(0, editStockValue) };
-    setManualStockOverrides(updated);
+    const updated = {
+      ...stockMap,
+      [editingItem.id]: val,
+    };
+    setStockMap(updated);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch {
-      // Ignore storage error
-    }
-    setEditingItemId(null);
-    toast.success("Stok fisik dapur berhasil diperbarui!");
+    } catch {}
+
+    toast.success(`Stok fisik "${editingItem.ingredientName}" diperbarui menjadi ${val} ${editingItem.unit}`);
+    setEditingItem(null);
   };
 
+  // Komputasi inventaris bahan
+  const inventoryItems = React.useMemo(() => {
+    return aggregateKitchenInventory(products, stockMap);
+  }, [products, stockMap]);
+
+  // Simpan ringkasan stok kritis agar bisa dibaca reaktif oleh Beranda (/home)
+  React.useEffect(() => {
+    try {
+      const criticalItems = inventoryItems.filter(
+        (i) => i.status === "KRITIS" || i.status === "MENIPIS"
+      );
+      localStorage.setItem("kumpul_critical_kitchen_needs", JSON.stringify(criticalItems));
+    } catch {}
+  }, [inventoryItems]);
+
   const filteredItems = React.useMemo(() => {
-    if (!searchQuery.trim()) return inventoryItems;
-    const q = searchQuery.toLowerCase();
-    return inventoryItems.filter(
-      (item) =>
-        item.ingredientName.toLowerCase().includes(q) ||
-        item.sector.toLowerCase().includes(q)
-    );
-  }, [inventoryItems, searchQuery]);
+    return inventoryItems.filter((item) => {
+      const matchSearch =
+        item.ingredientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.sector.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchStatus = statusFilter === "ALL" || item.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [inventoryItems, searchQuery, statusFilter]);
 
   const criticalCount = inventoryItems.filter((i) => i.status === "KRITIS").length;
-  const lowCount = inventoryItems.filter((i) => i.status === "MENIPIS").length;
+  const warningCount = inventoryItems.filter((i) => i.status === "MENIPIS").length;
 
   return (
-    <Card className="rounded-2xl border border-border shadow-elevation-1 bg-surface overflow-hidden">
-      <CardHeader className="border-b border-border/60 pb-3 bg-surface-subtle/40">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-800">
-                <Package className="w-4 h-4" />
-              </span>
-              <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
-                Manajemen Rantai Pasok Dapur
-              </span>
-            </div>
-            <CardTitle className="text-base sm:text-lg font-bold text-text-primary">
-              Pengolahan &amp; Ketahanan Stok Bahan Baku Dapur
-            </CardTitle>
-            <p className="text-xs text-text-secondary">
-              Agregasi konsumsi harian bahan baku berdasarkan iterasi hari produksi seluruh menu. Bahan berstatus kritis otomatis diprioritaskan di bursa belanja Beranda.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link href="/home">
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                className="gap-1.5 text-xs font-bold min-h-[38px] px-3.5"
-              >
-                <ShoppingCart className="w-3.5 h-3.5" />
-                <span>Beli Pasokan di Bursa</span>
-              </Button>
-            </Link>
-          </div>
+    <Card className="rounded-2xl border border-border bg-surface shadow-elevation-1 p-5 sm:p-6 space-y-5">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+        <div>
+          <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
+            Pengolahan Stok Bahan Baku Dapur (Agregat Resep)
+          </h2>
+          <p className="font-body text-xs text-text-secondary mt-1">
+            Pantau ketersediaan bahan terhadap laju produksi harian dan sinkronkan pengadaan ke Bursa.
+          </p>
         </div>
 
-        {/* Snapshot Status Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3">
-          <div className="p-2.5 rounded-xl border border-red-200 bg-red-50/60 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-600" />
-              <span className="font-semibold text-red-950">Stok Kritis (&le; 1 Hari)</span>
-            </div>
-            <span className="font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full text-[11px]">
-              {criticalCount} Bahan
-            </span>
-          </div>
-
-          <div className="p-2.5 rounded-xl border border-amber-200 bg-amber-50/60 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-600" />
-              <span className="font-semibold text-amber-950">Mendekati ROP (1 - 2.5 Hari)</span>
-            </div>
-            <span className="font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full text-[11px]">
-              {lowCount} Bahan
-            </span>
-          </div>
-
-          <div className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span className="font-semibold text-emerald-950">Stok Aman (&gt; 2.5 Hari)</span>
-            </div>
-            <span className="font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full text-[11px]">
-              {inventoryItems.length - criticalCount - lowCount} Bahan
-            </span>
-          </div>
+        {/* Ringkasan Status & Aksi Cepat */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {criticalCount > 0 && (
+            <Badge variant="warning" className="gap-1 font-bold text-[11px]">
+              <AlertTriangle className="size-3" />
+              <span>{criticalCount} Bahan Kritis</span>
+            </Badge>
+          )}
+          <Link href="/home">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs font-semibold gap-1.5 min-h-[38px] rounded-xl border-primary/30 text-primary hover:bg-primary-light"
+            >
+              <ShoppingCart className="size-3.5" />
+              <span>Buka Bursa Pasokan</span>
+            </Button>
+          </Link>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-4 pt-4">
-        {/* Search Bar Stok */}
-        <div className="relative max-w-sm">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+      {/* Filter & Pencarian */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <Input
             type="text"
             placeholder="Cari bahan baku dapur..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 text-xs bg-surface"
+            className="pl-9 h-10 text-xs bg-surface-subtle/60 rounded-xl"
           />
         </div>
 
-        {/* Tabel Agregasi Stok */}
-        <div className="rounded-xl border border-border overflow-x-auto bg-surface">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-surface-subtle/80 text-text-secondary border-b border-border font-semibold text-[11px] uppercase tracking-wider">
-              <tr>
-                <th className="py-2.5 px-3">Bahan Baku Dapur</th>
-                <th className="py-2.5 px-3">Sektor Asal</th>
-                <th className="py-2.5 px-3">Kebutuhan Harian</th>
-                <th className="py-2.5 px-3">Stok Aktual Dapur</th>
-                <th className="py-2.5 px-3">Ketahanan</th>
-                <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {filteredItems.map((item) => {
-                const secMeta =
-                  SECTOR_OPTIONS.find((s) => s.value === item.sector) ||
-                  SECTOR_OPTIONS[0];
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 p-1 bg-surface-subtle rounded-xl border border-border/60 text-xs">
+          {[
+            { label: "Semua", value: "ALL" },
+            { label: "Kritis", value: "KRITIS" },
+            { label: "Menipis", value: "MENIPIS" },
+            { label: "Aman", value: "AMAN" },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setStatusFilter(tab.value)}
+              className={`px-3 py-1.5 rounded-lg font-medium text-xs transition-all cursor-pointer ${
+                statusFilter === tab.value
+                  ? "bg-surface text-text-primary font-bold shadow-xs border border-border/80"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-                const isEditing = editingItemId === item.id;
+      {/* Tabel Inventaris Dapur */}
+      {filteredItems.length === 0 ? (
+        <div className="py-10 text-center rounded-xl bg-surface-subtle/50 border border-dashed border-border text-xs text-text-muted">
+          {searchQuery
+            ? "Tidak ditemukan bahan baku yang sesuai kata kunci."
+            : "Belum ada kebutuhan bahan baku terdaftar dari menu aktif."}
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-border shadow-xs bg-surface">
+          <Table>
+            <TableHeader className="bg-surface-subtle/80 shadow-[inset_0px_1px_2px_0px_rgba(255,255,255,1),inset_0px_-1px_4px_0px_rgba(0,0,0,0.05)]">
+              <TableRow>
+                <TableHead>Bahan Baku Dapur</TableHead>
+                <TableHead>Sektor Asal</TableHead>
+                <TableHead className="text-right">Kebutuhan Harian</TableHead>
+                <TableHead className="text-right">Stok Dapur</TableHead>
+                <TableHead className="text-center">Ketahanan</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredItems.map((item) => {
+                const isKritis = item.status === "KRITIS";
+                const isMenipis = item.status === "MENIPIS";
 
                 return (
-                  <tr key={item.id} className="hover:bg-surface-subtle/40 transition-colors">
-                    <td className="py-2.5 px-3">
-                      <p className="font-bold text-text-primary">{item.ingredientName}</p>
-                      <p className="text-[10px] text-text-muted truncate max-w-[200px]">
-                        Dipakai di: {item.linkedProducts.join(", ")}
-                      </p>
-                    </td>
-
-                    <td className="py-2.5 px-3">
-                      <span
-                        className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase ${secMeta.badgeClass}`}
-                      >
-                        {secMeta.label.split("&")[0]}
+                  <TableRow
+                    key={item.id}
+                    className={`hover:bg-surface-subtle/50 transition-colors ${
+                      isKritis ? "bg-red-50/20" : isMenipis ? "bg-amber-50/15" : ""
+                    }`}
+                  >
+                    <TableCell>
+                      <span className="font-bold text-text-primary block">
+                        {item.ingredientName}
                       </span>
-                    </td>
+                    </TableCell>
 
-                    <td className="py-2.5 px-3 font-semibold text-text-secondary">
-                      {item.dailyConsumption} {item.unit} / Hari
-                    </td>
+                    <TableCell>
+                      <span className="text-[11px] font-semibold text-text-secondary bg-surface-subtle px-2 py-0.5 rounded border border-border/60">
+                        {item.sector}
+                      </span>
+                    </TableCell>
 
-                    <td className="py-2.5 px-3">
-                      {isEditing ? (
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            value={editStockValue}
-                            onChange={(e) => setEditStockValue(parseFloat(e.target.value) || 0)}
-                            className="w-16 h-7 text-xs border border-primary rounded px-1.5"
-                            autoFocus
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => handleSaveStock(item.id)}
-                            className="h-7 px-2 text-[11px]"
-                          >
-                            Simpan
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-text-primary text-sm">
-                            {item.currentStock} {item.unit}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingItemId(item.id);
-                              setEditStockValue(item.currentStock);
-                            }}
-                            className="text-text-muted hover:text-primary p-1"
-                            title="Sesuaikan stok fisik (Opname)"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
+                    <TableCell className="text-right tabular-nums">
+                      <span className="font-semibold text-text-primary">
+                        {item.dailyConsumption} {item.unit}
+                      </span>
+                      <span className="text-[10px] text-text-muted block">/ hari</span>
+                    </TableCell>
 
-                    <td className="py-2.5 px-3">
+                    <TableCell className="text-right tabular-nums">
+                      <span className="font-bold text-text-primary">
+                        {item.currentStock} {item.unit}
+                      </span>
+                    </TableCell>
+
+                    <TableCell className="text-center tabular-nums">
                       <span
-                        className={`font-bold text-xs ${
-                          item.status === "KRITIS"
-                            ? "text-red-600"
-                            : item.status === "MENIPIS"
-                            ? "text-amber-600"
-                            : "text-emerald-600"
+                        className={`inline-block font-bold text-xs px-2.5 py-0.5 rounded-md ${
+                          isKritis
+                            ? "bg-red-100 text-red-700"
+                            : isMenipis
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-emerald-100 text-emerald-800"
                         }`}
                       >
-                        {item.daysRemaining} Hari
+                        {item.daysRemaining > 30 ? "> 30 Hari" : `${item.daysRemaining} Hari`}
                       </span>
-                    </td>
+                    </TableCell>
 
-                    <td className="py-2.5 px-3">
-                      {item.status === "KRITIS" && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-                          <AlertTriangle className="w-3 h-3" />
-                          Kritis
+                    <TableCell className="text-center">
+                      {isKritis ? (
+                        <span className="inline-block text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-md">
+                          KRITIS
                         </span>
-                      )}
-                      {item.status === "MENIPIS" && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-                          <Clock className="w-3 h-3" />
-                          Menipis
+                      ) : isMenipis ? (
+                        <span className="inline-block text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-md">
+                          MENIPIS
                         </span>
-                      )}
-                      {item.status === "AMAN" && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3" />
-                          Aman
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="py-2.5 px-3 text-right">
-                      {item.status !== "AMAN" ? (
-                        <Link href="/home">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="primary"
-                            className="h-7 text-[11px] gap-1 px-2.5 font-bold"
-                          >
-                            <ShoppingCart className="w-3 h-3" />
-                            <span>Restock</span>
-                          </Button>
-                        </Link>
                       ) : (
+                        <span className="inline-block text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-md">
+                          AMAN
+                        </span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
                           onClick={() => {
-                            setEditingItemId(item.id);
-                            setEditStockValue(item.currentStock);
+                            setEditingItem(item);
+                            setNewStockValue(String(item.currentStock));
                           }}
-                          className="text-[11px] font-semibold text-text-muted hover:text-text-primary px-2 py-1"
+                          className="px-2.5 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-border/60 border border-border/70 rounded-lg transition cursor-pointer"
                         >
                           Opname
                         </button>
-                      )}
-                    </td>
-                  </tr>
+                        {(isKritis || isMenipis) && (
+                          <Link href={`/home?q=${encodeURIComponent(item.ingredientName)}`}>
+                            <Button
+                              type="button"
+                              variant="primary"
+                              size="sm"
+                              className="text-[11px] font-bold px-2.5 py-1 min-h-[30px] rounded-lg shadow-xs cursor-pointer"
+                            >
+                              Restock
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </CardContent>
+      )}
+
+      {/* Modal Dialog Opname Stok Cepat */}
+      <Dialog open={Boolean(editingItem)} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <DialogContent className="max-w-md rounded-2xl bg-surface border border-border p-6 shadow-elevation-2">
+          <form onSubmit={handleSaveStock} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold text-text-primary">
+                Penyesuaian Stok Fisik (Stok Opname)
+              </DialogTitle>
+              <DialogDescription className="text-xs text-text-secondary">
+                Perbarui jumlah fisik aktual {editingItem?.ingredientName} yang tersedia di dapur usaha Anda.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 py-2">
+              <div className="rounded-xl bg-surface-subtle p-3 border border-border/60 text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Kebutuhan Produksi Harian:</span>
+                  <span className="font-bold text-text-primary">
+                    {editingItem?.dailyConsumption} {editingItem?.unit} / hari
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Ketahanan Saat Ini:</span>
+                  <span className="font-bold text-text-primary">
+                    {editingItem?.daysRemaining} Hari
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-text-primary block mb-1.5">
+                  Jumlah Stok Fisik Riil ({editingItem?.unit}) *
+                </label>
+                <Input
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={newStockValue}
+                  onChange={(e) => setNewStockValue(e.target.value)}
+                  placeholder={`Contoh: 15.5`}
+                  required
+                  autoFocus
+                  className="rounded-xl h-11 text-sm bg-surface"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingItem(null)}
+                className="rounded-xl px-4 min-h-[40px]"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                className="rounded-xl px-5 min-h-[40px] font-bold"
+              >
+                Simpan Stok
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

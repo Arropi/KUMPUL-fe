@@ -2,34 +2,102 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Utensils, Search, RefreshCw, ShoppingCart, Filter } from "lucide-react";
+import { Plus, Search, ShoppingCart, ArrowUpDown, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 import { MenuAddDialog } from "./menu/menu-add-dialog";
 import { MenuCard } from "./menu/menu-card";
-import { KitchenInventorySection } from "./menu/kitchen-inventory-section";
+import { Pagination15 } from "@/components/ui/pagination";
 import { getUmkmProductsAction } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
-import { MENU_CATEGORIES } from "./menu/menu-types";
+import { DEFAULT_SEED_PRODUCTS, calculateCircularMargin } from "@/lib/menu-intelligence";
+
+export type MenuSortOption =
+  | "MARGIN_DESC"
+  | "CIRCULAR_BOOST"
+  | "OUTPUT_DESC"
+  | "PRICE_DESC"
+  | "PRICE_ASC"
+  | "NAME_ASC";
+
+export const MENU_SORT_OPTIONS: { value: MenuSortOption; label: string; description: string }[] = [
+  {
+    value: "MARGIN_DESC",
+    label: "Margin Tertinggi (Prioritas Jual)",
+    description: "Urutkan menu dengan persentase laba bersih terbesar",
+  },
+  {
+    value: "CIRCULAR_BOOST",
+    label: "Laba Sirkular Terbesar (+Limbah)",
+    description: "Urutkan menu dengan potensi tambahan pendapatan residu tertinggi",
+  },
+  {
+    value: "OUTPUT_DESC",
+    label: "Volume Produksi Tertinggi",
+    description: "Urutkan menu dengan kapasitas porsi harian terbanyak",
+  },
+  {
+    value: "PRICE_DESC",
+    label: "Harga Jual Tertinggi",
+    description: "Dari menu harga premium ke ekonomis",
+  },
+  {
+    value: "PRICE_ASC",
+    label: "Harga Jual Terendah",
+    description: "Dari menu harga ekonomis ke premium",
+  },
+  {
+    value: "NAME_ASC",
+    label: "Nama Produk (A - Z)",
+    description: "Urutan alfabetis nama menu",
+  },
+];
 
 export function UmkmMenuView() {
   const [products, setProducts] = React.useState<BEProduct[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedCategory, setSelectedCategory] = React.useState<string>("Semua");
+  const [sortBy, setSortBy] = React.useState<MenuSortOption>("MARGIN_DESC");
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<BEProduct | null>(null);
 
+  // Pagination state (Watermelon UI Pagination-15)
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(6);
+
+  // Reset page when filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortBy]);
+
   const loadProducts = React.useCallback(async () => {
-    setIsLoading(true);
     try {
       const res = await getUmkmProductsAction();
-      if (res.success) {
+      if (res.success && res.data && res.data.length > 0) {
         setProducts(res.data);
       } else {
-        toast.error(res.message || "Gagal memuat daftar menu dari backend");
+        let localMocks: BEProduct[] = [];
+        try {
+          const saved = localStorage.getItem("kumpul_mock_products");
+          if (saved) localMocks = JSON.parse(saved);
+        } catch { }
+        if (localMocks.length > 0) {
+          setProducts(localMocks);
+        } else {
+          setProducts(DEFAULT_SEED_PRODUCTS);
+          try {
+            localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
+          } catch { }
+        }
       }
     } catch {
       toast.error("Gagal terhubung ke backend");
@@ -39,53 +107,87 @@ export function UmkmMenuView() {
   }, []);
 
   React.useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    let ignore = false;
+    getUmkmProductsAction()
+      .then((res) => {
+        let localMocks: BEProduct[] = [];
+        try {
+          const saved = localStorage.getItem("kumpul_mock_products");
+          if (saved) localMocks = JSON.parse(saved);
+        } catch { }
 
-  const handleProductSaved = (savedProduct: BEProduct) => {
-    setProducts((prev) => [
-      savedProduct,
-      ...prev.filter((p) => p.id !== savedProduct.id),
-    ]);
-    setEditingProduct(null);
+        if (!ignore) {
+          if (res.success && res.data && res.data.length > 0) {
+            const backendIds = new Set(res.data.map((p) => p.id));
+            const uniqueMocks = localMocks.filter((m) => !backendIds.has(m.id));
+            setProducts([...uniqueMocks, ...res.data]);
+          } else if (localMocks.length > 0) {
+            setProducts(localMocks);
+          } else {
+            // Seed awal produk realistis sesuai brief.md
+            setProducts(DEFAULT_SEED_PRODUCTS);
+            try {
+              localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
+            } catch { }
+          }
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          try {
+            const saved = localStorage.getItem("kumpul_mock_products");
+            if (saved) {
+              setProducts(JSON.parse(saved));
+            } else {
+              setProducts(DEFAULT_SEED_PRODUCTS);
+              localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
+            }
+          } catch { }
+        }
+      })
+      .finally(() => {
+        if (!ignore) setIsLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const handleProductAdded = (newProduct: BEProduct) => {
+    setProducts((prev) => {
+      const updated = [newProduct, ...prev.filter((p) => p.id !== newProduct.id)];
+      try {
+        localStorage.setItem(
+          "kumpul_mock_products",
+          JSON.stringify(updated.filter((p) => p.id.startsWith("mock-")))
+        );
+      } catch { }
+      return updated;
+    });
   };
 
   const handleProductDeleted = (deletedId: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== deletedId));
+    setProducts((prev) => {
+      const updated = prev.filter((p) => p.id !== deletedId);
+      try {
+        localStorage.setItem(
+          "kumpul_mock_products",
+          JSON.stringify(updated.filter((p) => p.id.startsWith("mock-")))
+        );
+      } catch { }
+      return updated;
+    });
   };
 
-  const handleOpenAdd = () => {
-    setEditingProduct(null);
+  const handleEditProduct = (prod: BEProduct) => {
+    setEditingProduct(prod);
     setIsAddModalOpen(true);
   };
 
-  const handleOpenEdit = (product: BEProduct) => {
-    setEditingProduct(product);
-    setIsAddModalOpen(true);
-  };
-
-  // Filter Grouping Menu Berdasarkan Kategori & Pencarian
-  const filteredProducts = React.useMemo(() => {
+  const processedProducts = React.useMemo(() => {
     let result = products;
 
-    // Filter Kategori Grouping
-    if (selectedCategory !== "Semua") {
-      result = result.filter((p) => {
-        const name = p.product_name.toLowerCase();
-        if (selectedCategory === "Makanan Utama") {
-          return !name.includes("es ") && !name.includes("kopi") && !name.includes("teh") && !name.includes("snack");
-        } else if (selectedCategory === "Minuman") {
-          return name.includes("es ") || name.includes("kopi") || name.includes("teh") || name.includes("jus") || name.includes("minum");
-        } else if (selectedCategory === "Snack & Camilan") {
-          return name.includes("snack") || name.includes("keripik") || name.includes("camilan") || name.includes("gorengan");
-        } else if (selectedCategory === "Paket Katering") {
-          return name.includes("paket") || name.includes("bento") || name.includes("box") || name.includes("pax");
-        }
-        return true;
-      });
-    }
-
-    // Filter Search Text
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -95,178 +197,211 @@ export function UmkmMenuView() {
       );
     }
 
-    return result;
-  }, [products, selectedCategory, searchQuery]);
+    return [...result].sort((a, b) => {
+      const finA = calculateCircularMargin(a);
+      const finB = calculateCircularMargin(b);
+
+      switch (sortBy) {
+        case "MARGIN_DESC":
+          return finB.pureMarginPercentage - finA.pureMarginPercentage;
+
+        case "CIRCULAR_BOOST":
+          return finB.dailyWasteRevenue - finA.dailyWasteRevenue;
+
+        case "OUTPUT_DESC": {
+          const outA = (a.expected_batch_units || 50) * (a.production_iterations_per_day || 2);
+          const outB = (b.expected_batch_units || 50) * (b.production_iterations_per_day || 2);
+          return outB - outA;
+        }
+
+        case "PRICE_DESC":
+          return finB.sellingPrice - finA.sellingPrice;
+
+        case "PRICE_ASC":
+          return finA.sellingPrice - finB.sellingPrice;
+
+        case "NAME_ASC":
+          return a.product_name.localeCompare(b.product_name);
+
+        default:
+          return 0;
+      }
+    });
+  }, [products, searchQuery, sortBy]);
+
+  const totalPages = Math.ceil(processedProducts.length / pageSize) || 1;
+  const paginatedProducts = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return processedProducts.slice(start, start + pageSize);
+  }, [processedProducts, currentPage, pageSize]);
 
   return (
     <div className="space-y-8">
       {/* 1. Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary" />
-            <span className="text-xs font-semibold text-text-muted">
-              Manajemen Produksi &amp; Bill of Materials (BOM)
-            </span>
-          </div>
           <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary mt-1">
-            Menu Usaha &amp; Kebutuhan Bahan Baku
+            Produk Usaha &amp; Kebutuhan Bahan Baku
           </h1>
           <p className="font-body text-xs sm:text-sm text-text-secondary mt-1">
-            Kelola menu produk, sesuaikan iterasi hari produksi dapur, pantau valuasi margin limbah sirkular, dan jaga ketahanan stok bahan baku.
+            Daftarkan produk olahan atau komoditas kuliner Anda beserta rincian resep bahan baku untuk agregasi pengadaan grosir otomatis.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="md"
-            onClick={loadProducts}
-            disabled={isLoading}
-            className="min-h-[44px] gap-2 font-semibold"
-            aria-label="Segarkan data menu"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Segarkan</span>
-          </Button>
-
+        <div className="flex items-center">
           <Button
             type="button"
             variant="primary"
             size="md"
-            onClick={handleOpenAdd}
-            className="min-h-[44px] gap-2 font-semibold px-4"
+            onClick={() => {
+              setEditingProduct(null);
+              setIsAddModalOpen(true);
+            }}
+            className="min-h-[44px] gap-2 font-semibold px-4 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Tambah Menu &amp; Resep</span>
+            <span>Tambah Produk &amp; Resep</span>
           </Button>
         </div>
       </div>
 
-      {/* 2. Grouping per Kategori Menu (Tabs / Filter Pills) */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-text-secondary uppercase tracking-wider">
-          <Filter className="w-3.5 h-3.5 text-primary" />
-          <span>Pengelompokan Menu Usaha:</span>
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {MENU_CATEGORIES.map((cat) => {
-            const isSelected = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  isSelected
-                    ? "bg-primary text-white shadow-sm"
-                    : "bg-surface border border-border text-text-secondary hover:border-primary/50 hover:text-text-primary"
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. Search & Bursa Pasokan Quick Action */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-        <div className="md:col-span-8 relative">
+      {/* 2. Search, Sort Dropdown & Quick Link */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {/* Kolom Pencarian */}
+        <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <Input
             type="text"
-            placeholder="Cari berdasarkan nama menu olahan atau bahan baku..."
+            placeholder="Cari berdasarkan nama produk atau bahan baku..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-11 text-xs sm:text-sm bg-surface rounded-xl"
           />
         </div>
 
-        <div className="md:col-span-4 flex items-center justify-end">
-          <Link href="/home" className="w-full">
+        {/* Dropdown Sortir Produk */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button
               type="button"
               variant="outline"
               size="md"
-              className="w-full min-h-[44px] text-xs font-semibold gap-2 border-primary/30 text-primary hover:bg-primary-light"
+              className="min-h-[44px] h-11 px-3.5 gap-2 rounded-xl text-xs font-semibold border-border bg-surface hover:bg-surface-subtle shrink-0 cursor-pointer justify-between sm:justify-start"
             >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Beli Pasokan di Bursa</span>
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                <span className="text-text-secondary font-normal">Urutkan:</span>
+                <span className="font-bold text-text-primary">
+                  {MENU_SORT_OPTIONS.find((o) => o.value === sortBy)?.label.split(" (")[0]}
+                </span>
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-text-muted ml-0.5 shrink-0" />
             </Button>
-          </Link>
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72 p-1.5 rounded-2xl shadow-elevation-2">
+            <div className="px-2.5 py-1.5 text-[11px] font-bold text-text-muted uppercase tracking-wider border-b border-border/60 mb-1">
+              Urutkan Produk
+            </div>
+            <DropdownMenuRadioGroup
+              value={sortBy}
+              onValueChange={(val) => setSortBy(val as MenuSortOption)}
+            >
+              {MENU_SORT_OPTIONS.map((opt) => (
+                <DropdownMenuRadioItem
+                  key={opt.value}
+                  value={opt.value}
+                  className="flex flex-col items-start gap-0.5 py-2 px-3 rounded-xl cursor-pointer hover:bg-surface-subtle"
+                >
+                  <span className="font-bold text-xs text-text-primary">
+                    {opt.label}
+                  </span>
+                  <span className="text-[10px] text-text-secondary leading-tight">
+                    {opt.description}
+                  </span>
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Tombol Beli Pasokan di Bursa */}
+        <Link href="/home" className="shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            size="md"
+            className="w-full sm:w-auto min-h-[44px] h-11 text-xs font-semibold gap-2 border-primary/30 text-primary hover:bg-primary-light rounded-xl px-4 cursor-pointer"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>Beli Pasokan di Bursa</span>
+          </Button>
+        </Link>
       </div>
 
-      {/* 4. Product Cards Grid (Dengan Tombol Edit & Analisis Limbah) */}
+      {/* 3. Product Cards Grid (3 cards per row on desktop) */}
       {isLoading ? (
         <div className="min-h-[250px] flex flex-col items-center justify-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           <span className="text-xs text-text-muted font-medium">
-            Memuat daftar menu dari backend KUMPUL...
+            Memuat daftar produk dari backend KUMPUL...
           </span>
         </div>
-      ) : filteredProducts.length === 0 ? (
-        <Card className="rounded-2xl border border-dashed border-border py-12 text-center bg-surface">
-          <CardContent className="space-y-4 max-w-md mx-auto">
-            <div className="w-12 h-12 rounded-2xl bg-primary-light text-primary flex items-center justify-center mx-auto">
-              <Utensils className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <CardTitle className="text-base font-bold text-text-primary">
-                {searchQuery || selectedCategory !== "Semua"
-                  ? "Menu Tidak Ditemukan"
-                  : "Belum Ada Menu Masakan"}
-              </CardTitle>
-              <p className="text-xs text-text-secondary">
-                {searchQuery || selectedCategory !== "Semua"
-                  ? `Tidak ada menu pada kelompok "${selectedCategory}" yang cocok dengan kata kunci.`
-                  : "Daftarkan menu olahan kuliner Anda dan tentukan bahan baku kebutuhan produksinya untuk menghitung HPP otomatis."}
-              </p>
-            </div>
-            {!searchQuery && selectedCategory === "Semua" && (
-              <Button
-                type="button"
-                variant="primary"
-                size="md"
-                onClick={handleOpenAdd}
-                className="gap-2 font-semibold min-h-[44px]"
-              >
-                <Plus className="w-4 h-4" />
-                Tambah Menu Pertama Sekarang
-              </Button>
-            )}
+      ) : processedProducts.length === 0 ? (
+        <Card className="rounded-2xl border border-dashed border-border py-12 text-center">
+          <CardContent className="space-y-2 max-w-md mx-auto">
+            <CardTitle className="text-base font-bold text-text-primary">
+              {searchQuery ? "Produk Tidak Ditemukan" : "Belum Ada Produk Terdaftar"}
+            </CardTitle>
+            <p className="text-xs text-text-secondary">
+              {searchQuery
+                ? `Tidak ada produk atau bahan baku yang cocok dengan kata kunci "${searchQuery}".`
+                : "Daftarkan produk usaha Anda dan tentukan bahan baku kebutuhan produksinya untuk menghitung HPP otomatis."}
+            </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {filteredProducts.map((prod) => (
-            <MenuCard
-              key={prod.id}
-              product={prod}
-              onDeleted={handleProductDeleted}
-              onEdit={handleOpenEdit}
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {paginatedProducts.map((prod) => (
+              <MenuCard
+                key={prod.id}
+                product={prod}
+                onDeleted={handleProductDeleted}
+                onEdit={handleEditProduct}
+                onRecipeUpdated={loadProducts}
+              />
+            ))}
+          </div>
+
+          {/* Watermelon UI Pagination-15 Component */}
+          {processedProducts.length > 0 && (
+            <Pagination15
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={processedProducts.length}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[6, 9, 12, 24]}
+              itemLabel="produk"
             />
-          ))}
+          )}
         </div>
       )}
 
-      {/* 5. BAGIAN PENGOLAHAN STOK BAHAN BAKU DAPUR (TERHUBUNG KE REKOMENDASI HOME) */}
-      <div className="pt-4">
-        <KitchenInventorySection products={products} />
-      </div>
-
-      {/* 6. Dialog Tambah & Edit Menu */}
+      {/* 4. Dialog Tambah & Edit Menu / Resep */}
       <MenuAddDialog
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);
           setEditingProduct(null);
         }}
-        onSuccess={handleProductSaved}
-        initialProduct={editingProduct}
+        onSuccess={(savedProduct) => {
+          handleProductAdded(savedProduct);
+          setIsAddModalOpen(false);
+          setEditingProduct(null);
+        }}
+        productToEdit={editingProduct}
       />
     </div>
   );

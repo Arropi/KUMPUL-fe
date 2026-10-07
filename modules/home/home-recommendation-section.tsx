@@ -2,191 +2,52 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Sparkles, Utensils, BarChart2, ArrowRight } from "lucide-react";
+import { Utensils, BarChart2, ArrowRight, AlertTriangle } from "lucide-react";
 import { SupplierCommodity } from "@/constants/supplier";
-import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
-import { getUmkmProductsAction } from "@/actions/products";
-import type { BEProduct } from "@/lib/api/types";
+import {
+  CommodityCatalogCard,
+  type CriticalStockNotice,
+} from "@/components/katalog/commodity-catalog-card";
+import { beFetch } from "@/lib/api/be-client";
 
 interface HomeRecommendationSectionProps {
   role: "umkm" | "supplier";
   commodities: SupplierCommodity[];
   onPurchase?: (item: SupplierCommodity) => void;
+  recommendations: MatchedCommodity[];
+  recsError: boolean;
 }
 
-interface MatchedCommodity {
+export interface MatchedCommodity {
   commodity: SupplierCommodity;
   recipeTag?: string;
   benchmarkTag?: string;
+  criticalStockNotice?: CriticalStockNotice;
 }
 
 export function HomeRecommendationSection({
   role,
   commodities,
+  recommendations,
+  recsError,
   onPurchase,
 }: HomeRecommendationSectionProps) {
   const isUmkm = role === "umkm";
-  const [umkmProducts, setUmkmProducts] = React.useState<BEProduct[]>([]);
-  const [criticalStockItems, setCriticalStockItems] = React.useState<
-    Array<{
-      name: string;
-      status: "KRITIS" | "MENIPIS";
-      daysRemaining: number;
-    }>
-  >([]);
 
-  React.useEffect(() => {
-    if (!isUmkm) return;
-    async function loadProducts() {
-      try {
-        const res = await getUmkmProductsAction();
-        if (res.success && res.data && res.data.length > 0) {
-          setUmkmProducts(res.data);
-        }
-      } catch {
-        // Fallback default recipes
-      }
-    }
-    loadProducts();
+  if (recsError) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-text-muted">Gagal memuat rekomendasi.</p>
+      </div>
+    );
+  }
 
-    // Muat data status stok kritis dapur dari localStorage
-    try {
-      const saved = localStorage.getItem("kumpul_kitchen_critical_items");
-      if (saved) {
-        setCriticalStockItems(JSON.parse(saved));
-      }
-    } catch {
-      // Ignore storage error
-    }
-  }, [isUmkm]);
-
-  // Compute recommendations for UMKM based on Recipe Ingredients & Critical Kitchen Stocks
-  const umkmRecommendations: MatchedCommodity[] = React.useMemo(() => {
-    if (!isUmkm) return [];
-
-    const matches: MatchedCommodity[] = [];
-    const seenCommodityIds = new Set<string>();
-
-    // 0. PRIORITAS UTAMA: Bahan Baku dengan Stok Dapur Kritis & Menipis
-    if (criticalStockItems.length > 0) {
-      for (const crit of criticalStockItems) {
-        const cName = crit.name.toLowerCase();
-        const found = commodities.find(
-          (c) =>
-            !seenCommodityIds.has(c.id) &&
-            (c.name.toLowerCase().includes(cName) ||
-              cName.includes(c.name.toLowerCase().split(" ")[0]))
-        );
-        if (found) {
-          seenCommodityIds.add(found.id);
-          matches.push({
-            commodity: found,
-            recipeTag:
-              crit.status === "KRITIS"
-                ? `⚠️ Stok Kritis Dapur (Sisa ${crit.daysRemaining} Hari) • Segera Restock`
-                : `⚡ Stok Dapur Menipis (Sisa ${crit.daysRemaining} Hari) • Restock`,
-          });
-        }
-      }
-    }
-
-    // 1. If products exist with recipes in DB
-    if (umkmProducts.length > 0) {
-      for (const prod of umkmProducts) {
-        if (prod.recipes && prod.recipes.length > 0) {
-          for (const rec of prod.recipes) {
-            const ingName = rec.ingredient_name.toLowerCase();
-            const found = commodities.find(
-              (c) =>
-                !seenCommodityIds.has(c.id) &&
-                (c.name.toLowerCase().includes(ingName) ||
-                  ingName.includes(c.name.toLowerCase().split(" ")[0]))
-            );
-            if (found) {
-              seenCommodityIds.add(found.id);
-              matches.push({
-                commodity: found,
-                recipeTag: `Bahan: ${rec.ingredient_name} (${prod.product_name})`,
-              });
-            }
-          }
-        }
-      }
-    }
-
-    // 2. Fallback / supplementary matching against popular F&B recipes
-    const defaultRecipeRules = [
-      { keyword: "beras", label: "Kebutuhan Menu Nasi Kotak & Kuliner" },
-      { keyword: "ayam", label: "Kebutuhan Menu Olahan Ayam & Unggas" },
-      { keyword: "bawang", label: "Kebutuhan Bumbu Dasar & Sambal" },
-      { keyword: "kedelai", label: "Kebutuhan Olahan Tahu & Tempe" },
-      { keyword: "telur", label: "Kebutuhan Menu Sarapan & Olahan Telur" },
-      { keyword: "minyak", label: "Kebutuhan Penggorengan Dapur Usaha" },
-    ];
-
-    for (const rule of defaultRecipeRules) {
-      if (matches.length >= 4) break;
-      const found = commodities.find(
-        (c) => !seenCommodityIds.has(c.id) && c.name.toLowerCase().includes(rule.keyword)
-      );
-      if (found) {
-        seenCommodityIds.add(found.id);
-        matches.push({
-          commodity: found,
-          recipeTag: rule.label,
-        });
-      }
-    }
-
-    // If still less than 3, add first available commodities
-    if (matches.length < 3) {
-      for (const c of commodities) {
-        if (matches.length >= 3) break;
-        if (!seenCommodityIds.has(c.id)) {
-          seenCommodityIds.add(c.id);
-          matches.push({
-            commodity: c,
-            recipeTag: `Rekomendasi Bahan Pokok Sektor ${c.sector}`,
-          });
-        }
-      }
-    }
-
-    return matches;
-  }, [isUmkm, umkmProducts, commodities]);
-
-  // Compute recommendations for Supplier based on Similar Commodities & Sector Benchmarks
-  const supplierRecommendations: MatchedCommodity[] = React.useMemo(() => {
-    if (isUmkm) return [];
-
-    // Filter commodities matching key sectors for market comparison
-    const matches: MatchedCommodity[] = [];
-    const targetSectors = ["Pertanian", "FnB / Pengolahan", "Peternakan"];
-
-    for (const c of commodities) {
-      if (targetSectors.includes(c.sector)) {
-        matches.push({
-          commodity: c,
-          benchmarkTag: `Tolok Ukur Pasar: Sektor ${c.sector}`,
-        });
-      }
-      if (matches.length >= 3) break;
-    }
-
-    if (matches.length === 0) {
-      return commodities.slice(0, 3).map((c) => ({
-        commodity: c,
-        benchmarkTag: "Tolok Ukur Harga Bursa",
-      }));
-    }
-
-    return matches;
-  }, [isUmkm, commodities]);
-
-  const activeRecommendations = isUmkm ? umkmRecommendations : supplierRecommendations;
-
-  if (activeRecommendations.length === 0) {
-    return null;
+  if (recommendations.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-text-muted">Saat ini rekomendasi tidak tersedia.</p>
+      </div>
+    );
   }
 
   return (
@@ -201,6 +62,15 @@ export function HomeRecommendationSection({
             <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
               {isUmkm ? "Sesuai Kebutuhan Resep Dapur" : "Tolok Ukur Pasar Serupa"}
             </span>
+            {isUmkm && (
+              // We need to count critical notices from recommendations
+              <span className="inline-flex items-center gap-1 rounded-md bg-red-100 text-red-700 px-2 py-0.5 text-[10px] font-bold">
+                <AlertTriangle className="w-3 h-3 text-red-600 animate-pulse" />
+                <span>
+                  {recommendations.filter((r) => r.criticalStockNotice).length} Bahan Kritis Dapur
+                </span>
+              </span>
+            )}
           </div>
           <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
             {isUmkm
@@ -209,17 +79,17 @@ export function HomeRecommendationSection({
           </h2>
           <p className="text-xs text-text-secondary max-w-2xl">
             {isUmkm
-              ? "Bahan pangan pokok yang terhubung dengan menu UMKM Anda untuk memotong HPP via pooling kuota grosir. Klik beli untuk masuk ke detail."
+              ? "Bahan pangan pokok yang terhubung dengan produk UMKM Anda. Pasokan kritis dapur otomatis diposition teratas dengan estimasi saran kuota 7 hari."
               : "Pantau komoditas sejenis di bursa untuk tolok ukur harga pasokan (benchmark) dan peluang pasokan konsolidasi."}
           </p>
         </div>
 
         {isUmkm && (
           <Link
-            href="/menu"
+            href="/produk"
             className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1 shrink-0 self-start sm:self-center"
           >
-            <span>Kelola Daftar Menu &amp; Resep</span>
+            <span>Kelola Daftar Produk &amp; Resep</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         )}
@@ -227,15 +97,22 @@ export function HomeRecommendationSection({
 
       {/* Grid Kartu Rekomendasi */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {activeRecommendations.map(({ commodity, recipeTag, benchmarkTag }) => (
+        {recommendations.map(({ commodity, recipeTag, benchmarkTag, criticalStockNotice }) => (
           <div key={`rec-${commodity.id}`} className="relative">
-            <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-primary/20 blur-[2px] opacity-75 pointer-events-none" />
+            <div
+              className={`absolute -inset-0.5 rounded-2xl blur-[2px] opacity-75 pointer-events-none ${
+                criticalStockNotice
+                  ? "bg-gradient-to-r from-red-500/25 to-amber-500/25"
+                  : "bg-gradient-to-r from-emerald-500/20 to-primary/20"
+              }`}
+            />
             <div className="relative">
               <CommodityCatalogCard
                 item={commodity}
                 role={role}
                 recipeTag={recipeTag}
                 benchmarkTag={benchmarkTag}
+                criticalStockNotice={criticalStockNotice}
                 onPurchase={onPurchase}
               />
             </div>

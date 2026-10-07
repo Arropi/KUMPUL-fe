@@ -1,0 +1,2 @@
+- [RTK - Rust Token Killer](RTK.md) — Token-optimized CLI proxy for bash output
+- [Profile updates](memory/2026-10-07-profile-updates.md) — Removed complianceStatus badge, PIC section, and generalized storage display to show units and type

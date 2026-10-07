@@ -45,7 +45,7 @@ export function getNavItemsForRole(role: UserRole): NavItemDef[] {
 
   return [
     commonHome,
-    { id: "menu", label: "Menu", href: "/menu", icon: UtensilsCrossed },
+    { id: "produk", label: "Produk", href: "/produk", icon: Package },
     { id: "pesanan", label: "Pesanan Saya", href: "/pesanan", badge: "1 Siap", icon: ClipboardList },
     { id: "dashboard", label: "Dashboard", href: "/dashboard", badge: "4 Aktif", icon: LayoutDashboard },
     { id: "limbah", label: "Limbah", href: "/limbah", icon: Recycle },

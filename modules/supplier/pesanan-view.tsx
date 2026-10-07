@@ -2,10 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import {
-  MOCK_CONSOLIDATED_POS,
-  ConsolidatedPO,
-} from "@/constants/supplier";
+import { ConsolidatedPO } from "@/constants/supplier";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,11 +16,38 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getOrderStatusBadge } from "./helpers";
+import { beFetch } from "@/lib/api/be-client";
 
 export function SupplierPesananView() {
-  const [orders] = React.useState<ConsolidatedPO[]>(MOCK_CONSOLIDATED_POS);
+  const [orders, setOrders] = React.useState<ConsolidatedPO[]>([]);
+  const [loadingOrders, setLoadingOrders] = React.useState<boolean>(true);
+  const [errorOrders, setErrorOrders] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = React.useState<string>("ALL");
   const [searchQuery, setSearchQuery] = React.useState("");
+
+  React.useEffect(() => {
+    async function loadOrders() {
+      setLoadingOrders(true);
+      try {
+        const res = await beFetch<ConsolidatedPO[]>(
+          `/api/orders/supplier/pos?limit=20&offset=0`
+        );
+        if (res.success) {
+          setOrders(res.data ?? []);
+        } else {
+          setOrders([]);
+          setErrorOrders(res.message ?? 'Gagal memuat daftar pesanan');
+        }
+      } catch (err) {
+        console.error(err);
+        setOrders([]);
+        setErrorOrders('Gagal memuat daftar pesanan');
+      } finally {
+        setLoadingOrders(false);
+      }
+    }
+    loadOrders();
+  }, []); // empty deps for now
 
   const filteredOrders = orders.filter((po) => {
     const matchSearch =
@@ -69,7 +93,7 @@ export function SupplierPesananView() {
                   : "text-text-secondary hover:text-text-primary hover:bg-surface-subtle hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-[0.5px]"
               }`}
             >
-              Semua Pesanan ({orders.length})
+              Semua Pesanan {loadingOrders ? '(memuat...)' : `(${orders.length})`}
             </button>
             <button
               type="button"
@@ -120,13 +144,16 @@ export function SupplierPesananView() {
       </Card>
 
       {/* Konten Daftar Pesanan: Table View untuk Desktop & Card View untuk Mobile */}
-      {filteredOrders.length === 0 ? (
+      {loadingOrders ? (
         <div className="bg-surface rounded-2xl border border-dashed border-border p-12 text-center space-y-2 shadow-elevation-1">
           <p className="font-heading text-sm font-bold text-text-primary">
-            Tidak ada pesanan pada kategori ini
+            Memuat daftar pesanan...
           </p>
-          <p className="font-body text-xs text-text-secondary">
-            Pesanan baru akan muncul secara otomatis begitu kumpulan kuota pooling UMKM berstatus locked.
+        </div>
+      ) : errorOrders ? (
+        <div className="bg-surface rounded-2xl border border-dashed border-border p-12 text-center space-y-2 shadow-elevation-1">
+          <p className="font-heading text-sm font-bold text-text-primary">
+            {errorOrders}
           </p>
         </div>
       ) : (

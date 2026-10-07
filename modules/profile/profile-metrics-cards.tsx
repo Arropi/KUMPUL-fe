@@ -10,7 +10,7 @@ interface ProfileMetricsCardsProps {
   totalItems: number;
   activeItems: number;
   storageValue: number;
-  storageUnit: string;
+  storageUnit: string; // kept for compatibility but not used in display
   storageType: string;
   city: string;
   onAdjustStorage?: () => void;
@@ -22,7 +22,7 @@ export function ProfileMetricsCards({
   totalItems,
   activeItems,
   storageValue,
-  storageUnit,
+  storageUnit, // kept for compatibility but not used in display
   storageType,
   city,
   onAdjustStorage,
@@ -97,7 +97,7 @@ export function ProfileMetricsCards({
         <div>
           <div className="flex items-baseline justify-between">
             <p className="text-xl sm:text-2xl font-bold font-heading text-text-primary tabular-nums tracking-tight">
-              {formatNumber(storageValue)} {storageUnit}
+              {formatNumber(storageValue)} Unit
             </p>
             {onAdjustStorage && (
               <button

@@ -58,22 +58,92 @@ export interface UMKMPurchaseHistory {
   marketPriceComparison: number;
   savingsAmount: number;
   status: "TERKUNCI" | "DIPROSES_SUPPLIER" | "TIBA_DI_HUB" | "SELESAI";
-  deliveryMethod: "HEMAT_HUB" | "DIRECT_DELIVERY";
+  deliveryMethod: "HEMAT_HUB" | "DIRECT_DELIVERY" | "ON_YOUR_DOOR";
   orderDate: string;
   hubPickupCode?: string;
+  orderType?: "POOLING_UNDER_MOQ" | "DIRECT_OVER_MOQ" | "CIRCULAR_WASTE";
+  supplierOrSellerName?: string;
+  deliveryLocation?: string;
+}
+
+export interface WasteBuyerOrder {
+  id: string;
+  buyerName: string;
+  buyerType: string;
+  buyerPhone?: string;
+  orderedVolume: number;
+  orderedUnit: string;
+  totalPrice: number;
+  orderDate: string;
+  pickupScheduledDate: string;
+  status: "MENUNGGU_KONFIRMASI" | "SELESAI";
+  notes?: string;
+}
+
+export interface WasteSaleOrder {
+  id: string;
+  orderNumber: string;
+  listingId: string;
+  listingTitle: string;
+  listingCategory?: string;
+  listingImageUrl?: string;
+  buyerName: string;
+  buyerType: string;
+  buyerPhone?: string;
+  orderedVolume: number;
+  orderedUnit: string;
+  totalPrice: number;
+  orderDate: string;
+  pickupScheduledDate: string;
+  status: "MENUNGGU_DIAMBIL" | "SELESAI";
+  notes?: string;
+  location: string;
+}
+
+export interface WasteOrderInfo extends WasteBuyerOrder {}
+
+export interface WastePurchaseOrder {
+  id: string;
+  orderNumber: string;
+  listingId: string;
+  listingTitle: string;
+  listingCategory?: string;
+  listingImageUrl?: string;
+  sellerName: string;
+  sellerType: string;
+  sellerPhone?: string;
+  sellerLocation: string;
+  orderedVolume: number;
+  orderedUnit: string;
+  pricePerUnit: number;
+  totalPrice: number;
+  orderDate: string;
+  pickupScheduledDate: string;
+  status: "MENUNGGU_KONFIRMASI" | "DIKONFIRMASI" | "SELESAI" | "DIBATALKAN";
+  notes?: string;
 }
 
 export interface WasteListing {
   id: string;
   title: string;
-  category: "Ampas Kedelai / Tahu" | "Minyak Jelantah (UCO)" | "Kulit Buah & Sayur" | "Cangkang Telur";
-  volumeKg: number;
+  category?: string;
+  sourceProductId?: string;
+  sourceProductName?: string;
+  totalVolume?: number; // Total volume awal sebelum dibeli
+  volumeKg: number;    // Sisa stok yang tersedia saat ini
+  unit?: string;
   pricePerKg: number;
   location: string;
-  expiryTimeHours: number;
-  status: "TERSEDIA" | "DIBOOKING" | "DIJEMPUT_OFFTAKER";
+  expiryTimeHours?: number;
+  expiryDate?: string;
+  status: "TERSEDIA" | "DIBOOKING" | "HABIS_TERJUAL";
   potentialRevenue: number;
+  realizedRevenue?: number; // Saldo yang telah masuk ke penjual setelah konfirmasi
   suitableOfftaker: string;
+  buyerOrders?: WasteBuyerOrder[];
+  orderInfo?: WasteOrderInfo;
+  imageUrl?: string;
+  description?: string;
 }
 
 export const MOCK_UMKM_PROFILE: UMKMBusinessProfile = {
@@ -202,20 +272,6 @@ export const MOCK_ACTIVE_POOLS: ActivePoolItem[] = [
 
 export const MOCK_UMKM_PURCHASE_HISTORY: UMKMPurchaseHistory[] = [
   {
-    id: "po-hist-01",
-    orderNumber: "POOL-KMPL-2026-081",
-    commodityName: "Beras Rojolele Super Premium",
-    volumeKg: 150,
-    unit: "3 Karung (50 kg)",
-    totalWholesalePaid: 1875000,
-    marketPriceComparison: 2280000,
-    savingsAmount: 405000,
-    status: "SELESAI",
-    deliveryMethod: "HEMAT_HUB",
-    orderDate: "28 Sep 2026",
-    hubPickupCode: "HUB-SBY-8821",
-  },
-  {
     id: "po-hist-02",
     orderNumber: "POOL-KMPL-2026-088",
     commodityName: "Bawang Merah Brebes Super",
@@ -226,8 +282,27 @@ export const MOCK_UMKM_PURCHASE_HISTORY: UMKMPurchaseHistory[] = [
     savingsAmount: 360000,
     status: "TIBA_DI_HUB",
     deliveryMethod: "HEMAT_HUB",
+    orderType: "POOLING_UNDER_MOQ",
     orderDate: "30 Sep 2026",
     hubPickupCode: "HUB-RKT-4410",
+    deliveryLocation: "Hemat Hub Rungkut, Surabaya",
+    supplierOrSellerName: "Gapoktan Bawang Brebes Lestari",
+  },
+  {
+    id: "po-hist-04",
+    orderNumber: "DIR-KMPL-2026-042",
+    commodityName: "Gula Pasir Rafinasi Kristal Putih",
+    volumeKg: 250,
+    unit: "5 Karung (50 kg)",
+    totalWholesalePaid: 3625000,
+    marketPriceComparison: 4250000,
+    savingsAmount: 625000,
+    status: "DIPROSES_SUPPLIER",
+    deliveryMethod: "ON_YOUR_DOOR",
+    orderType: "DIRECT_OVER_MOQ",
+    orderDate: "02 Okt 2026",
+    deliveryLocation: "Antar ke Pintu Dapur (Rungkut Mapan)",
+    supplierOrSellerName: "PT Agro Manis Nusantara",
   },
   {
     id: "po-hist-03",
@@ -240,7 +315,43 @@ export const MOCK_UMKM_PURCHASE_HISTORY: UMKMPurchaseHistory[] = [
     savingsAmount: 264000,
     status: "DIPROSES_SUPPLIER",
     deliveryMethod: "HEMAT_HUB",
+    orderType: "POOLING_UNDER_MOQ",
     orderDate: "01 Okt 2026",
+    deliveryLocation: "Hemat Hub Rungkut, Surabaya",
+    supplierOrSellerName: "CV Sumber Pangan Sejahtera",
+  },
+  {
+    id: "po-hist-05",
+    orderNumber: "CIR-KMPL-2026-015",
+    commodityName: "Minyak Jelantah Dapur B2B (UCO Tersaring)",
+    volumeKg: 100,
+    unit: "5 Jeriken (20 Liter)",
+    totalWholesalePaid: 750000,
+    marketPriceComparison: 900000,
+    savingsAmount: 150000,
+    status: "SELESAI",
+    deliveryMethod: "DIRECT_DELIVERY",
+    orderType: "CIRCULAR_WASTE",
+    orderDate: "29 Sep 2026",
+    deliveryLocation: "Pick-up Mandiri Dapur Penjual (Jemursari)",
+    supplierOrSellerName: "Dapur Ayam Goreng Pemuda",
+  },
+  {
+    id: "po-hist-01",
+    orderNumber: "POOL-KMPL-2026-081",
+    commodityName: "Beras Rojolele Super Premium",
+    volumeKg: 150,
+    unit: "3 Karung (50 kg)",
+    totalWholesalePaid: 1875000,
+    marketPriceComparison: 2280000,
+    savingsAmount: 405000,
+    status: "SELESAI",
+    deliveryMethod: "HEMAT_HUB",
+    orderType: "POOLING_UNDER_MOQ",
+    orderDate: "28 Sep 2026",
+    hubPickupCode: "HUB-SBY-8821",
+    deliveryLocation: "Hemat Hub Rungkut, Surabaya",
+    supplierOrSellerName: "UD Beras Tani Makmur",
   },
 ];
 
@@ -305,6 +416,29 @@ export interface CircularOfftaker {
   minPickupKg: number;
   pickupService: boolean;
   priceEstimateInfo: string;
+}
+
+export interface BankSampahPoint {
+  id: string;
+  name: string;
+  category: "Bank Sampah Induk Kota" | "Unit Bank Sampah Kelurahan" | "Pusat Daur Ulang Komunal";
+  address: string;
+  subdistrict: string;
+  distanceKm: number;
+  rating: number;
+  userRatingsTotal: number;
+  operatingHours: string;
+  openStatus: "Buka Sekarang" | "Tutup Sementara";
+  acceptedCommodities: string[];
+  contactPerson: string;
+  phone: string;
+  hasDropbox24h: boolean;
+  googleMapsUrl: string;
+  serviceFeatures: string[];
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export const MOCK_CATALOG_COMMODITIES: CatalogCommodity[] = [
@@ -596,36 +730,512 @@ export const MOCK_WASTE_LISTINGS: WasteListing[] = [
     id: "waste-01",
     title: "Ampas Kedelai Perasan Tahu Segar",
     category: "Ampas Kedelai / Tahu",
+    sourceProductId: "mock-seed-tahu-walik",
+    sourceProductName: "Tahu Walik Crispy Daun Jeruk",
+    imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+    description: "Ampas sisa perasan kedelai murni pembuatan tahu walik. Bersih, segar, dan berprotein tinggi untuk pakan lele/bebek.",
+    totalVolume: 120,
     volumeKg: 120,
+    unit: "Kg",
     pricePerKg: 1200,
     location: "Rungkut, Surabaya",
     expiryTimeHours: 24,
-    status: "TERSEDIA",
+    expiryDate: "2026-10-06",
+    status: "DIBOOKING",
     potentialRevenue: 144000,
+    realizedRevenue: 0,
     suitableOfftaker: "Peternak Bebek & Ikan Lele Sidoarjo",
+    buyerOrders: [
+      {
+        id: "ord-w1-1",
+        buyerName: "UD Berkah Peternakan Bebek & Lele",
+        buyerType: "Peternak Bebek & Ikan Lele",
+        buyerPhone: "0813-8899-2311",
+        orderedVolume: 40,
+        orderedUnit: "Kg",
+        totalPrice: 48000,
+        orderDate: "05 Okt 2026, 09:30 WIB",
+        pickupScheduledDate: "Besok (06 Okt 2026), 08:30 WIB",
+        status: "MENUNGGU_KONFIRMASI",
+        notes: "Akan datang bawa pick-up sendiri, mohon ampas disiapkan di teras samping.",
+      },
+      {
+        id: "ord-w1-2",
+        buyerName: "Pak Sugeng (Budidaya Maggot BSF)",
+        buyerType: "Peternak Maggot Organik",
+        buyerPhone: "0812-4455-6677",
+        orderedVolume: 30,
+        orderedUnit: "Kg",
+        totalPrice: 36000,
+        orderDate: "05 Okt 2026, 11:15 WIB",
+        pickupScheduledDate: "Besok (06 Okt 2026), 13:00 WIB",
+        status: "MENUNGGU_KONFIRMASI",
+        notes: "Saya bawa karung sendiri dari rumah saat ambil mandiri.",
+      },
+    ],
   },
   {
     id: "waste-02",
     title: "Minyak Jelantah Bekas Katering (UCO)",
     category: "Minyak Jelantah (UCO)",
+    sourceProductId: "mock-seed-bebek-goreng",
+    sourceProductName: "Bebek Goreng Kremes Sambal Korek",
+    imageUrl: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80",
+    description: "Minyak jelantah sisa 2x penggorengan bebek kremes. Tersimpan dalam jeriken tertutup rapat dan disaring bersih dari remah gosong.",
+    totalVolume: 65,
     volumeKg: 65,
+    unit: "Liter",
     pricePerKg: 7500,
     location: "Rungkut, Surabaya",
     expiryTimeHours: 72,
-    status: "TERSEDIA",
+    expiryDate: "2026-10-08",
+    status: "DIBOOKING",
     potentialRevenue: 487500,
+    realizedRevenue: 0,
     suitableOfftaker: "Off-Taker Biodiesel Ekspor & Bank Sampah Induk",
+    buyerOrders: [
+      {
+        id: "ord-w2-1",
+        buyerName: "PT Hijau Bioenergi Nusantara",
+        buyerType: "Offtaker Biodiesel Surabaya",
+        buyerPhone: "0812-9988-7711",
+        orderedVolume: 35,
+        orderedUnit: "Liter",
+        totalPrice: 262500,
+        orderDate: "05 Okt 2026, 08:15 WIB",
+        pickupScheduledDate: "Rabu (07 Okt 2026), 10:00 WIB",
+        status: "MENUNGGU_KONFIRMASI",
+        notes: "Tim kami bawa jeriken penukar saat datang ke lokasi dapur.",
+      },
+    ],
   },
   {
     id: "waste-03",
     title: "Cangkang Telur Ayam Kering Cacah",
     category: "Cangkang Telur",
+    sourceProductId: "mock-seed-martabak-telur",
+    sourceProductName: "Martabak Telur Daging Sapi Super",
+    imageUrl: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=800&q=80",
+    description: "Cangkang telur ayam negeri, sudah dicuci dan dijemur kering lalu dicacah kasar. Sangat cocok untuk bahan baku pupuk kalsium tanaman.",
+    totalVolume: 25,
     volumeKg: 25,
+    unit: "Kg",
     pricePerKg: 2000,
     location: "Rungkut, Surabaya",
-    expiryTimeHours: 120,
+    expiryTimeHours: 0,
+    expiryDate: "2026-10-05",
     status: "TERSEDIA",
     potentialRevenue: 50000,
+    realizedRevenue: 0,
     suitableOfftaker: "Produsen Pupuk Kalsium Organik",
+    buyerOrders: [],
+  },
+  {
+    id: "waste-04",
+    title: "Residu Trimming Lemak & Tulang Sapi Bersih",
+    category: "Biomassa Organik Lainnya",
+    sourceProductId: "mock-seed-rice-bowl-sapi",
+    sourceProductName: "Rice Bowl Daging Sapi Lada Hitam",
+    imageUrl: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=800&q=80",
+    description: "Trimming lemak dan potongan tulang sapi segar hasil prapemotongan daging rice bowl. Higienis dan disimpan beku dalam freezer.",
+    totalVolume: 35,
+    volumeKg: 35,
+    unit: "Kg",
+    pricePerKg: 3000,
+    location: "Rungkut, Surabaya",
+    expiryTimeHours: 48,
+    expiryDate: "2026-10-08",
+    status: "TERSEDIA",
+    potentialRevenue: 105000,
+    realizedRevenue: 0,
+    suitableOfftaker: "Biokonversi Maggot BSF SIER Tenggilis",
+    buyerOrders: [],
+  },
+  {
+    id: "waste-05",
+    title: "Ampas Kulit Nanas & Buah Olahan Jus",
+    category: "Residu Buah & Sayuran",
+    sourceProductId: "mock-seed-jus-nanas",
+    sourceProductName: "Jus Nanas Madu Segar",
+    imageUrl: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=800&q=80",
+    description: "Ampas kulit dan serat nanas sisa perasan jus. Telah melewati masa simpan segar (lewat 2 hari), dialihkan dari bursa reguler untuk diolah jadi eco-enzyme atau kompos di Bank Sampah.",
+    totalVolume: 40,
+    volumeKg: 40,
+    unit: "Kg",
+    pricePerKg: 800,
+    location: "Rungkut, Surabaya",
+    expiryTimeHours: 0,
+    expiryDate: "2026-10-03",
+    status: "TERSEDIA",
+    potentialRevenue: 32000,
+    realizedRevenue: 0,
+    suitableOfftaker: "Bank Sampah Induk Surabaya (Eco-Enzyme & Kompos)",
+    buyerOrders: [],
+  },
+  {
+    id: "waste-06",
+    title: "Residu Sayuran & Trimming Dapur Campur",
+    category: "Residu Kulit & Sayur",
+    sourceProductId: "mock-seed-sup-rempah",
+    sourceProductName: "Sup Sayur Rempah Dapur",
+    imageUrl: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80",
+    description: "Sisa pemotongan sayur sawi, wortel, dan kubis mentah. Telah melewati masa simpan segar (lewat 1 hari), siap disetorkan ke bank sampah terdekat untuk pengomposan.",
+    totalVolume: 25,
+    volumeKg: 25,
+    unit: "Kg",
+    pricePerKg: 600,
+    location: "Rungkut, Surabaya",
+    expiryTimeHours: 0,
+    expiryDate: "2026-10-04",
+    status: "TERSEDIA",
+    potentialRevenue: 15000,
+    realizedRevenue: 0,
+    suitableOfftaker: "Bank Sampah Bratang & Rumah Kompos (Pupuk Organik)",
+    buyerOrders: [],
+  },
+];
+
+export const MOCK_WASTE_PURCHASE_ORDERS: WastePurchaseOrder[] = [
+  {
+    id: "buy-wst-01",
+    orderNumber: "KMPL-WBUY-2026-0031",
+    listingId: "ext-waste-01",
+    listingTitle: "Kulit Singkong & Ampas Ubi Segar",
+    listingCategory: "Residu Buah & Sayuran",
+    listingImageUrl: "https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=800&q=80",
+    sellerName: "Dapur Catering Pak Harto",
+    sellerType: "UMKM Katering",
+    sellerPhone: "0812-7788-9900",
+    sellerLocation: "Wonokromo, Surabaya",
+    orderedVolume: 30,
+    orderedUnit: "Kg",
+    pricePerUnit: 800,
+    totalPrice: 24000,
+    orderDate: "05 Okt 2026, 10:00 WIB",
+    pickupScheduledDate: "Besok (06 Okt 2026), 09:00 WIB",
+    status: "DIKONFIRMASI",
+    notes: "Saya akan datang sendiri bawa karung. Mohon disiapkan di depan.",
+  },
+  {
+    id: "buy-wst-02",
+    orderNumber: "KMPL-WBUY-2026-0028",
+    listingId: "ext-waste-02",
+    listingTitle: "Ampas Kopi Robusta Segar (Espresso Bar)",
+    listingCategory: "Ampas Kopi & Teh",
+    listingImageUrl: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80",
+    sellerName: "Kedai Kopi Rungkut Corner",
+    sellerType: "Kedai Kopi & Minuman",
+    sellerPhone: "0813-5544-2211",
+    sellerLocation: "Rungkut, Surabaya",
+    orderedVolume: 15,
+    orderedUnit: "Kg",
+    pricePerUnit: 1200,
+    totalPrice: 18000,
+    orderDate: "04 Okt 2026, 14:30 WIB",
+    pickupScheduledDate: "05 Okt 2026, 08:00 WIB",
+    status: "SELESAI",
+    notes: "Ampas disimpan dalam kantung plastik food-grade rapat. Sudah diambil.",
+  },
+  {
+    id: "buy-wst-03",
+    orderNumber: "KMPL-WBUY-2026-0019",
+    listingId: "ext-waste-03",
+    listingTitle: "Cangkang Telur Kering Sortir Bersih",
+    listingCategory: "Cangkang Telur",
+    sellerName: "Warung Martabak Bu Dewi",
+    sellerType: "Warung Makan UMKM",
+    sellerPhone: "0857-6655-1122",
+    sellerLocation: "Jemursari, Surabaya",
+    orderedVolume: 8,
+    orderedUnit: "Kg",
+    pricePerUnit: 2000,
+    totalPrice: 16000,
+    orderDate: "01 Okt 2026, 09:00 WIB",
+    pickupScheduledDate: "02 Okt 2026, 10:00 WIB",
+    status: "SELESAI",
+  },
+];
+
+export const MOCK_BANK_SAMPAH_POINTS: BankSampahPoint[] = [
+  {
+    id: "bs-01",
+    name: "Bank Sampah Induk Surabaya (BSIS)",
+    category: "Bank Sampah Induk Kota",
+    address: "Jl. Menur Pumpungan No. 32, Menur Pumpungan, Sukolilo",
+    subdistrict: "Sukolilo, Surabaya",
+    distanceKm: 2.4,
+    rating: 4.8,
+    userRatingsTotal: 142,
+    operatingHours: "Senin - Sabtu: 08.00 - 16.00 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Minyak Jelantah (UCO)",
+      "Cangkang Telur Kering",
+      "Kardus / Box Makanan",
+      "Plastik Botol & Jeriken",
+    ],
+    contactPerson: "Bpk. Bambang Irawan",
+    phone: "0812-3011-8844",
+    hasDropbox24h: true,
+    googleMapsUrl: "https://maps.google.com/?q=Bank+Sampah+Induk+Surabaya",
+    serviceFeatures: [
+      "Penimbangan Digital Akurat",
+      "Area Parkir Pick-up Luas",
+      "Dropbox Pintar 24 Jam",
+    ],
+    coordinates: {
+      lat: -7.2882,
+      lng: 112.7663,
+    },
+  },
+  {
+    id: "bs-02",
+    name: "Bank Sampah Resik Mandiri Rungkut",
+    category: "Unit Bank Sampah Kelurahan",
+    address: "Balai RW 05, Jl. Rungkut Asri Timur No. 8, Rungkut Kidul",
+    subdistrict: "Rungkut, Surabaya",
+    distanceKm: 0.8,
+    rating: 4.9,
+    userRatingsTotal: 88,
+    operatingHours: "Setiap Hari: 07.30 - 17.00 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Ampas Kedelai / Tahu",
+      "Kulit Buah & Sayur",
+      "Minyak Jelantah (UCO)",
+      "Sisa Makanan Katering",
+    ],
+    contactPerson: "Ibu Sri Wahyuni",
+    phone: "0813-3342-9901",
+    hasDropbox24h: true,
+    googleMapsUrl: "https://maps.google.com/?q=Rungkut+Asri+Timur+Surabaya",
+    serviceFeatures: [
+      "Jarak Sangat Dekat (< 1 km)",
+      "Drop-box 24 Jam",
+      "Akses Motor & Tossa",
+    ],
+    coordinates: {
+      lat: -7.3225,
+      lng: 112.7788,
+    },
+  },
+  {
+    id: "bs-03",
+    name: "Bank Sampah Bintang Mangrove Wonorejo",
+    category: "Pusat Daur Ulang Komunal",
+    address: "Jl. Wonorejo Timur No. 12, Wonorejo, Rungkut",
+    subdistrict: "Rungkut, Surabaya",
+    distanceKm: 3.1,
+    rating: 4.7,
+    userRatingsTotal: 65,
+    operatingHours: "Senin - Jumat: 08.30 - 15.30 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Minyak Jelantah (UCO)",
+      "Ampas Kopi & Teh",
+      "Cangkang Telur",
+      "Sisa Organik Basah",
+    ],
+    contactPerson: "Mas Hendra Prasetyo",
+    phone: "0811-3489-021",
+    hasDropbox24h: false,
+    googleMapsUrl: "https://maps.google.com/?q=Wonorejo+Rungkut+Surabaya",
+    serviceFeatures: [
+      "Sertifikasi ISCC Daur Ulang",
+      "Edukasi Kompos Mandiri",
+      "Area Parkir Nyaman",
+    ],
+    coordinates: {
+      lat: -7.311,
+      lng: 112.8021,
+    },
+  },
+  {
+    id: "bs-04",
+    name: "Pusat Pengolahan Organik SIER Tenggilis",
+    category: "Pusat Daur Ulang Komunal",
+    address: "Kawasan Industri SIER Blok D-4, Tenggilis Mejoyo",
+    subdistrict: "Tenggilis Mejoyo, Surabaya",
+    distanceKm: 3.7,
+    rating: 4.6,
+    userRatingsTotal: 53,
+    operatingHours: "Senin - Sabtu: 08.00 - 17.00 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Residu Trimming Daging & Tulang",
+      "Ampas Kedelai / Tahu",
+      "Sisa Sayur & Nasi",
+    ],
+    contactPerson: "Drs. Eko Purwanto",
+    phone: "0812-4455-6677",
+    hasDropbox24h: false,
+    googleMapsUrl: "https://maps.google.com/?q=Kawasan+Industri+SIER+Surabaya",
+    serviceFeatures: [
+      "Penerimaan Residu Skala Besar",
+      "Khusus Residu Daging & Tulang",
+      "Timbangan Truk / Pick-up",
+    ],
+    coordinates: {
+      lat: -7.3312,
+      lng: 112.7554,
+    },
+  },
+  {
+    id: "bs-05",
+    name: "Bank Sampah Surya Mandiri Jemursari",
+    category: "Unit Bank Sampah Kelurahan",
+    address: "Jl. Jemursari Selatan IV No. 16, Jemur Wonosari",
+    subdistrict: "Wonocolo, Surabaya",
+    distanceKm: 4.2,
+    rating: 4.8,
+    userRatingsTotal: 92,
+    operatingHours: "Senin - Sabtu: 08.00 - 16.30 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Minyak Jelantah (UCO)",
+      "Wadah Plastik & Jeriken",
+      "Kardus Kemasan",
+    ],
+    contactPerson: "Ibu Ratna Dewi",
+    phone: "0812-3211-9988",
+    hasDropbox24h: true,
+    googleMapsUrl: "https://maps.google.com/?q=Jemursari+Surabaya",
+    serviceFeatures: [
+      "Penerimaan Drop-off Langsung UMKM",
+      "Dropbox 24 Jam",
+      "Area Dekat Jalan Raya",
+    ],
+    coordinates: {
+      lat: -7.318,
+      lng: 112.748,
+    },
+  },
+  {
+    id: "bs-06",
+    name: "Bank Sampah Bratang Binangun",
+    category: "Unit Bank Sampah Kelurahan",
+    address: "Jl. Bratang Binangun No. 22, Baratajaya, Gubeng",
+    subdistrict: "Gubeng, Surabaya",
+    distanceKm: 4.8,
+    rating: 4.7,
+    userRatingsTotal: 74,
+    operatingHours: "Senin - Sabtu: 08.00 - 16.00 WIB",
+    openStatus: "Buka Sekarang",
+    acceptedCommodities: [
+      "Minyak Jelantah (UCO)",
+      "Cangkang Telur",
+      "Kardus Kemasan Makanan",
+    ],
+    contactPerson: "Bpk. Agus Santoso",
+    phone: "0813-9088-1234",
+    hasDropbox24h: false,
+    googleMapsUrl: "https://maps.google.com/?q=Bratang+Binangun+Surabaya",
+    serviceFeatures: [
+      "Tersedia Parkir Pick-up",
+      "Pelayanan Ramah & Cepat",
+      "Penimbangan Digital",
+    ],
+    coordinates: {
+      lat: -7.2965,
+      lng: 112.754,
+    },
+  },
+];
+
+export const MOCK_WASTE_SALES_ORDERS: WasteSaleOrder[] = [
+  {
+    id: "sale-wst-01",
+    orderNumber: "KMPL-WST-2026-0911",
+    listingId: "waste-01",
+    listingTitle: "Ampas Kedelai Perasan Tahu Segar",
+    listingCategory: "Ampas Kedelai / Tahu",
+    listingImageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+    buyerName: "UD Berkah Peternakan Bebek & Lele",
+    buyerType: "Peternak Bebek & Ikan Lele",
+    buyerPhone: "0813-8899-2311",
+    orderedVolume: 40,
+    orderedUnit: "Kg",
+    totalPrice: 48000,
+    orderDate: "05 Okt 2026, 09:30 WIB",
+    pickupScheduledDate: "Besok (06 Okt 2026), 08:30 WIB",
+    status: "MENUNGGU_DIAMBIL",
+    notes: "Akan datang bawa pick-up sendiri, mohon ampas disiapkan di teras samping.",
+    location: "Rungkut, Surabaya",
+  },
+  {
+    id: "sale-wst-02",
+    orderNumber: "KMPL-WST-2026-0912",
+    listingId: "waste-01",
+    listingTitle: "Ampas Kedelai Perasan Tahu Segar",
+    listingCategory: "Ampas Kedelai / Tahu",
+    listingImageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+    buyerName: "Pak Sugeng (Budidaya Maggot BSF)",
+    buyerType: "Peternak Maggot Organik",
+    buyerPhone: "0812-4455-6677",
+    orderedVolume: 30,
+    orderedUnit: "Kg",
+    totalPrice: 36000,
+    orderDate: "05 Okt 2026, 11:15 WIB",
+    pickupScheduledDate: "Besok (06 Okt 2026), 13:00 WIB",
+    status: "MENUNGGU_DIAMBIL",
+    notes: "Saya bawa karung sendiri dari rumah saat ambil mandiri.",
+    location: "Rungkut, Surabaya",
+  },
+  {
+    id: "sale-wst-03",
+    orderNumber: "KMPL-WST-2026-0908",
+    listingId: "waste-02",
+    listingTitle: "Minyak Jelantah Bekas Katering (UCO)",
+    listingCategory: "Minyak Jelantah (UCO)",
+    listingImageUrl: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80",
+    buyerName: "PT Hijau Bioenergi Nusantara",
+    buyerType: "Offtaker Biodiesel Surabaya",
+    buyerPhone: "0812-9988-7711",
+    orderedVolume: 35,
+    orderedUnit: "Liter",
+    totalPrice: 262500,
+    orderDate: "05 Okt 2026, 08:15 WIB",
+    pickupScheduledDate: "Rabu (07 Okt 2026), 10:00 WIB",
+    status: "MENUNGGU_DIAMBIL",
+    notes: "Tim kami bawa jeriken penukar saat datang ke lokasi dapur.",
+    location: "Rungkut, Surabaya",
+  },
+  {
+    id: "sale-wst-04",
+    orderNumber: "KMPL-WST-2026-0899",
+    listingId: "waste-03",
+    listingTitle: "Cangkang Telur Ayam Kering Cacah",
+    listingCategory: "Cangkang Telur",
+    listingImageUrl: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=800&q=80",
+    buyerName: "Kompos Berkah Wonokromo",
+    buyerType: "Produsen Pupuk Organik",
+    buyerPhone: "0812-5566-7788",
+    orderedVolume: 20,
+    orderedUnit: "Kg",
+    totalPrice: 40000,
+    orderDate: "04 Okt 2026, 10:00 WIB",
+    pickupScheduledDate: "Kemarin (04 Okt 2026), 14:00 WIB",
+    status: "SELESAI",
+    notes: "Sudah diambil mandiri dengan sepeda motor gerobak. Cangkang kering bersih.",
+    location: "Rungkut, Surabaya",
+  },
+  {
+    id: "sale-wst-05",
+    orderNumber: "KMPL-WST-2026-0887",
+    listingId: "waste-01",
+    listingTitle: "Ampas Kedelai Perasan Tahu Segar",
+    listingCategory: "Ampas Kedelai / Tahu",
+    listingImageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+    buyerName: "Peternak Bebek Cak Slamet",
+    buyerType: "Peternak Bebek Rungkut",
+    buyerPhone: "0857-3322-1100",
+    orderedVolume: 50,
+    orderedUnit: "Kg",
+    totalPrice: 60000,
+    orderDate: "02 Okt 2026, 08:30 WIB",
+    pickupScheduledDate: "02 Okt 2026, 11:00 WIB",
+    status: "SELESAI",
+    notes: "Telah ditimbang langsung dan serah terima tuntas di dapur.",
+    location: "Rungkut, Surabaya",
   },
 ];

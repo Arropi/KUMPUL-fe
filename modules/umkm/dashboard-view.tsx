@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import {
   MOCK_UMKM_PROFILE,
-  MOCK_ACTIVE_POOLS,
   MOCK_UMKM_PURCHASE_HISTORY,
   MOCK_WASTE_LISTINGS,
   ActivePoolItem,
@@ -27,6 +26,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/components/ui/toast";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
+import { KitchenInventorySection } from "@/modules/umkm/menu/kitchen-inventory-section";
+import { getUmkmProductsAction } from "@/actions/products";
+import type { BEProduct } from "@/lib/api/types";
+import { DEFAULT_SEED_PRODUCTS } from "@/lib/menu-intelligence";
+import { beFetch } from "@/lib/api/be-client";
+import { RefreshCw } from "lucide-react";
 
 type TimelineOptionValue = "7d" | "30d" | "90d";
 
@@ -109,12 +114,78 @@ function InsightBadge({ children }: { children: React.ReactNode }) {
 export function UmkmDashboardView() {
   const greeting = useGreeting(MOCK_UMKM_PROFILE.ownerName);
   const [timeline, setTimeline] = React.useState<TimelineOptionValue>("7d");
-  const [pools, setPools] = React.useState<ActivePoolItem[]>(MOCK_ACTIVE_POOLS);
+  const [pools, setPools] = React.useState<ActivePoolItem[]>([]);
+  const [loadingPools, setLoadingPools] = React.useState<boolean>(true);
+  const [errorPools, setErrorPools] = React.useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = React.useState<string>("Semua");
   const [activeJoinPool, setActiveJoinPool] = React.useState<ActivePoolItem | null>(null);
   const [joinQuantity, setJoinQuantity] = React.useState<number>(50);
   const [deliveryMethod, setDeliveryMethod] = React.useState<"HEMAT_HUB" | "DIRECT_DELIVERY">("HEMAT_HUB");
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
+  const [products, setProducts] = React.useState<BEProduct[]>([]);
+
+  // Load products (backend atau localStorage) untuk sinkronisasi inventaris dapur
+  React.useEffect(() => {
+    let ignore = false;
+    getUmkmProductsAction()
+      .then((res) => {
+        let localMocks: BEProduct[] = [];
+        try {
+          const saved = localStorage.getItem("kumpul_mock_products");
+          if (saved) localMocks = JSON.parse(saved);
+        } catch {}
+
+        if (!ignore) {
+          if (res.success && res.data && res.data.length > 0) {
+            const backendIds = new Set(res.data.map((p) => p.id));
+            const uniqueMocks = localMocks.filter((m) => !backendIds.has(m.id));
+            setProducts([...uniqueMocks, ...res.data]);
+          } else if (localMocks.length > 0) {
+            setProducts(localMocks);
+          } else {
+            setProducts(DEFAULT_SEED_PRODUCTS);
+          }
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          try {
+            const saved = localStorage.getItem("kumpul_mock_products");
+            if (saved) setProducts(JSON.parse(saved));
+            else setProducts(DEFAULT_SEED_PRODUCTS);
+          } catch {
+            setProducts(DEFAULT_SEED_PRODUCTS);
+          }
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  // Load pools from backend
+  React.useEffect(() => {
+    async function loadPools() {
+      setLoadingPools(true);
+      try {
+        const res = await beFetch<ActivePoolItem[]>(`/api/pre-orders/pools?limit=20&offset=0`);
+        if (res.success) {
+          setPools(res.data ?? []);
+        } else {
+          setPools([]);
+          setErrorPools(res.message ?? 'Gagal memuat daftar pool');
+        }
+      } catch (err) {
+        console.error(err);
+        setPools([]);
+        setErrorPools('Gagal memuat daftar pool');
+      } finally {
+        setLoadingPools(false);
+      }
+    }
+    loadPools();
+  }, []); // empty deps for now
 
   const selectedLabel =
     TIMELINE_OPTIONS.find((opt) => opt.value === timeline)?.label ?? "7 Hari Terakhir";
@@ -137,45 +208,66 @@ export function UmkmDashboardView() {
     "Unggas & Daging",
   ];
 
-  const filteredPools =
-    selectedCategory === "Semua"
-      ? pools
-      : pools.filter((p) => p.category === selectedCategory);
+  // Compute filtered pools only when we have data (not loading and not error)
+  let filteredPools: ActivePoolItem[] = [];
+  if (!loadingPools && !errorPools) {
+    filteredPools =
+      selectedCategory === "Semua"
+        ? pools
+        : pools.filter((p) => p.category === selectedCategory);
+  }
 
-  const handleJoinPoolSubmit = (e: React.FormEvent) => {
+  const handleJoinPoolSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeJoinPool) return;
 
     setIsSubmitting(true);
+    try {
+      const res = await beFetch<any>(
+        `/api/pre-orders/join`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            pool_id: activeJoinPool.id,
+            // We don't have the other required fields, so we'll send empty strings and zeros for now.
+            // In a real implementation, we must get these from the user's session/profile.
+            umkm_role_id: '',
+            order_qty: joinQuantity,
+            required_delivery_date: '',
+            is_urgent_asap: deliveryMethod === 'HEMAT_HUB',
+            delivery_method: deliveryMethod,
+            final_delivery_address: '',
+            final_delivery_lng: 0,
+            final_delivery_lat: 0,
+          })
+        }
+      );
 
-    setTimeout(() => {
+      if (!res.success) {
+        throw new Error(res.message ?? 'Gagal bergabung ke pool');
+      }
+
+      // Optimistic update: we can update the pool's accumulatedKg and participantsCount
+      setPools(prev =>
+        prev.map(p =>
+          p.id === activeJoinPool.id
+            ? {
+                ...p,
+                accumulatedKg: p.accumulatedKg + joinQuantity,
+                participantsCount: p.participantsCount + 1,
+                status:
+                  p.accumulatedKg + joinQuantity >= p.targetMoqKg ? 'LOCKED' : 'AGGREGATING',
+              }
+            : p
+        )
+      );
+
+      toast.success('Berhasil bergabung ke pool', 'Success');
+    } catch (err: any) {
+      toast.error((err as Error)?.message ?? 'Terjadi kesalahan', 'Gagal');
+    } finally {
       setIsSubmitting(false);
-      const addedKg = Number(joinQuantity);
-
-      setPools((prev) =>
-        prev.map((p) => {
-          if (p.id === activeJoinPool.id) {
-            const newAccumulated = p.accumulatedKg + addedKg;
-            return {
-              ...p,
-              accumulatedKg: newAccumulated,
-              participantsCount: p.participantsCount + 1,
-              status: newAccumulated >= p.targetMoqKg ? "LOCKED" : "AGGREGATING",
-            };
-          }
-          return p;
-        })
-      );
-
-      toast.success(
-        `Berhasil bergabung ke pooling ${activeJoinPool.commodityName} sebesar ${addedKg} kg dengan Opsi ${
-          deliveryMethod === "HEMAT_HUB" ? "Hemat (Ambil di Hub)" : "Kirim Langsung"
-        }.`,
-        "Kuota Pooling Berhasil Ditambahkan"
-      );
-
-      setActiveJoinPool(null);
-    }, 600);
+    }
   };
 
   return (
@@ -204,7 +296,7 @@ export function UmkmDashboardView() {
                 className="h-10 shrink-0 gap-2 rounded-xl px-3.5 text-xs sm:text-sm font-semibold shadow-xs"
               >
                 <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span>{selectedLabel}</span>
                 <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -213,10 +305,7 @@ export function UmkmDashboardView() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-44">
-              <DropdownMenuRadioGroup
-                value={timeline}
-                onValueChange={(val) => setTimeline(val as TimelineOptionValue)}
-              >
+              <DropdownMenuRadioGroup value={timeline} onValueChange={(val) => setTimeline(val as TimelineOptionValue)}>
                 {TIMELINE_OPTIONS.map((opt) => (
                   <DropdownMenuRadioItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -573,7 +662,7 @@ export function UmkmDashboardView() {
             <div className="flex items-center gap-2.5">
               <span className="flex w-8 h-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 018 0z" />
                 </svg>
               </span>
               <h3 className="font-heading text-sm font-bold text-text-primary">
@@ -639,155 +728,175 @@ export function UmkmDashboardView() {
         </article>
       </section>
 
-      {/* 6. Autonomous MOQ Pooling Radar Section */}
+      {/* 6. Pengolahan Stok Bahan Baku Dapur (Kitchen Inventory & Alert Restock) */}
       <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-heading text-base sm:text-lg font-bold text-text-primary">
-                Radar Autonomous MOQ Pooling Aktif
-              </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary text-text-inverse tabular-nums">
-                {filteredPools.length}
-              </span>
-            </div>
-            <p className="text-xs text-text-muted mt-0.5">
-              Pilih komoditas yang sedang dikumpulkan bersama UMKM dalam radius logistik Jawa Timur.
-            </p>
+        <KitchenInventorySection products={products} />
+      </section>
+
+      {/* 7. Autonomous MOQ Pooling Radar Section */}
+      <section className="space-y-4">
+        {loadingPools ? (
+          <div className="text-center py-8">
+            <span className="inline-flex items-center justify-center w-10 h-10 rounded-full border-2 border-primary text-primary animate-spin">
+              <RefreshCw className="w-5 h-5" />
+            </span>
+            <p className="mt-2 text-xs font-semibold text-text-primary">Memuat daftar pool...</p>
           </div>
-
-          {/* Filter Kategori Pill Bergaya Watermelon UI */}
-          <div className="flex items-center gap-1.5 p-1 bg-background rounded-xl border border-border overflow-x-auto max-w-full">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`min-h-[36px] px-3.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                  selectedCategory === cat
-                    ? "bg-surface text-primary shadow-[inset_0_1px_0_#FFFFFF,inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.06)] font-bold border border-border"
-                    : "text-text-secondary hover:text-text-primary hover:bg-surface-subtle"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+        ) : errorPools ? (
+          <div className="p-4 text-center bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm font-medium text-red-800">{errorPools}</p>
           </div>
-        </div>
-
-        {/* Grid Kartu Radar Pooling */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {filteredPools.map((pool) => {
-            const percentage = Math.min(
-              Math.round((pool.accumulatedKg / pool.targetMoqKg) * 100),
-              100
-            );
-            const savingsPerKg = pool.pricePerKgRetailMarket - pool.pricePerKgWholesale;
-            const isLocked = pool.status === "LOCKED";
-
-            return (
-              <Card
-                key={pool.id}
-                className="flex flex-col justify-between overflow-hidden rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2"
-              >
-                <div className="p-5 sm:p-6 space-y-4">
-                  {/* Header Komoditas & Supplier */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-md border border-primary/20">
-                        {pool.category}
-                      </span>
-                      <h3 className="font-heading text-base font-bold text-text-primary mt-1.5">
-                        {pool.commodityName}
-                      </h3>
-                      <p className="text-xs text-text-muted mt-0.5">
-                        Pemasok: <strong className="text-text-secondary">{pool.supplierName}</strong> ({pool.supplierLocation})
-                      </p>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      {isLocked ? (
-                        <Badge variant="success" className="font-semibold">
-                          Terkunci (Siap Kirim)
-                        </Badge>
-                      ) : (
-                        <Badge variant="warning" className="font-semibold tabular-nums gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-                          {pool.expiryHoursRemaining}j lagi
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Paspor Mutu Badge */}
-                  <div className="flex items-center gap-2 text-[11px] text-text-secondary">
-                    <span className="font-bold text-success flex items-center gap-1">
-                      <span>✓</span> {pool.qualityBadge.grade}
-                    </span>
-                    <span>&bull;</span>
-                    <span className="text-text-muted truncate">{pool.qualityBadge.certification}</span>
-                  </div>
-
-                  {/* Progress Bar Kuota MOQ Pooling */}
-                  <div className="p-3.5 rounded-xl bg-surface-subtle border border-border/70 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-text-secondary font-medium">
-                        Kuota Terkumpul: <strong className="text-text-primary tabular-nums">{pool.accumulatedKg}</strong> / {pool.targetMoqKg} kg
-                      </span>
-                      <span className="font-black text-primary tabular-nums">
-                        {percentage}%
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-border/60 h-2 rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-all duration-500",
-                          isLocked ? "bg-emerald-600" : "bg-primary"
-                        )}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-text-muted pt-0.5">
-                      <span>{pool.participantsCount} UMKM telah bergabung</span>
-                      <span>Satuan: {pool.unit}</span>
-                    </div>
-                  </div>
-
-                  {/* Perbandingan Harga & Tombol Aksi */}
-                  <div className="pt-2 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="font-heading text-xl font-extrabold text-primary tabular-nums">
-                          {formatCurrency(pool.pricePerKgWholesale)}
-                        </span>
-                        <span className="text-xs text-text-muted">/ kg grosir</span>
-                      </div>
-                      <p className="text-[11px] text-emerald-700 font-semibold">
-                        Hemat {formatCurrency(savingsPerKg)}/kg vs pasar
-                      </p>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant={isLocked ? "secondary" : "primary"}
-                      size="default"
-                      onClick={() => {
-                        setActiveJoinPool(pool);
-                        setJoinQuantity(50);
-                      }}
-                      className="font-bold shrink-0 min-h-[40px]"
-                      disabled={isLocked}
-                    >
-                      {isLocked ? "Kuota Penuh" : "Gabung Kuota (Join Pool)"}
-                    </Button>
-                  </div>
+        ) : (
+          <>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-heading text-base sm:text-lg font-bold text-text-primary">
+                    Radar Autonomous MOQ Pooling Aktif
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary text-text-inverse tabular-nums">
+                    {filteredPools.length}
+                  </span>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
+                <p className="text-xs text-text-muted mt-0.5">
+                  Pilih komoditas yang sedang dikumpulkan bersama UMKM dalam radius logistik Jawa Timur.
+                </p>
+              </div>
+
+              {/* Filter Kategori Pill Bergaya Watermelon UI */}
+              <div className="flex items-center gap-1.5 p-1 bg-background rounded-xl border border-border overflow-x-auto max-w-full">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`min-h-[36px] px-3.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      selectedCategory === cat
+                        ? "bg-surface text-primary shadow-[inset_0_1px_0_#FFFFFF,inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.06)] font-bold border border-border"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-subtle"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Grid Kartu Radar Pooling */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {filteredPools.map((pool) => {
+                const percentage = Math.min(
+                  Math.round((pool.accumulatedKg / pool.targetMoqKg) * 100),
+                  100
+                );
+                const savingsPerKg = pool.pricePerKgRetailMarket - pool.pricePerKgWholesale;
+                const isLocked = pool.status === "LOCKED";
+
+                return (
+                  <Card
+                    key={pool.id}
+                    className="flex flex-col justify-between overflow-hidden rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2"
+                  >
+                    <div className="p-5 sm:p-6 space-y-4">
+                      {/* Header Komoditas & Supplier */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-md border border-primary/20">
+                            {pool.category}
+                          </span>
+                          <h3 className="font-heading text-base font-bold text-text-primary mt-1.5">
+                            {pool.commodityName}
+                          </h3>
+                          <p className="text-xs text-text-muted mt-0.5">
+                            Pemasok: <strong className="text-text-secondary">{pool.supplierName}</strong> ({pool.supplierLocation})
+                          </p>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          {isLocked ? (
+                            <Badge variant="success" className="font-semibold">
+                              Terkunci (Siap Kirim)
+                            </Badge>
+                          ) : (
+                            <Badge variant="warning" className="font-semibold tabular-nums gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                              {pool.expiryHoursRemaining}j lagi
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Paspor Mutu Badge */}
+                      <div className="flex items-center gap-2 text-[11px] text-text-secondary">
+                        <span className="font-bold text-success flex items-center gap-1">
+                          <span>✓</span> {pool.qualityBadge.grade}
+                        </span>
+                        <span>&bull;</span>
+                        <span className="text-text-muted truncate">{pool.qualityBadge.certification}</span>
+                      </div>
+
+                      {/* Progress Bar Kuota MOQ Pooling */}
+                      <div className="p-3.5 rounded-xl bg-surface-subtle border border-border/70 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-text-secondary font-medium">
+                            Kuota Terkumpul: <strong className="text-text-primary tabular-nums">{pool.accumulatedKg}</strong> / {pool.targetMoqKg} kg
+                          </span>
+                          <span className="font-black text-primary tabular-nums">
+                            {percentage}%
+                          </span>
+                        </div>
+
+                        <div className="w-full bg-border/60 h-2 rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all duration-500",
+                              isLocked ? "bg-emerald-600" : "bg-primary"
+                            )}
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] text-text-muted pt-0.5">
+                          <span>{pool.participantsCount} UMKM telah bergabung</span>
+                          <span>Satuan: {pool.unit}</span>
+                        </div>
+                      </div>
+
+                      {/* Perbandingan Harga & Tombol Aksi */}
+                      <div className="pt-2 border-t border-border/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="font-heading text-xl font-extrabold text-primary tabular-nums">
+                              {formatCurrency(pool.pricePerKgWholesale)}
+                            </span>
+                            <span className="text-xs text-text-muted">/ kg grosir</span>
+                          </div>
+                          <p className="text-[11px] text-emerald-700 font-semibold">
+                            Hemat {formatCurrency(savingsPerKg)}/kg vs pasar
+                          </p>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant={isLocked ? "secondary" : "primary"}
+                          size="default"
+                          onClick={() => {
+                            setActiveJoinPool(pool);
+                            setJoinQuantity(50);
+                          }}
+                          className="font-bold shrink-0 min-h-[40px]"
+                          disabled={isLocked}
+                        >
+                          {isLocked ? "Kuota Penuh" : "Gabung Kuota (Join Pool)"}
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </>
+        )}
       </section>
 
       {/* 5. Section Riwayat Pengadaan & Bursa Limbah */}
@@ -1053,7 +1162,7 @@ export function UmkmDashboardView() {
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-success/10 border border-success/20 text-success text-center font-bold text-xs">
-                  🎉 Anda Menghemat{" "}
+                  🎉 Anda Mengat{" "}
                   {formatCurrency(
                     joinQuantity *
                       (activeJoinPool.pricePerKgRetailMarket - activeJoinPool.pricePerKgWholesale)

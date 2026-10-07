@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { HomeView } from "@/modules/home/home-view";
 import { UserRole, UserSession } from "@/constants/auth";
+import { fetchHomeData } from "@/lib/actions/server-actions";
 
 export const metadata: Metadata = {
   title: "Beranda | KUMPUL",
@@ -52,6 +53,9 @@ export default async function HomePage() {
     }
   }
 
+  // Fetch data for home page using server actions
+  const { catalog, recommendations, catalogError, recsError } = await fetchHomeData();
+
   return (
     <React.Suspense
       fallback={
@@ -60,7 +64,13 @@ export default async function HomePage() {
         </div>
       }
     >
-      <HomeView initialSession={session} />
+      <HomeView
+        initialSession={session}
+        catalog={catalog}
+        recommendations={recommendations}
+        catalogError={catalogError}
+        recsError={recsError}
+      />
     </React.Suspense>
   );
 }

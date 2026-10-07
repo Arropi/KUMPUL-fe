@@ -84,8 +84,9 @@ export function ProfileView({ initialRole = "umkm" }: ProfileViewProps) {
             (bank.pic_title as string) ||
             (isSupplier ? "Head of Operations & Supply" : "Owner / Pengelola Usaha"),
           contactPhone:
+            ent.phone_number ||
             (bank.phone as string) ||
-            (isSupplier ? "0811-8899-2311" : "0812-3456-7890"),
+            "",
           contactEmail:
             (bank.email as string) ||
             res.session?.email ||
@@ -100,8 +101,8 @@ export function ProfileView({ initialRole = "umkm" }: ProfileViewProps) {
           storageValue: activeRole?.storage_capacity || 0,
           storageUnit: "KG",
           storageType: "DRY",
-          totalRevenue: isSupplier ? 38500000 : 12450000,
-          totalItems: isSupplier ? 4 : 6,
+          totalRevenue: res.total_sales ?? (isSupplier ? 38500000 : 12450000),
+          totalItems: res.products?.length ?? (isSupplier ? 4 : 6),
         });
       } else {
         toast.error(res.message || "Gagal memuat profil entitas usaha.");
@@ -234,23 +235,24 @@ export function ProfileView({ initialRole = "umkm" }: ProfileViewProps) {
         onAdjustStorage={handleFocusStorage}
       />
 
-      {/* 4. Rekening Settlement Escrow (Penambahan & Pengurangan Rekening) */}
-      <div ref={bankSectionRef}>
-        <ProfileBankAccountsCard
-          entityId={entity.id}
-          bankInfo={entity.bank_account_info}
-          defaultHolderName={profileState.legalName || "Pemilik Usaha"}
-          onUpdated={handleBankUpdated}
-        />
-      </div>
+      {/* 4 & 5. Dua Kolom Grid: Kapasitas Ruang Penyimpanan & Rekening Bank */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <div ref={storageSectionRef} className="h-full">
+          <ProfileStorageCard
+            activeRole={activeRole}
+            allRoles={roles}
+            onRoleUpdated={handleRoleUpdated}
+          />
+        </div>
 
-      {/* 5. Kapasitas Ruang Penyimpanan (Penambahan & Pengurangan Kapasitas) */}
-      <div ref={storageSectionRef}>
-        <ProfileStorageCard
-          activeRole={activeRole}
-          allRoles={roles}
-          onRoleUpdated={handleRoleUpdated}
-        />
+        <div ref={bankSectionRef} className="h-full">
+          <ProfileBankAccountsCard
+            entityId={entity.id}
+            bankInfo={entity.bank_account_info}
+            defaultHolderName={profileState.legalName || "Pemilik Usaha"}
+            onUpdated={handleBankUpdated}
+          />
+        </div>
       </div>
 
       {/* 6. Manajemen Peran Usaha & Beralih Portal */}
