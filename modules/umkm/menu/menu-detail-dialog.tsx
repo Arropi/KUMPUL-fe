@@ -213,8 +213,26 @@ export function MenuDetailDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl sm:max-w-4xl p-0 overflow-hidden rounded-3xl border border-border bg-surface shadow-2xl flex flex-col max-h-[92vh]">
+        {/* Tombol Aksi Edit (berdampingan dengan tombol close X) */}
+        <div className="absolute top-4.5 right-[62px] z-30 flex items-center">
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              onClose();
+              onEdit(product);
+            }}
+            className="h-9 min-h-9 px-3 sm:px-3.5 rounded-xl text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
+          >
+            <Pencil className="size-3.5" />
+            <span className="hidden sm:inline">Edit Produk &amp; Resep</span>
+            <span className="sm:hidden">Edit</span>
+          </Button>
+        </div>
+
         {/* 1. Modal Header */}
-        <div className="px-6 py-5 pr-16 border-b border-border/80 bg-surface shrink-0">
+        <div className="px-6 py-5 pr-36 sm:pr-64 border-b border-border/80 bg-surface shrink-0">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <DialogTitle className="text-lg sm:text-xl font-heading font-bold text-text-primary leading-tight">
@@ -273,7 +291,7 @@ export function MenuDetailDialog({
         </div>
 
         {/* 3. Tab Contents Area */}
-        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 space-y-6 custom-scrollbar min-h-0 bg-background/40">
+        <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-5 pb-6 space-y-6 custom-scrollbar min-h-0 bg-background/40">
           {/* TAB 1: LIMBAH YANG DIHASILKAN (Bersih tanpa 4 stat cards) */}
           {activeTab === "limbah" && (
             <div className="space-y-6 animate-in fade-in-50 duration-150">
@@ -652,34 +670,11 @@ export function MenuDetailDialog({
                   </div>
                 </div>
 
-                <p className="text-[11px] text-text-muted italic pt-1">
-                  * Klik CTA pada kartu di atas untuk membuka formulir pemesanan langsung bahan tersebut di bursa Beranda.
-                </p>
               </div>
             </div>
           )}
         </div>
 
-        {/* 4. Modal Footer */}
-        <div className="px-6 py-4 border-t border-border/80 bg-surface shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <span className="text-xs text-text-muted">
-            Kalkulasi terintegrasi dengan Bursa Sirkular &amp; HPP KUMPUL
-          </span>
-
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              onClose();
-              onEdit(product);
-            }}
-            className="rounded-xl px-4 text-xs font-bold gap-1.5 self-end sm:self-auto cursor-pointer"
-          >
-            <Pencil className="size-3.5" />
-            <span>Edit Produk &amp; Resep</span>
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );
