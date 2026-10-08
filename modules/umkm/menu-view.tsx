@@ -17,6 +17,7 @@ import {
 import { MenuAddDialog } from "./menu/menu-add-dialog";
 import { MenuCard } from "./menu/menu-card";
 import { MenuDetailDialog } from "./menu/menu-detail-dialog";
+import { KitchenInventorySection } from "./menu/kitchen-inventory-section";
 import { Pagination15 } from "@/components/ui/pagination";
 import { getUmkmProductsAction } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
@@ -65,6 +66,7 @@ export const MENU_SORT_OPTIONS: { value: MenuSortOption; label: string; descript
 
 export function UmkmMenuView() {
   const [products, setProducts] = React.useState<BEProduct[]>([]);
+  const rawProducts = products;
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortBy, setSortBy] = React.useState<MenuSortOption>("MARGIN_DESC");
@@ -402,10 +404,13 @@ export function UmkmMenuView() {
               itemLabel="produk"
             />
           )}
+
+          {/* 4. Pengolahan Stok Bahan Baku Dapur (Agregat Resep) */}
+          <KitchenInventorySection products={rawProducts} />
         </div>
       )}
 
-      {/* 4. Dialog Tambah & Edit Menu / Resep */}
+      {/* 5. Dialog Tambah & Edit Menu / Resep */}
       <MenuAddDialog
         isOpen={isAddModalOpen}
         onClose={() => {
