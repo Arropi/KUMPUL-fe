@@ -466,16 +466,23 @@ export function UmkmDashboardView() {
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-border/70">
           <div>
-            <h2 className="font-heading text-base sm:text-lg font-bold text-text-primary">
-              Ketahanan Stok Dapur (Kitchen Runout Predictor)
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-heading text-base sm:text-lg font-bold text-text-primary">
+                Ketahanan Stok Dapur (Kitchen Runout Predictor)
+              </h2>
+              {dashboardData?.kitchen_runout_alerts && dashboardData.kitchen_runout_alerts.length > 0 && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface-subtle text-text-secondary border border-border">
+                  {dashboardData.kitchen_runout_alerts.length} Bahan
+                </span>
+              )}
+            </div>
             <p className="text-xs text-text-secondary mt-0.5">
               Prediksi laju konsumsi harian bahan baku dihitung langsung dari komposisi resep menu produk UMKM Anda.
             </p>
           </div>
           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-bold gap-1 self-start sm:self-auto">
-            <Link href="/produk">
-              <span>Kelola Resep &amp; Bahan</span>
+            <Link href="/produk#kitchen-inventory">
+              <span>Kelola Stok Lengkap</span>
               <ArrowRight className="size-3.5" />
             </Link>
           </Button>
@@ -488,47 +495,68 @@ export function UmkmDashboardView() {
             </p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {dashboardData.kitchen_runout_alerts.map((alert, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-2xl border border-border bg-surface shadow-elevation-1 flex flex-col justify-between gap-3 hover:border-border-strong transition-all"
-              >
-                <div className="space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-bold text-sm text-text-primary">
-                      {alert.ingredient_name}
-                    </h4>
-                    {alert.is_urgent ? (
-                      <Badge variant="warning" className="text-[10px] font-bold">
-                        Perlu Restok
-                      </Badge>
-                    ) : (
-                      <Badge variant="primary" className="text-[10px]">
-                        Aman
-                      </Badge>
-                    )}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dashboardData.kitchen_runout_alerts.slice(0, 6).map((alert, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-2xl border border-border bg-surface shadow-elevation-1 flex flex-col justify-between gap-3 hover:border-border-strong transition-all"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-bold text-sm text-text-primary line-clamp-1">
+                        {alert.ingredient_name}
+                      </h4>
+                      {alert.is_urgent ? (
+                        <Badge variant="warning" className="text-[10px] font-bold shrink-0">
+                          Perlu Restok
+                        </Badge>
+                       ) : (
+                        <Badge variant="primary" className="text-[10px] shrink-0">
+                          Aman
+                        </Badge>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-text-secondary">
+                      Laju Pemakaian: <strong className="text-text-primary tabular-nums">{alert.daily_consumption_rate} {alert.unit}</strong>/hari
+                    </p>
                   </div>
 
-                  <p className="text-xs text-text-secondary">
-                    Laju Pemakaian: <strong className="text-text-primary tabular-nums">{alert.daily_consumption_rate} {alert.unit}</strong>/hari
+                  <div className="pt-2 border-t border-border/70 flex items-center justify-between text-xs">
+                    <span className="text-text-muted">
+                      Sisa Ketahanan: <strong className="text-primary font-bold">{alert.days_until_runout} Hari</strong>
+                    </span>
+
+                    <Button asChild variant="primary" size="sm" className="rounded-xl text-xs font-bold">
+                      <Link href={`/home?search=${encodeURIComponent(alert.ingredient_name)}`}>
+                        <span>Restok di Bursa</span>
+                        <ArrowRight className="size-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {dashboardData.kitchen_runout_alerts.length > 6 && (
+              <div className="p-4 rounded-2xl bg-surface-subtle/80 border border-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold text-text-primary block">
+                    Tersisa {dashboardData.kitchen_runout_alerts.length - 6} bahan baku lainnya dalam pantauan dapur
+                  </span>
+                  <p className="text-[11px] text-text-secondary">
+                    Buka tabel buku besar pengolahan stok untuk melihat seluruh daftar bahan, opname fisik aktual, dan navigasi halaman.
                   </p>
                 </div>
-
-                <div className="pt-2 border-t border-border/70 flex items-center justify-between text-xs">
-                  <span className="text-text-muted">
-                    Sisa Ketahanan: <strong className="text-primary font-bold">{alert.days_until_runout} Hari</strong>
-                  </span>
-
-                  <Button asChild variant="primary" size="sm" className="rounded-xl text-xs font-bold">
-                    <Link href={`/home?search=${encodeURIComponent(alert.ingredient_name)}`}>
-                      <span>Restok di Bursa</span>
-                      <ArrowRight className="size-3.5" />
-                    </Link>
-                  </Button>
-                </div>
+                <Button asChild variant="primary" size="sm" className="rounded-xl text-xs font-bold gap-1.5 shrink-0 self-start sm:self-auto">
+                  <Link href="/produk#kitchen-inventory">
+                    <span>Buka Pengolahan Stok Dapur</span>
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                </Button>
               </div>
-            ))}
+            )}
           </div>
         )}
       </section>
