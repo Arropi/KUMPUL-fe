@@ -20,8 +20,8 @@ export interface BELoginResult {
   token: string;
   user_id: string;
   entity_id: string;
-  active_role?: { role_type: "SUPPLIER" | "UMKM" };
-  available_roles?: Array<{ role_type: "SUPPLIER" | "UMKM" }>;
+  active_role?: { id?: string; role_type: "SUPPLIER" | "UMKM" };
+  available_roles?: Array<{ id?: string; role_type: "SUPPLIER" | "UMKM" }>;
   business_entity?: Record<string, unknown>;
 }
 
@@ -45,7 +45,9 @@ export interface BERegisterCompleteResult {
   user_id: string;
   entity_id: string;
   business_entity?: Record<string, unknown>;
-  available_roles?: Array<{ role_type: "SUPPLIER" | "UMKM" }>;
+  active_role?: { id?: string; role_type: "SUPPLIER" | "UMKM" };
+  business_role?: { id?: string; role_type: "SUPPLIER" | "UMKM" };
+  available_roles?: Array<{ id?: string; role_type: "SUPPLIER" | "UMKM" }>;
 }
 
 export type BESectorType =

@@ -30,12 +30,17 @@ export async function beFetch<T>(
 
   for (const url of urls) {
     try {
+      const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+      const headers: Record<string, string> = isFormData
+        ? { ...((options.headers as Record<string, string>) || {}) }
+        : {
+            "Content-Type": "application/json",
+            ...((options.headers as Record<string, string>) || {}),
+          };
+
       const res = await fetch(url, {
         ...options,
-        headers: {
-          "Content-Type": "application/json",
-          ...(options.headers || {}),
-        },
+        headers,
         cache: "no-store",
       });
 

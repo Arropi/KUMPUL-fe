@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Plus, Trash2, ArrowRightLeft, Check, Layers, AlertCircle } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, ArrowRightLeft, Check, Layers, AlertCircle, AlertTriangle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,13 +14,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import type { BEBusinessRole } from "@/lib/api/types";
 import {
   createBusinessRoleAction,
   deleteBusinessRoleAction,
+  deleteBusinessAccountAction,
 } from "@/actions/business-profile";
-import { switchRoleAction } from "@/actions/auth";
+import { switchRoleAction, logoutAction } from "@/actions/auth";
 
 interface ProfileRolesCardProps {
   entityId: string;
@@ -48,7 +50,9 @@ export function ProfileRolesCard({
 }: ProfileRolesCardProps) {
   const router = useRouter();
   const [isAddOpen, setIsAddOpen] = React.useState(false);
-  const [isDeletingId, setIsDeletingId] = React.useState<string | null>(null);
+  const [roleToDelete, setRoleToDelete] = React.useState<{ id: string; role_type: string } | null>(null);
+  const [isAlertOpen, setIsAlertOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const [isSwitching, setIsSwitching] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -121,25 +125,46 @@ export function ProfileRolesCard({
     }
   };
 
-  const handleDeleteRole = async (roleId: string, roleName: string) => {
-    if (roles.length <= 1) {
-      toast.info("Entitas usaha harus memiliki minimal 1 peran aktif.");
-      return;
-    }
+  // Konfirmasi Hapus: Membedakan hapus peran tunggal vs hapus seluruh akun usaha
+  const handleConfirmDelete = async () => {
+    if (!roleToDelete) return;
 
-    setIsDeletingId(roleId);
+    setIsDeleting(true);
     try {
-      const res = await deleteBusinessRoleAction(roleId);
-      if (res.success) {
-        onRolesUpdated(roles.filter((r) => r.id !== roleId));
-        toast.success(`Peran ${roleName} berhasil dihapus.`);
+      if (roles.length > 1) {
+        // Kasus A: Lebih dari 1 peran aktif, hapus peran spesifik ini
+        const res = await deleteBusinessRoleAction(roleToDelete.id);
+        if (res.success) {
+          onRolesUpdated(roles.filter((r) => r.id !== roleToDelete.id));
+          toast.success(
+            `Peran ${roleToDelete.role_type === "SUPPLIER" ? "Mitra Supplier" : "UMKM"} berhasil dihapus.`
+          );
+          setIsAlertOpen(false);
+          setRoleToDelete(null);
+        } else {
+          toast.error(res.message || "Gagal menghapus peran usaha.");
+        }
       } else {
-        toast.error(res.message || "Gagal menghapus peran usaha.");
+        // Kasus B: Hanya ada 1 peran (peran terakhir), hapus akun profil usaha permanen
+        const res = await deleteBusinessAccountAction(entityId);
+        if (res.success) {
+          toast.success(
+            "Seluruh profil usaha dan akun berhasil dihapus secara permanen.",
+            "Akun Berhasil Dihapus"
+          );
+          setIsAlertOpen(false);
+          setRoleToDelete(null);
+          const logoutRes = await logoutAction();
+          router.push(logoutRes.redirectTo || "/login");
+          router.refresh();
+        } else {
+          toast.error(res.message || "Gagal menghapus akun bisnis.");
+        }
       }
     } catch {
-      toast.error("Gagal terhubung ke backend server.");
+      toast.error("Terjadi kendala saat memproses penghapusan.");
     } finally {
-      setIsDeletingId(null);
+      setIsDeleting(false);
     }
   };
 
@@ -165,6 +190,8 @@ export function ProfileRolesCard({
       setIsSwitching(false);
     }
   };
+
+  const isSingleRoleRemaining = roles.length <= 1;
 
   return (
     <Card className="rounded-2xl border-border bg-surface shadow-elevation-1">
@@ -212,7 +239,6 @@ export function ProfileRolesCard({
               const isCurrentActive =
                 (currentRoleType === "supplier" && r.role_type.toUpperCase() === "SUPPLIER") ||
                 (currentRoleType === "umkm" && r.role_type.toUpperCase() === "UMKM");
-              const isDeleting = isDeletingId === r.id;
 
               return (
                 <div
@@ -248,22 +274,32 @@ export function ProfileRolesCard({
                         Sektor: <span className="text-text-primary font-semibold">{r.sector_type || "-"}</span>
                       </p>
                       <p className="text-[11px] text-text-muted">
-                        Kapasitas Ruang: <span className="font-mono font-semibold text-text-primary">{(r.storage_capacity || 0).toLocaleString("id-ID")} Kg</span>
+                        Kapasitas Ruang:{" "}
+                        <span className="font-mono font-semibold text-text-primary">
+                          {(r.storage_capacity || 0).toLocaleString("id-ID")} Unit
+                        </span>
                       </p>
                     </div>
 
+                    {/* Tombol Trash Terintegrasi: Selalu tampil dan memicu dialog alert */}
                     <div className="flex items-center gap-1 shrink-0">
-                      {roles.length > 1 && (
-                        <button
-                          type="button"
-                          disabled={isDeleting}
-                          onClick={() => handleDeleteRole(r.id, r.role_type)}
-                          title="Hapus peran ini"
-                          className="p-1.5 rounded-lg text-text-muted hover:text-red-600 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        disabled={isDeleting}
+                        onClick={() => {
+                          setRoleToDelete({ id: r.id, role_type: r.role_type });
+                          setIsAlertOpen(true);
+                        }}
+                        title={
+                          isSingleRoleRemaining
+                            ? "Hapus peran dan seluruh akun bisnis"
+                            : "Hapus peran usaha ini"
+                        }
+                        className="p-1.5 rounded-lg text-text-muted hover:text-red-600 hover:bg-red-500/10 transition-colors disabled:opacity-50 cursor-pointer"
+                        aria-label="Hapus peran usaha"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500 hover:text-red-600" />
+                      </button>
                     </div>
                   </div>
 
@@ -334,9 +370,12 @@ export function ProfileRolesCard({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-text-primary">
-                Kapasitas Awal Ruang Penyimpanan (Kg)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-text-primary">
+                  Kapasitas Awal Ruang Penyimpanan (Unit)
+                </label>
+                <span className="text-[10px] text-text-muted">1 kg/liter = 1 unit</span>
+              </div>
               <Input
                 type="number"
                 min="0"
@@ -347,6 +386,9 @@ export function ProfileRolesCard({
                 className="w-full h-11 text-xs sm:text-sm font-mono"
                 required
               />
+              <p className="text-[11px] text-text-muted">
+                Penyimpanan dihitung per unit untuk kalkulasi kapasitas pooling &amp; gudang.
+              </p>
             </div>
 
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
@@ -371,6 +413,99 @@ export function ProfileRolesCard({
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Alert Konfirmasi: Hapus Peran vs Hapus Akun Usaha Permanen */}
+      <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <DialogContent className="max-w-md rounded-2xl p-6">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  isSingleRoleRemaining ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600"
+                }`}
+              >
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <DialogTitle className="font-heading text-base font-bold text-text-primary">
+                {isSingleRoleRemaining
+                  ? "Hapus Akun Profil Usaha Secara Permanen?"
+                  : `Hapus Peran ${
+                      roleToDelete?.role_type === "SUPPLIER" ? "Mitra Supplier" : "Pelaku Usaha UMKM"
+                    }?`}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-text-secondary pt-1">
+              {isSingleRoleRemaining
+                ? "Tindakan ini tidak dapat dibatalkan dan akan menghapus seluruh data usaha Anda."
+                : "Peran yang dihapus akan dinonaktifkan dari entitas bisnis Anda."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            {isSingleRoleRemaining ? (
+              <div className="p-3.5 rounded-xl border border-red-200 bg-red-50/80 text-xs text-red-950 space-y-2">
+                <span className="font-bold block text-red-900">
+                  ⚠️ Peran Terakhir Akun Bisnis Terdeteksi
+                </span>
+                <p className="leading-relaxed text-[11px] text-red-800">
+                  Peran ini merupakan <strong>satu-satunya peran aktif</strong> pada bisnis Anda.
+                  Menghapus peran ini akan <strong>menghapus seluruh akun usaha, profil legalitas, dan riwayat transaksi secara permanen</strong>.
+                </p>
+                <p className="leading-relaxed text-[11px] text-red-850 font-semibold">
+                  Sesi login Anda akan diakhiri dan Anda akan otomatis dialihkan ke halaman masuk (login).
+                </p>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-xl border border-border bg-surface-subtle text-xs text-text-secondary space-y-1.5">
+                <p className="leading-relaxed">
+                  Apakah Anda yakin ingin menghapus peran{" "}
+                  <strong>
+                    {roleToDelete?.role_type === "SUPPLIER" ? "Mitra Supplier" : "Pelaku Usaha UMKM"}
+                  </strong>{" "}
+                  dari akun bisnis ini?
+                </p>
+                <p className="text-[11px] text-text-muted">
+                  Peran bisnis Anda yang lain akan tetap aktif dan Anda tetap dapat login seperti biasa.
+                </p>
+              </div>
+            )}
+
+            <div className="p-2.5 rounded-lg bg-surface-subtle/60 border border-border text-[11px] text-text-muted">
+              🛡️ Sistem akan memastikan tidak ada pesanan aktif atau dana tertahan di escrow sebelum memproses tindakan ini.
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border/60">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isDeleting}
+              onClick={() => {
+                setIsAlertOpen(false);
+                setRoleToDelete(null);
+              }}
+              className="text-xs font-semibold h-10 px-4"
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={isDeleting}
+              isLoading={isDeleting}
+              onClick={handleConfirmDelete}
+              className="text-xs font-bold h-10 px-4 bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              <span>
+                {isSingleRoleRemaining ? "Hapus Akun Permanen" : "Hapus Peran Ini"}
+              </span>
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>

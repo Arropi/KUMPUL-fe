@@ -18,6 +18,7 @@ import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-car
 import {
   getMySupplierCatalogsAction,
   updateSupplierCommodityAction,
+  unpublishSupplierCommodityAction,
 } from "@/actions/supplier-catalog";
 import { mapBEToSupplierCommodity } from "./helpers";
 import { PublishCommodityDialog } from "./katalog/publish-commodity-dialog";
@@ -77,7 +78,7 @@ export function SupplierKatalogView() {
     );
 
     try {
-      await updateSupplierCommodityAction(id, { isMarketplaceActive: nextState });
+      await unpublishSupplierCommodityAction(id);
       toast.info(
         `Status publikasi ${target.name} telah ditarik dari etalase bursa.`,
         "Komoditas Dinonaktifkan"

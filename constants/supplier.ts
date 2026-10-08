@@ -1,4 +1,37 @@
-export type WholesaleUnit = "KARUNG" | "SAK" | "KRAT" | "PAX" | "BAL" | "PETI";
+export type WholesaleUnit =
+  | "KARUNG"
+  | "SAK"
+  | "KRAT"
+  | "PAX"
+  | "BAL"
+  | "KG"
+  | "GRAM"
+  | "TON"
+  | "KUINTAL"
+  | "LITER"
+  | "ML"
+  | "KUBIK"
+  | "PCS"
+  | "PACK"
+  | "DUS"
+  | "BOX"
+  | "KARTON"
+  | "BOTOL"
+  | "KALENG"
+  | "TRAY"
+  | "KERANJANG"
+  | "BASKOM"
+  | "EKOR"
+  | "BUTIR"
+  | "LEMBAR"
+  | "IKAT"
+  | "PORSI"
+  | "CUP"
+  | "BUNGKUS"
+  | "LUSIN"
+  | "PALLET"
+  | "KOLI"
+  | "PETI";
 
 export type StorageTemperature = "AMBIENT" | "CHILLED" | "FROZEN";
 
@@ -121,6 +154,8 @@ export interface CommodityPriceTier {
 export interface CommodityBatchTag {
   id: string;
   licenseNumber: string; // Izin edar / BPOM / Kementan / Sertifikat Uji Bebas Residu
+  verificationNotes?: string | null; // Keterangan hasil validasi / audit mutu AI
+  supportingFileUrl?: string | null;
   productionDate: string; // YYYY-MM-DD
   expiryDate: string;
   storageTemperature: StorageTemperature;
@@ -148,6 +183,8 @@ export interface SupplierCommodity {
   underMoqPricePerKg?: number | null;
   productionDate?: string | null;
   expiryDate?: string | null;
+  supplierRoleId?: string;
+  supplierEntityId?: string;
 }
 
 export type DeliveryMethod = "HEMAT_HUB" | "ON_YOUR_DOOR" | "DIRECT_DOOR_TO_DOOR";

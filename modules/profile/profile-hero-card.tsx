@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Edit3, Check, X, ShieldCheck, MapPin, Phone, Mail, User, Building } from "lucide-react";
+import { Edit3, Check, X, MapPin, Phone, Mail, User, Building } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { SECTOR_MEDIA_MAP, type UnifiedProfileState } from "./types";
 import { updateBusinessEntityProfileAction } from "@/actions/business-profile";
+import { MapPicker } from "@/components/ui/map-picker";
 
 interface ProfileHeroCardProps {
   role: "supplier" | "umkm";
@@ -33,34 +34,33 @@ export function ProfileHeroCard({
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
 
-  // Form states for editing
-  const [brandName, setBrandName] = React.useState(profile.brandName);
+  // Form states for editing - matching exactly what the PUT/PATCH endpoint accepts
   const [legalName, setLegalName] = React.useState(profile.legalName);
-  const [picName, setPicName] = React.useState(profile.picName);
-  const [picTitle, setPicTitle] = React.useState(profile.picTitle);
-  const [contactPhone, setContactPhone] = React.useState(profile.contactPhone);
-  const [contactEmail, setContactEmail] = React.useState(profile.contactEmail);
   const [npwpNib, setNpwpNib] = React.useState(profile.npwpNib);
   const [address, setAddress] = React.useState(profile.address);
-  const [city, setCity] = React.useState(profile.city);
+  const [phoneNumber, setPhoneNumber] = React.useState(profile.contactPhone || "");
+  const [latitude, setLatitude] = React.useState<number | null>(
+    // Since latitude/longitude aren't in UnifiedProfileState, we initialize to null
+    // In a real implementation, these would come from the entity data
+    null
+  );
+  const [longitude, setLongitude] = React.useState<number | null>(null);
 
   React.useEffect(() => {
-    setBrandName(profile.brandName);
     setLegalName(profile.legalName);
-    setPicName(profile.picName);
-    setPicTitle(profile.picTitle);
-    setContactPhone(profile.contactPhone);
-    setContactEmail(profile.contactEmail);
     setNpwpNib(profile.npwpNib);
     setAddress(profile.address);
-    setCity(profile.city);
+    setPhoneNumber(profile.contactPhone || "");
+    // Note: latitude and longitude are not part of UnifiedProfileState
+    // In a complete implementation, these would be fetched from the entity
   }, [profile]);
 
+  // Extract values needed for display
+  const brandName = profile.brandName;
   const sectorKey = profile.sector.toUpperCase();
   const sectorMeta =
     SECTOR_MEDIA_MAP[sectorKey] ||
     (role === "supplier" ? SECTOR_MEDIA_MAP.PERTANIAN : SECTOR_MEDIA_MAP.FNB_PENGOLAHAN);
-
   const initials = (brandName || profile.legalName || "KP").substring(0, 2).toUpperCase();
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -76,32 +76,32 @@ export function ProfileHeroCard({
 
     setIsSaving(true);
     try {
-      const res = await updateBusinessEntityProfileAction({
+      // Update entity fields - matching exactly what the PUT/PATCH endpoint accepts
+      const entityRes = await updateBusinessEntityProfileAction({
         entityId: profile.id,
         legalName: legalName.trim(),
         npwpNib: npwpNib.trim(),
         defaultAddress: address.trim(),
+        phoneNumber: phoneNumber.trim(),
+        latitude: latitude === null ? undefined : latitude,
+        longitude: longitude === null ? undefined : longitude,
       });
 
-      if (res.success) {
+      if (entityRes.success) {
+        // Prepare the update for the profile state
         onProfileUpdated({
-          brandName: brandName.trim() || legalName.trim(),
           legalName: legalName.trim(),
-          picName: picName.trim(),
-          picTitle: picTitle.trim(),
-          contactPhone: contactPhone.trim(),
-          contactEmail: contactEmail.trim(),
           npwpNib: npwpNib.trim(),
           address: address.trim(),
-          city: city.trim(),
+          contactPhone: phoneNumber.trim(),
         });
         setIsEditModalOpen(false);
         toast.success("Profil usaha berhasil diperbarui di backend KUMPUL.");
       } else {
-        toast.error(res.message || "Gagal memperbarui profil.");
+        throw new Error(entityRes.message || "Gagal memperbarui profil.");
       }
-    } catch {
-      toast.error("Gagal terhubung ke backend server.");
+    } catch (err) {
+      toast.error((err as Error)?.message ?? "Gagal terhubung ke backend server.");
     } finally {
       setIsSaving(false);
     }
@@ -126,10 +126,6 @@ export function ProfileHeroCard({
           <span className="px-3 py-1 rounded-full bg-surface/90 backdrop-blur-md text-text-primary text-[11px] font-bold border border-white/20 shadow-xs">
             {sectorMeta.label}
           </span>
-          <Badge variant="success" className="text-[11px] font-bold shadow-xs">
-            <ShieldCheck className="w-3.5 h-3.5 mr-1" />
-            <span>{profile.complianceStatus || "TERVERIFIKASI"}</span>
-          </Badge>
         </div>
 
         <div className="absolute bottom-3 right-4 sm:bottom-4 sm:right-6 text-right">
@@ -148,7 +144,7 @@ export function ProfileHeroCard({
             </div>
             <div className="pb-1">
               <h1 className="text-xl sm:text-2xl font-bold font-heading text-text-primary tracking-tight">
-                {profile.brandName || profile.legalName}
+                {brandName || profile.legalName}
               </h1>
               <p className="text-xs sm:text-sm font-semibold text-text-secondary">
                 {profile.legalName}
@@ -157,26 +153,12 @@ export function ProfileHeroCard({
           </div>
 
           <div className="flex items-center gap-2 pt-1 sm:pt-0">
-            {role === "supplier" ? (
-              <Button asChild variant="primary" size="sm" className="font-bold text-xs h-9">
-                <Link href="/katalog/tambah">
-                  <span>+ Tambah Katalog</span>
-                </Link>
-              </Button>
-            ) : (
-              <Button asChild variant="primary" size="sm" className="font-bold text-xs h-9">
-                <Link href="/produk">
-                  <span>+ Tambah Produk</span>
-                </Link>
-              </Button>
-            )}
-
             <Button
               type="button"
-              variant="outline"
+              variant="primary"
               size="sm"
               onClick={() => setIsEditModalOpen(true)}
-              className="text-xs h-9 font-semibold flex items-center gap-1.5"
+              className="text-xs h-9 font-bold flex items-center gap-1.5 shadow-xs"
             >
               <Edit3 className="w-3.5 h-3.5" />
               <span>Ubah Profil</span>
@@ -184,34 +166,27 @@ export function ProfileHeroCard({
           </div>
         </div>
 
-        {/* Rincian Identitas Legal & Kontak PIC */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-2 border-t border-border/70 text-xs">
-          <div className="space-y-1">
-            <span className="text-text-muted text-[11px] flex items-center gap-1">
-              <User className="w-3 h-3" />
-              <span>Nama Penanggung Jawab (PIC)</span>
-            </span>
-            <p className="font-semibold text-text-primary">
-              {profile.picName || "Penanggung Jawab"}
-              <span className="block text-[11px] text-text-secondary font-normal">
-                {profile.picTitle || (role === "supplier" ? "Head of Operations & Supply" : "Owner / Pengelola Usaha")}
-              </span>
-            </p>
-          </div>
-
+        {/* Rincian Identitas Legal & Kontak */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3.5 pt-2 border-t border-border/70 text-xs">
+          {/* Kontak Resmi Usaha */}
           <div className="space-y-1">
             <span className="text-text-muted text-[11px] flex items-center gap-1">
               <Phone className="w-3 h-3" />
               <span>Kontak Resmi Usaha</span>
             </span>
-            <p className="font-semibold text-text-primary">{profile.contactPhone || "-"}</p>
+            {profile.contactPhone && profile.contactPhone.trim() ? (
+              <p className="font-semibold text-text-primary font-mono">{profile.contactPhone}</p>
+            ) : (
+              <p className="text-text-muted text-xs italic">Belum terdata</p>
+            )}
             <p className="text-text-secondary text-[11px] truncate flex items-center gap-1">
               <Mail className="w-2.5 h-2.5" />
               <span>{profile.contactEmail || "-"}</span>
             </p>
           </div>
 
-          <div className="space-y-1 sm:col-span-2 md:col-span-1">
+          {/* NIB / NPWP Legal and Alamat */}
+          <div className="space-y-1 sm:col-span-2 md:col-span-2">
             <span className="text-text-muted text-[11px] flex items-center gap-1">
               <Building className="w-3 h-3" />
               <span>NIB / NPWP Legal</span>
@@ -225,155 +200,116 @@ export function ProfileHeroCard({
             </p>
           </div>
         </div>
+
+        {/* Modal Dialog Ubah Profil - showing only fields that match PUT/PATCH endpoint */}
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="max-w-lg rounded-3xl p-6 sm:p-7">
+            <DialogHeader>
+              <DialogTitle className="font-heading text-lg font-bold text-text-primary">
+                Ubah Data Profil {role === "supplier" ? "Supplier" : "UMKM"}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-text-muted">
+                Perbarui identitas usaha dan kontak operasional yang terdaftar di KUMPUL.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-bold text-text-primary">
+                    Nama Badan Usaha (Legal) <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    value={legalName}
+                    onChange={(e) => setLegalName(e.target.value)}
+                    placeholder="Contoh: PT Agroniaga Nusantara Sejahtera"
+                    className="h-10 text-xs"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-bold text-text-primary">NIB / NPWP Legal</label>
+                  <Input
+                    type="text"
+                    value={npwpNib}
+                    onChange={(e) => setNpwpNib(e.target.value)}
+                    placeholder="Contoh: 9120003481923 / 01.892.341.2-045.000"
+                    className="h-10 text-xs font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-bold text-text-primary">
+                    Nomor Telepon Operasional
+                  </label>
+                  <Input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="Contoh: 081234567890"
+                    className="h-10 text-xs font-mono"
+                  />
+                  <p className="text-[10px] text-text-muted">
+                    Nomor WhatsApp / telepon yang aktif untuk koordinasi pesanan dan konfirmasi pengiriman.
+                  </p>
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-bold text-text-primary">
+                    Alamat Lengkap Operasional / Dapur <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Alamat lengkap lokasi operasional..."
+                    className="w-full p-2.5 rounded-xl border border-border bg-surface text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-bold text-text-primary">Latitude &amp; Longitude</label>
+                  <MapPicker
+                    latitude={latitude}
+                    longitude={longitude}
+                    onChange={(coords) => {
+                      setLatitude(coords.lat);
+                      setLongitude(coords.lng);
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/70">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="text-xs font-semibold h-10 px-4 text-text-secondary"
+                >
+                  <X className="w-3.5 h-3.5 mr-1" />
+                  <span>Batal</span>
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  isLoading={isSaving}
+                  className="font-bold text-xs min-h-[40px] px-6"
+                >
+                  <Check className="w-3.5 h-3.5 mr-1" />
+                  <span>{isSaving ? "Menyimpan..." : "Simpan Perubahan"}</span>
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Modal Dialog Ubah Profil */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-lg rounded-3xl p-6 sm:p-7">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-lg font-bold text-text-primary">
-              Ubah Data Profil {role === "supplier" ? "Supplier" : "UMKM"}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-text-muted">
-              Perbarui identitas usaha, kontak operasional penanggung jawab, dan alamat legalitas Anda.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-bold text-text-primary">
-                  Nama Brand / Merek Usaha
-                </label>
-                <Input
-                  type="text"
-                  value={brandName}
-                  onChange={(e) => setBrandName(e.target.value)}
-                  placeholder="Contoh: AgroNusantara Supply"
-                  className="h-10 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-bold text-text-primary">
-                  Nama Badan Usaha (Legal) <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="text"
-                  value={legalName}
-                  onChange={(e) => setLegalName(e.target.value)}
-                  placeholder="Contoh: PT Agroniaga Nusantara Sejahtera"
-                  className="h-10 text-xs"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-text-primary">Nama PIC</label>
-                <Input
-                  type="text"
-                  value={picName}
-                  onChange={(e) => setPicName(e.target.value)}
-                  placeholder="Contoh: Hendra Pratama"
-                  className="h-10 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-text-primary">Jabatan PIC</label>
-                <Input
-                  type="text"
-                  value={picTitle}
-                  onChange={(e) => setPicTitle(e.target.value)}
-                  placeholder="Contoh: Head of Operations"
-                  className="h-10 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-text-primary">No. Telepon / WhatsApp</label>
-                <Input
-                  type="text"
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                  placeholder="0812-xxxx-xxxx"
-                  className="h-10 text-xs font-mono"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-text-primary">Email Operasional</label>
-                <Input
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="kontak@usaha.com"
-                  className="h-10 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-bold text-text-primary">NIB / NPWP Legal</label>
-                <Input
-                  type="text"
-                  value={npwpNib}
-                  onChange={(e) => setNpwpNib(e.target.value)}
-                  placeholder="Contoh: 9120003481923 / 01.892.341.2-045.000"
-                  className="h-10 text-xs font-mono"
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-bold text-text-primary">
-                  Alamat Lengkap Operasional / Dapur <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  rows={2}
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Alamat lengkap lokasi operasional..."
-                  className="w-full p-2.5 rounded-xl border border-border bg-surface text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-bold text-text-primary">Kota / Kabupaten</label>
-                <Input
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="Contoh: Surabaya"
-                  className="h-10 text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/70">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsEditModalOpen(false)}
-                className="text-xs font-semibold h-10 px-4 text-text-secondary"
-              >
-                <X className="w-3.5 h-3.5 mr-1" />
-                <span>Batal</span>
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                isLoading={isSaving}
-                className="font-bold text-xs min-h-[40px] px-6"
-              >
-                <Check className="w-3.5 h-3.5 mr-1" />
-                <span>{isSaving ? "Menyimpan..." : "Simpan Perubahan"}</span>
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

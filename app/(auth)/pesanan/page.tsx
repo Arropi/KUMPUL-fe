@@ -34,7 +34,11 @@ export default async function PesananPage() {
         </div>
       }
     >
-      {role === "supplier" ? <SupplierPesananView /> : <UmkmPesananView />}
+      {role === "supplier" ? (
+        <SupplierPesananView />
+      ) : (
+        <UmkmPesananView />
+      )}
     </React.Suspense>
   );
 }

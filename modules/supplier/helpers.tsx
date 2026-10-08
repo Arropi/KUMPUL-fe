@@ -89,20 +89,39 @@ export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommo
     isActive: be.is_marketplace_active ?? true,
     priceTiers: tiers,
     batchTag: {
-      id: `bt-${be.id}`,
-      licenseNumber: `BATCH-${be.sku || be.id.slice(0, 8)}`,
-      productionDate: be.production_date || "2026-10-15",
-      expiryDate: "2027-04-15",
-      storageTemperature: "AMBIENT",
+      id: (be.batch_tag?.id || (be.batch_tags && be.batch_tags[0]?.id)) || `bt-${be.id}`,
+      licenseNumber:
+        be.batch_tag?.is_verified || be.batch_tags?.[0]?.is_verified
+          ? `BATCH-${be.sku || be.id.slice(0, 8)}`
+          : "Menunggu Berkas Audit",
+      verificationNotes:
+        be.batch_tag?.verification_notes ||
+        be.batch_tags?.[0]?.verification_notes ||
+        null,
+      supportingFileUrl:
+        be.batch_tag?.supporting_file_url ||
+        be.batch_tags?.[0]?.supporting_file_url ||
+        null,
+      productionDate: be.production_date || "-",
+      expiryDate: be.closed_date || "-",
+      storageTemperature:
+        (be.batch_tag?.storage_temperature_type as StorageTemperature) ||
+        (be.batch_tags?.[0]?.storage_temperature_type as StorageTemperature) ||
+        "AMBIENT",
       originLocation: "Indonesia",
-      hygieneStatus: "TERVERIFIKASI",
+      hygieneStatus:
+        be.batch_tag?.is_verified || be.batch_tags?.[0]?.is_verified
+          ? "TERVERIFIKASI"
+          : "MENUNGGU_AUDIT",
     },
     imageUrl: be.image_url || undefined,
     createdAt: be.created_at || new Date().toISOString(),
     allowsUnderMoq: be.allows_under_moq ?? false,
     underMoqPricePerKg: be.under_moq_price_per_kg ? Number(be.under_moq_price_per_kg) : null,
-    productionDate: be.production_date || "2026-10-15",
-    expiryDate: "2027-04-15",
+    productionDate: be.production_date || "-",
+    expiryDate: be.closed_date || "-",
+    supplierRoleId: be.supplier_role_id,
+    supplierEntityId: be.supplier_entity_id,
   };
 }
 

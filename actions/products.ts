@@ -10,6 +10,7 @@ export interface CreateProductRecipeItemInput {
   amountPerPortion: number;
   unit: string;
   estimatedCost?: number;
+  sector?: string;
 }
 
 export interface CreateProductWithRecipesInput {
@@ -17,8 +18,14 @@ export interface CreateProductWithRecipesInput {
   unit?: string;
   targetSellingPricePerUnit: number;
   expectedBatchUnits?: number;
+  productionIterationsPerDay?: number;
+  unitsPerIteration?: number;
   ingredients: CreateProductRecipeItemInput[];
   umkmRoleId?: string;
+}
+
+export interface UpdateProductWithRecipesInput extends CreateProductWithRecipesInput {
+  productId: string;
 }
 
 /**
@@ -215,6 +222,68 @@ export async function createProductWithRecipesAction(
       success: true,
       data: mockProduct,
       message: `Produk "${payload.productName}" berhasil ditambahkan (Mode Testing FE)!`,
+    };
+  }
+}
+
+/**
+ * Server Action: Memperbarui produk UMKM beserta resep bahan (Edit Mode)
+ */
+export async function updateProductWithRecipesAction(
+  payload: UpdateProductWithRecipesInput
+): Promise<{
+  success: boolean;
+  data?: BEProduct;
+  message?: string;
+}> {
+  try {
+    const productId = payload.productId;
+    if (!productId) {
+      return {
+        success: false,
+        message: "ID Produk tidak ditemukan untuk diperbarui.",
+      };
+    }
+
+    // 1. Update data dasar produk di Backend Express
+    const updateProductRes = await beFetch<BEProduct>(`/products/${productId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        product_name: payload.productName.trim(),
+        unit: payload.unit?.toUpperCase() || "PORSI",
+        target_selling_price_per_unit: Number(payload.targetSellingPricePerUnit),
+        expected_batch_units: Math.max(1, Number(payload.expectedBatchUnits) || 1),
+      }),
+    });
+
+    // 2. Refresh resep jika backend mendukung atau tambah komponen baru
+    if (payload.ingredients && payload.ingredients.length > 0) {
+      for (const ing of payload.ingredients) {
+        if (!ing.name.trim()) continue;
+        await beFetch<BERecipe>(`/products/${productId}/recipes`, {
+          method: "POST",
+          body: JSON.stringify({
+            ingredient_name: ing.name.trim(),
+            required_qty_per_unit: Number(ing.amountPerPortion),
+            unit: ing.unit.toUpperCase(),
+            estimated_cost_per_unit: Number(ing.estimatedCost) || 0,
+          }),
+        });
+      }
+    }
+
+    const updatedDetailRes = await beFetch<BEProduct>(`/products/${productId}`);
+    revalidatePath("/menu");
+
+    return {
+      success: true,
+      data: updatedDetailRes.data || updateProductRes.data,
+      message: `Menu "${payload.productName}" berhasil diperbarui!`,
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Gagal memperbarui menu.",
     };
   }
 }

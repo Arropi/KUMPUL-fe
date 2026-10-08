@@ -25,6 +25,8 @@ import { mapBEToSupplierCommodity } from "@/modules/supplier/helpers";
 import { HomeRecommendationSection } from "./home-recommendation-section";
 import { UmkmPurchaseCard } from "@/modules/supplier/katalog/umkm-purchase-card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { beFetch } from "@/lib/api/be-client";
+import type { MatchedCommodity } from "./home-recommendation-section";
 
 const SECTOR_OPTIONS = [
   { value: "ALL", label: "Semua Sektor" },
@@ -37,30 +39,29 @@ const SECTOR_OPTIONS = [
 
 interface HomeViewProps {
   initialSession?: UserSession | null;
+  catalog: SupplierCommodity[];
+  recommendations: MatchedCommodity[];
+  catalogError: boolean;
+  recsError: boolean;
 }
 
-export function HomeView({ initialSession }: HomeViewProps) {
-  const [commodities, setCommodities] = React.useState<SupplierCommodity[]>(
-    MOCK_SUPPLIER_COMMODITIES
-  );
+export function HomeView({
+  initialSession,
+  catalog,
+  recommendations,
+  catalogError,
+  recsError
+}: HomeViewProps) {
+  const [commodities, setCommodities] = React.useState<SupplierCommodity[]>(catalog);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
   const [purchasingCommodity, setPurchasingCommodity] =
     React.useState<SupplierCommodity | null>(null);
 
+  // Update local commodities state when props catalog changes (if needed)
   React.useEffect(() => {
-    async function load() {
-      try {
-        const res = await getAllMarketplaceCatalogsAction();
-        if (res.success && res.data && res.data.length > 0) {
-          setCommodities(res.data.map(mapBEToSupplierCommodity));
-        }
-      } catch {
-        // Fallback to initial mock
-      }
-    }
-    load();
-  }, []);
+    setCommodities(catalog);
+  }, [catalog]);
 
   const role: UserRole = initialSession?.role || "umkm";
   const isSupplier = role === "supplier";
@@ -125,6 +126,8 @@ export function HomeView({ initialSession }: HomeViewProps) {
       <HomeRecommendationSection
         role={role}
         commodities={commodities}
+        recommendations={recommendations}
+        recsError={recsError}
         onPurchase={setPurchasingCommodity}
       />
 

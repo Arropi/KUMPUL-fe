@@ -31,7 +31,39 @@ export interface BEPriceTier {
   tier_price: number;
 }
 
-export type BEWholesaleUnit = "KARUNG" | "SAK" | "KRAT" | "PAX" | "BAL";
+export type BEWholesaleUnit =
+  | "KARUNG"
+  | "SAK"
+  | "KRAT"
+  | "PAX"
+  | "BAL"
+  | "KG"
+  | "GRAM"
+  | "TON"
+  | "KUINTAL"
+  | "LITER"
+  | "ML"
+  | "KUBIK"
+  | "PCS"
+  | "PACK"
+  | "DUS"
+  | "BOX"
+  | "KARTON"
+  | "BOTOL"
+  | "KALENG"
+  | "TRAY"
+  | "KERANJANG"
+  | "BASKOM"
+  | "EKOR"
+  | "BUTIR"
+  | "LEMBAR"
+  | "IKAT"
+  | "PORSI"
+  | "CUP"
+  | "BUNGKUS"
+  | "LUSIN"
+  | "PALLET"
+  | "KOLI";
 
 export interface BESupplierCommodity {
   id: string;
@@ -45,7 +77,10 @@ export interface BESupplierCommodity {
   lead_time_days: number;
   image_url: string | null;
   description: string | null;
+  productionDate?: string | null;
   production_date: string | null;
+  closed_date?: string | null;
+  supplier_entity_id?: string;
   auto_activate_marketplace: boolean;
   allows_under_moq: boolean;
   under_moq_price_per_kg: string | number | null;
@@ -53,6 +88,8 @@ export interface BESupplierCommodity {
   created_at?: string;
   updated_at?: string;
   price_tiers?: BEPriceTier[];
+  batch_tag?: BECommodityBatchTag | null;
+  batch_tags?: BECommodityBatchTag[];
 }
 
 export type BEStorageTemperature = "AMBIENT" | "CHILLED" | "FROZEN";
@@ -63,6 +100,8 @@ export interface BECommodityBatchTag {
   supporting_file_url: string | null;
   storage_temperature_type: BEStorageTemperature;
   is_verified: boolean;
+  verification_notes?: string | null;
+  verified_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -97,6 +136,7 @@ export interface BEBusinessEntity {
   default_address: string;
   latitude: string | number;
   longitude: string | number;
+  phone_number?: string | null;
   bank_account_info?: BEBankAccountInfo;
   profile_picture_url?: string | null;
   created_at?: string;

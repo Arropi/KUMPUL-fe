@@ -40,6 +40,7 @@ import {
   ShieldCheck,
   AlertCircle,
 } from "lucide-react";
+import { beFetch } from "@/lib/api/be-client";
 
 type MainTab = "pembelian" | "limbah";
 type PurchaseFilter = "SEMUA" | "TIBA_DI_HUB" | "DIPROSES_SUPPLIER" | "SELESAI";
@@ -67,7 +68,7 @@ const purchaseStatusVariant: Record<UMKMPurchaseHistory["status"], string> = {
     "bg-surface-subtle text-text-secondary border-border",
 };
 
-// ─── Sub-filter DeptTab (Watermelon UI Career-1 style) ─────────────────────────
+// ─── Sub-filter DeptTab (Watermelon UI Career-1 style) ────────────────────────
 
 function DeptTab({
   label,
@@ -294,7 +295,7 @@ function WasteSaleRow({
               {order.orderNumber}
             </span>
             <span className="text-text-muted text-[11px]">&bull; {order.orderDate}</span>
-            <span className="inline-flex items-center rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-[10px] font-semibold text-text-secondary">
+            <span className="inline-flex items-center rounded-full bg-surface-subtle border border-border px-2 py-0.5 text-xs font-semibold">
               {order.listingCategory || "Residu Dapur"}
             </span>
           </div>
@@ -422,8 +423,12 @@ export function UmkmPesananView() {
   }, [searchParams]);
 
   // Reactive state orders for interactive handover/confirmation updates
-  const [purchases, setPurchases] = React.useState<UMKMPurchaseHistory[]>(MOCK_UMKM_PURCHASE_HISTORY);
-  const [sales, setSales] = React.useState<WasteSaleOrder[]>(MOCK_WASTE_SALES_ORDERS);
+  const [purchases, setPurchases] = React.useState<UMKMPurchaseHistory[]>([]);
+  const [sales, setSales] = React.useState<WasteSaleOrder[]>([]);
+  const [loadingPurchases, setLoadingPurchases] = React.useState<boolean>(true);
+  const [loadingSales, setLoadingSales] = React.useState<boolean>(true);
+  const [errorPurchases, setErrorPurchases] = React.useState<string | null>(null);
+  const [errorSales, setErrorSales] = React.useState<string | null>(null);
 
   // Tab 1 state
   const [purchaseFilter, setPurchaseFilter] = React.useState<PurchaseFilter>("SEMUA");
@@ -436,6 +441,52 @@ export function UmkmPesananView() {
   const [saleSearch, setSaleSearch] = React.useState("");
   const [selectedSale, setSelectedSale] = React.useState<WasteSaleOrder | null>(null);
   const [handoverModalOpen, setHandoverModalOpen] = React.useState(false);
+
+  // Load purchases from backend
+  React.useEffect(() => {
+    async function loadPurchases() {
+      setLoadingPurchases(true);
+      try {
+        const res = await beFetch<UMKMPurchaseHistory[]>(`/api/orders/umkm/all`);
+        if (res.success) {
+          setPurchases(res.data ?? []);
+        } else {
+          setPurchases([]);
+          setErrorPurchases(res.message ?? 'Gagal memuat riwayat pembelian');
+        }
+      } catch (err) {
+        console.error(err);
+        setPurchases([]);
+        setErrorPurchases('Gagal memuat riwayat pembelian');
+      } finally {
+        setLoadingPurchases(false);
+      }
+    }
+    loadPurchases();
+  }, []); // empty deps for now
+
+  // Load sales from backend (optional, but we'll do it for consistency)
+  React.useEffect(() => {
+    async function loadSales() {
+      setLoadingSales(true);
+      try {
+        const res = await beFetch<WasteSaleOrder[]>(`/api/orders/umkm/waste-sales`); // endpoint assumption
+        if (res.success) {
+          setSales(res.data ?? []);
+        } else {
+          setSales([]);
+          setErrorSales(res.message ?? 'Gagal memuat riwayat penjualan limbah');
+        }
+      } catch (err) {
+        console.error(err);
+        setSales([]);
+        setErrorSales('Gagal memuat riwayat penjualan limbah');
+      } finally {
+        setLoadingSales(false);
+      }
+    }
+    loadSales();
+  }, []); // empty deps for now
 
   // ── Derived: Tab 1 ──
   const filteredPurchases = React.useMemo(() => {
@@ -472,17 +523,41 @@ export function UmkmPesananView() {
   const completedSaleCount = sales.filter((o) => o.status === "SELESAI").length;
 
   // ── Handlers: Konfirmasi Serah-Terima & Pengambilan ──
-  const handleConfirmHubPickup = (order: UMKMPurchaseHistory) => {
-    setPurchases((prev) =>
-      prev.map((item) =>
-        item.id === order.id ? { ...item, status: "SELESAI" } : item
-      )
-    );
-    setTicketOpen(false);
-    toast.success(
-      `Pengambilan ${order.commodityName} di ${MOCK_UMKM_PROFILE.preferredHubName} telah terkonfirmasi tuntas!`,
-      "Serah-Terima Hub Berhasil"
-    );
+  const handleConfirmHubPickup = async (order: UMKMPurchaseHistory) => {
+    // TODO: Get order reference id from order (maybe order.id or order.referenceId)
+    const orderReferenceId = order.id; // assuming order.id is the reference id
+    setTicketOpen(true); // keep modal open while processing
+    try {
+      const res = await beFetch<any>(
+        `/api/payments/escrow/release`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            order_reference_id: orderReferenceId,
+          })
+        }
+      );
+
+      if (!res.success) {
+        throw new Error(res.message ?? 'Gagal konfirmasi terima barang');
+      }
+
+      // Optimistic update: set status to SELESAI
+      setPurchases(prev =>
+        prev.map((item) =>
+          item.id === order.id ? { ...item, status: "SELESAI" } : item
+        )
+      );
+
+      toast.success(
+        `Pengambilan ${order.commodityName} di ${MOCK_UMKM_PROFILE.preferredHubName} telah terkonfirmasi tuntas!`,
+        "Serah-Terima Hub Berhasil"
+      );
+    } catch (err: any) {
+      toast.error((err as Error)?.message ?? 'Terjadi kesalahan', 'Gagal');
+    } finally {
+      setTicketOpen(false);
+    }
   };
 
   const handleConfirmWasteHandover = (order: WasteSaleOrder) => {
@@ -550,9 +625,9 @@ export function UmkmPesananView() {
         </button>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════════ */}
       {/* TAB 1: BELI BAHAN BAKU (WATERMELON CAREER-1 STYLE)             */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════════ */}
       {activeTab === "pembelian" && (
         <div className="space-y-4">
           {/* Action Row & Sub-filters */}
@@ -618,35 +693,49 @@ export function UmkmPesananView() {
 
           {/* Unified Table Card Container (Watermelon UI Career-1) */}
           <div className="rounded-2xl border border-border bg-surface shadow-elevation-1 px-4 sm:px-6">
-            {filteredPurchases.length > 0 ? (
-              <ul role="list">
-                {filteredPurchases.map((order) => (
-                  <PurchaseOrderRow
-                    key={order.id}
-                    order={order}
-                    onOpenTicket={(o) => {
-                      setSelectedTicket(o);
-                      setTicketOpen(true);
-                    }}
-                  />
-                ))}
-              </ul>
-            ) : (
+            {loadingPurchases ? (
               <div className="flex flex-col items-center gap-3 py-14 text-center">
                 <span className="flex size-11 items-center justify-center rounded-full bg-surface-subtle border border-border text-text-muted">
                   <ShoppingBag className="size-5" />
                 </span>
                 <p className="font-heading text-sm font-bold text-text-primary">
-                  Tidak ada pesanan pada filter ini
+                  Memuat daftar pesanan...
                 </p>
-                <p className="max-w-xs text-xs text-text-muted">
-                  Jelajahi katalog pasokan grosir hulu atau radar pooling aktif untuk memesan bahan baku.
-                </p>
-                <Button asChild variant="primary" size="sm" className="font-bold mt-1">
-                  <Link href="/katalog">Jelajahi Radar Pooling</Link>
-                </Button>
               </div>
-            )}
+            ) : errorPurchases ? (
+              <div className="p-4 text-center bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm font-medium text-red-800">{errorPurchases}</p>
+              </div>
+            ) : (
+              filteredPurchases.length > 0 ? (
+                <ul role="list">
+                  {filteredPurchases.map((order) => (
+                    <PurchaseOrderRow
+                      key={order.id}
+                      order={order}
+                      onOpenTicket={(o) => {
+                        setSelectedTicket(o);
+                        setTicketOpen(true);
+                      }}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-14 text-center">
+                  <span className="flex size-11 items-center justify-center rounded-full bg-surface-subtle border border-border text-text-muted">
+                    <ShoppingBag className="size-5" />
+                  </span>
+                  <p className="font-heading text-sm font-bold text-text-primary">
+                    Tidak ada pesanan pada filter ini
+                  </p>
+                  <p className="max-w-xs text-xs text-text-muted">
+                    Jelajahi katalog pasokan grosir hulu atau radar pooling aktif untuk memesan bahan baku.
+                  </p>
+                  <Button asChild variant="primary" size="sm" className="font-bold mt-1">
+                    <Link href="/katalog">Jelajahi Radar Pooling</Link>
+                  </Button>
+                </div>
+              ))}
           </div>
 
           {/* Watermelon Career-1 CTA Banner */}
@@ -660,9 +749,9 @@ export function UmkmPesananView() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════════ */}
       {/* TAB 2: PENJUALAN LIMBAH (WATERMELON CAREER-1 STYLE)            */}
-      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════════════ */}
       {activeTab === "limbah" && (
         <div className="space-y-4">
           {/* Action Row */}
@@ -723,35 +812,50 @@ export function UmkmPesananView() {
 
           {/* Unified Table Card Container (Watermelon UI Career-1) */}
           <div className="rounded-2xl border border-border bg-surface shadow-elevation-1 px-4 sm:px-6">
-            {filteredSales.length > 0 ? (
-              <ul role="list">
-                {filteredSales.map((order) => (
-                  <WasteSaleRow
-                    key={order.id}
-                    order={order}
-                    onOpenHandover={(o) => {
-                      setSelectedSale(o);
-                      setHandoverModalOpen(true);
-                    }}
-                  />
-                ))}
-              </ul>
-            ) : (
+            {loadingSales ? (
               <div className="flex flex-col items-center gap-3 py-14 text-center">
                 <span className="flex size-11 items-center justify-center rounded-full bg-surface-subtle border border-border text-text-muted">
                   <Recycle className="size-5" />
                 </span>
                 <p className="font-heading text-sm font-bold text-text-primary">
-                  Tidak ada transaksi penjualan pada filter ini
+                  Memuat daftar penjualan limbah...
                 </p>
-                <p className="max-w-xs text-xs text-text-muted">
-                  Tayangkan residu sisa olahan dapur Anda ke bursa sirkular untuk dibeli offtaker terverifikasi.
-                </p>
-                <Button asChild variant="primary" size="sm" className="font-bold mt-1">
-                  <Link href="/limbah">Kelola Listing Limbah</Link>
-                </Button>
               </div>
-            )}
+            ) : errorSales ? (
+              <div className="p-4 text-center bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm font-medium text-red-800">{errorSales}</p>
+              </div>
+            ) : (
+              filteredSales.length > 0 ? (
+                <ul role="list">
+                  {filteredSales.map(order => (
+                    <WasteSaleRow
+                      key={order.id}
+                      order={order}
+                      onOpenHandover={(o) => {
+                        setSelectedSale(o);
+                        setHandoverModalOpen(true);
+                      }}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-14 text-center">
+                  <span className="flex size-11 items-center justify-center rounded-full bg-surface-subtle border border-border text-text-muted">
+                    <Recycle className="size-5" />
+                  </span>
+                  <p className="font-heading text-sm font-bold text-text-primary">
+                    Tidak ada transaksi penjualan pada filter ini
+                  </p>
+                  <p className="max-w-xs text-xs text-text-muted">
+                    Tayangkan residu sisa olahan dapur Anda ke bursa sirkular untuk dibeli offtaker terverifikasi.
+                  </p>
+                  <Button asChild variant="primary" size="sm" className="font-bold mt-1">
+                    <Link href="/limbah">Kelola Listing Limbah</Link>
+                  </Button>
+                </div>
+              ))
+            }
           </div>
 
           {/* Watermelon Career-1 CTA Banner */}
@@ -825,8 +929,8 @@ export function UmkmPesananView() {
                     {selectedTicket.deliveryMethod === "HEMAT_HUB"
                       ? "Hemat Hub Konsolidasi"
                       : selectedTicket.deliveryMethod === "ON_YOUR_DOOR"
-                      ? "On Your Door (Antar ke Dapur)"
-                      : "Pick-Up Mandiri"}
+                        ? "On Your Door (Antar ke Dapur)"
+                        : "Pick-Up Mandiri"}
                   </span>
                 </div>
               </div>
@@ -908,14 +1012,14 @@ export function UmkmPesananView() {
                 {selectedSale.buyerPhone && (
                   <div className="flex justify-between items-center">
                     <span className="text-text-muted">Kontak Pembeli:</span>
-                    <a
-                      href={`tel:${selectedSale.buyerPhone}`}
-                      className="text-primary font-bold hover:underline flex items-center gap-1"
-                    >
-                      <Phone className="size-3" />
-                      {selectedSale.buyerPhone}
-                    </a>
-                  </div>
+                      <a
+                        href={`tel:${selectedSale.buyerPhone}`}
+                        className="text-primary font-bold hover:underline flex items-center gap-1"
+                      >
+                        <Phone className="size-3" />
+                        {selectedSale.buyerPhone}
+                      </a>
+                    </div>
                 )}
                 <div className="flex justify-between border-t border-border/60 pt-2">
                   <span className="text-text-muted">Jadwal Pick-Up:</span>

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { beFetch } from "@/lib/api/be-client";
-import { getAuthSession } from "@/lib/auth-cookies";
+import { getAuthSession, clearAuthCookies } from "@/lib/auth-cookies";
 import type {
   BEBusinessEntity,
   BEBusinessRole,
@@ -15,6 +15,7 @@ export interface UpdateBusinessProfileInput {
   legalName?: string;
   npwpNib?: string;
   defaultAddress?: string;
+  phoneNumber?: string;
   latitude?: number | string;
   longitude?: number | string;
   bankAccountInfo?: BEBankAccountInfo;
@@ -29,21 +30,23 @@ export async function getBusinessProfileAction(): Promise<{
   entity?: BEBusinessEntity;
   roles?: BEBusinessRole[];
   session?: UserSession | null;
+  total_sales?: number;
+  products?: any[];
   message?: string;
 }> {
   try {
     const session = await getAuthSession();
     let entityId = session?.entityId;
-    console.log(entityId, session)
+    console.log(entityId, session);
 
     // Jika entityId tidak ada pada sesi, cari entitas pertama yang tersedia
     if (!entityId) {
-      const listRes = await beFetch<BEBusinessEntity[]>("/business/entities");
+      // Use /profile endpoint to get list of profiles
+      const listRes = await beFetch<any[]>("/profile");
       if (listRes.success && listRes.data && listRes.data.length > 0) {
         entityId = listRes.data[0].id;
       }
     }
-
     if (!entityId) {
       return {
         success: false,
@@ -52,24 +55,58 @@ export async function getBusinessProfileAction(): Promise<{
       };
     }
 
-    const [entityRes, rolesRes] = await Promise.all([
-      beFetch<BEBusinessEntity>(`/business/entities/${entityId}`),
-      beFetch<BEBusinessRole[]>(`/business/roles?entity_id=${entityId}`),
-    ]);
+    // Fetch single profile data
+    const profileRes = await beFetch<any>(`/profile/${entityId}`);
 
-    if (!entityRes.success || !entityRes.data) {
+    if (!profileRes.success || !profileRes.data) {
       return {
         success: false,
         session,
-        message: entityRes.message || "Gagal mengambil data entitas bisnis",
+        message: profileRes.message || "Gagal mengambil data profil entitas bisnis",
       };
     }
 
+    const data = profileRes.data;
+
+    // Map to entity shape (BEBusinessEntity)
+    const entity: BEBusinessEntity = {
+      id: data.id,
+      auth_user_id: data.auth_user_id,
+      legal_name: data.legal_name,
+      npwp_nib: data.npwp_nib,
+      default_address: data.default_address,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      phone_number: data.phone_number || null,
+      bank_account_info: data.bank_account_info as BEBankAccountInfo | undefined,
+      profile_picture_url: data.profile_picture_url,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    };
+
+    // Map roles to BEBusinessRole array
+    const roles: BEBusinessRole[] = (data.roles || []).map((role: any) => ({
+      id: role.id,
+      entity_id: role.entity_id,
+      role_type: role.role_type as "SUPPLIER" | "UMKM",
+      sector_type: role.sector_type,
+      storage_capacity: role.storage_capacity,
+      is_active: role.is_active,
+      created_at: role.created_at,
+      updated_at: role.updated_at,
+      // Optional fields: capacity_monthly, capacity_unit, storage_type left as undefined
+    }));
+
+    const total_sales = data.total_sales ?? 0;
+    const products = data.products ?? [];
+
     return {
       success: true,
-      entity: entityRes.data,
-      roles: rolesRes.data || [],
+      entity,
+      roles,
       session,
+      total_sales,
+      products,
     };
   } catch (err: unknown) {
     return {
@@ -80,7 +117,7 @@ export async function getBusinessProfileAction(): Promise<{
 }
 
 /**
- * Server Action: Memperbarui profil legalitas, alamat, koordinat, dan rekening bank
+ * Server Action: Memperbarui profil legalitas, alamat, nomor telepon, koordinat, dan rekening bank
  */
 export async function updateBusinessEntityProfileAction(
   payload: UpdateBusinessProfileInput
@@ -104,6 +141,7 @@ export async function updateBusinessEntityProfileAction(
     if (payload.legalName !== undefined) updatePayload.legal_name = payload.legalName.trim();
     if (payload.npwpNib !== undefined) updatePayload.npwp_nib = payload.npwpNib.trim();
     if (payload.defaultAddress !== undefined) updatePayload.default_address = payload.defaultAddress.trim();
+    if (payload.phoneNumber !== undefined) updatePayload.phone_number = payload.phoneNumber.trim();
     if (payload.latitude !== undefined) updatePayload.latitude = Number(payload.latitude);
     if (payload.longitude !== undefined) updatePayload.longitude = Number(payload.longitude);
     if (payload.bankAccountInfo !== undefined) updatePayload.bank_account_info = payload.bankAccountInfo;
@@ -225,6 +263,50 @@ export async function deleteBusinessRoleAction(roleId: string): Promise<{
     return {
       success: false,
       message: err instanceof Error ? err.message : "Gagal menghapus peran usaha",
+    };
+  }
+}
+
+/**
+ * Server Action: Menghapus profil entitas bisnis secara permanen (menghapus seluruh akun usaha)
+ */
+export async function deleteBusinessAccountAction(entityId?: string): Promise<{
+  success: boolean;
+  message?: string;
+}> {
+  try {
+    const session = await getAuthSession();
+    const targetEntityId = entityId || session?.entityId;
+
+    if (!targetEntityId) {
+      return {
+        success: false,
+        message: "ID Entitas Bisnis tidak ditemukan untuk menghapus akun.",
+      };
+    }
+
+    const res = await beFetch(`/business/entities/${targetEntityId}`, {
+      method: "DELETE",
+    });
+
+    if (res.success) {
+      await clearAuthCookies();
+    }
+
+    revalidatePath("/profil");
+    return {
+      success: res.success,
+      message:
+        res.message ||
+        (res.success
+          ? "Akun profil usaha berhasil dihapus secara permanen."
+          : "Gagal menghapus akun bisnis."),
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      message:
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menghapus akun bisnis.",
     };
   }
 }

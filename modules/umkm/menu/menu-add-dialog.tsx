@@ -26,6 +26,13 @@ import {
 } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
+import {
+  PRODUCT_UNITS,
+  COMMON_INGREDIENT_UNITS,
+  WASTE_PRESETS,
+  type WasteItemInput,
+  type SectorType,
+} from "./menu-types";
 
 interface MenuAddDialogProps {
   isOpen: boolean;
@@ -90,18 +97,50 @@ export function MenuAddDialog({
   const isEditMode = Boolean(productToEdit);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // Form Fields
+  // 1. Data Utama Produk
   const [productName, setProductName] = React.useState("");
   const [productUnit, setProductUnit] = React.useState("PORSI");
   const [productionIterations, setProductionIterations] = React.useState<number>(2);
   const [batchUnits, setBatchUnits] = React.useState<number>(50);
   const [sellingPrice, setSellingPrice] = React.useState<number>(25000);
 
-  // Bill of Materials / Resep Items
+// 4. Limbah Sirkular
+  const [wastes, setWastes] = React.useState<WasteItemInput[]>([]);
+
+  // 2. Parameter Produksi: Iterasi Hari Produksi
+  const [iterationsPerDay, setIterationsPerDay] = React.useState<number>(1);
+  const [unitsPerIteration, setUnitsPerIteration] = React.useState<number>(50);
+
+  // 3. Bill of Materials (BOM) Resep Lintas 7 Sektor
   const [ingredients, setIngredients] = React.useState<CreateProductRecipeItemInput[]>([
-    { name: "Daging Ayam Fillet", amountPerPortion: 0.2, unit: "KG", estimatedCost: 7000 },
-    { name: "Minyak Goreng Sawit", amountPerPortion: 0.05, unit: "LITER", estimatedCost: 1000 },
-    { name: "Cabai Rawit Merah", amountPerPortion: 0.03, unit: "KG", estimatedCost: 1500 },
+    {
+      name: "Daging Ayam Fillet",
+      sector: "PETERNAKAN",
+      amountPerPortion: 0.2,
+      unit: "KG",
+      estimatedCost: 7500,
+    },
+    {
+      name: "Minyak Goreng Sawit",
+      sector: "FNB_PENGOLAHAN",
+      amountPerPortion: 0.05,
+      unit: "LITER",
+      estimatedCost: 1000,
+    },
+    {
+      name: "Cabai Rawit Merah",
+      sector: "PERTANIAN",
+      amountPerPortion: 0.03,
+      unit: "KG",
+      estimatedCost: 1500,
+    },
+    {
+      name: "Kemasan Paper Bowl",
+      sector: "RITEL",
+      amountPerPortion: 1,
+      unit: "PCS",
+      estimatedCost: 1200,
+    },
   ]);
 
   // Sinkronisasi saat productToEdit berganti
@@ -127,6 +166,8 @@ export function MenuAddDialog({
           }))
         );
       }
+      // Reset wastes when editing a product (since we don't have waste data from BE)
+      setWastes([]);
     } else {
       setProductName("");
       setProductUnit("PORSI");
@@ -138,6 +179,8 @@ export function MenuAddDialog({
         { name: "Minyak Goreng Sawit", amountPerPortion: 0.05, unit: "LITER", estimatedCost: 1000 },
         { name: "Cabai Rawit Merah", amountPerPortion: 0.03, unit: "KG", estimatedCost: 1500 },
       ]);
+      // Reset wastes when creating a new product
+      setWastes([]);
     }
   }, [productToEdit, isOpen]);
 
@@ -145,7 +188,10 @@ export function MenuAddDialog({
   const totalDailyOutput = (Number(productionIterations) || 1) * (Number(batchUnits) || 1);
 
   const totalEstimatedHpp = React.useMemo(() => {
-    return ingredients.reduce((sum, item) => sum + (Number(item.estimatedCost) || 0), 0);
+    return ingredients.reduce(
+      (sum, item) => sum + (Number(item.estimatedCost) || 0),
+      0
+    );
   }, [ingredients]);
 
   const projectedPureMarginPct = React.useMemo(() => {
@@ -164,7 +210,13 @@ export function MenuAddDialog({
   const handleAddIngredientRow = () => {
     setIngredients((prev) => [
       ...prev,
-      { name: "", amountPerPortion: 0.1, unit: "KG", estimatedCost: 0 },
+      {
+        name: "",
+        sector: "PERTANIAN",
+        amountPerPortion: 0.1,
+        unit: "KG",
+        estimatedCost: 0,
+      },
     ]);
   };
 
@@ -187,6 +239,20 @@ export function MenuAddDialog({
       return copy;
     });
   };
+
+  // Handlers Limbah Sirkular
+  const handleAddWasteRow = () => {
+    setWastes((prev) => [
+      ...prev,
+      {
+        wasteName: "",
+        volumePerIteration: 1.0,
+        unit: "KG",
+        potentialPricePerUnit: 1500,
+      },
+    ]);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -542,6 +608,17 @@ export function MenuAddDialog({
                   </div>
                 </div>
               </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddWasteRow}
+                className="text-xs font-semibold gap-1 border-emerald-500/30 text-emerald-800 hover:bg-emerald-500/10 min-h-[32px]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Tambah Residu
+              </Button>
             </div>
           </div>
 

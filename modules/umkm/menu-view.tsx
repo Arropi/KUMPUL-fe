@@ -236,7 +236,7 @@ export function UmkmMenuView() {
   }, [processedProducts, currentPage, pageSize]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* 1. Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
@@ -340,7 +340,7 @@ export function UmkmMenuView() {
 
       {/* 3. Product Cards Grid (3 cards per row on desktop) */}
       {isLoading ? (
-        <div className="min-h-[300px] flex flex-col items-center justify-center gap-3">
+        <div className="min-h-[250px] flex flex-col items-center justify-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           <span className="text-xs text-text-muted font-medium">
             Memuat daftar produk dari backend KUMPUL...
