@@ -576,26 +576,6 @@ export function ProdukDetailView({ productId, initialProduct }: ProdukDetailView
                 </TableFooter>
               </Table>
             </div>
-
-            {/* Rekomendasi Optimalisasi AI - Noticeable, Bold & Elegant */}
-            <div className="p-4 sm:p-4.5 rounded-xl bg-surface-subtle/90 border border-border border-l-4 border-l-primary shadow-xs flex items-start gap-3.5">
-              <div className="size-9 rounded-xl bg-surface border border-border shadow-2xs flex items-center justify-center shrink-0 mt-0.5 text-primary">
-                <Sparkles className="size-4.5" />
-              </div>
-              <div className="space-y-1.5 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h5 className="font-heading font-bold text-sm sm:text-[15px] text-text-primary tracking-tight">
-                    Rekomendasi Optimalisasi Sirkular
-                  </h5>
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-surface border border-border text-primary">
-                    AI Insight
-                  </span>
-                </div>
-                <p className="text-text-secondary text-xs sm:text-[13px] leading-relaxed">
-                  {wastePrediction.aiRecommendation}
-                </p>
-              </div>
-            </div>
           </div>
         </Card>
       )}
