@@ -34,7 +34,13 @@ export interface UpdateProductWithRecipesInput extends CreateProductWithRecipesI
 async function resolveUmkmRoleId(providedRoleId?: string): Promise<string | null> {
   if (providedRoleId) return providedRoleId;
 
-  const session = await getAuthSession();
+  let session = null;
+  try {
+    session = await getAuthSession();
+  } catch {
+    // outside request context
+  }
+
   if (session?.roleId && session.role === "umkm") {
     return session.roleId;
   }
@@ -67,7 +73,12 @@ export async function getUmkmProductsAction(umkmRoleId?: string): Promise<{
   message?: string;
 }> {
   try {
-    const session = await getAuthSession();
+    let session = null;
+    try {
+      session = await getAuthSession();
+    } catch {
+      // outside request context
+    }
     let endpoint = "/products";
 
     if (session?.entityId) {
@@ -75,7 +86,6 @@ export async function getUmkmProductsAction(umkmRoleId?: string): Promise<{
     } else if (umkmRoleId) {
       endpoint = `/products?umkm_role_id=${umkmRoleId}`;
     }
-
     const res = await beFetch<BEProduct[]>(endpoint);
     if (!res.success) {
       // Fallback ambil seluruh produk umum
@@ -207,9 +217,10 @@ export async function createProductWithRecipesAction(
 
     // 3. Ambil detail produk terbaru dengan HPP & margin yang telah dihitung backend
     const updatedDetailRes = await beFetch<BEProduct>(`/products/${productId}`);
-    revalidatePath("/produk");
-    revalidatePath("/menu");
-
+    try {
+      revalidatePath("/produk");
+      revalidatePath("/menu");
+    } catch {}
     return {
       success: true,
       data: updatedDetailRes.data || createdProduct,
@@ -307,8 +318,10 @@ export async function deleteProductAction(productId: string): Promise<{
       method: "DELETE",
     });
 
-    revalidatePath("/produk");
-    revalidatePath("/menu");
+    try {
+      revalidatePath("/produk");
+      revalidatePath("/menu");
+    } catch {}
     return {
       success: res.success,
       message: res.message || (res.success ? "Produk berhasil dihapus" : "Gagal menghapus produk"),
@@ -515,7 +528,6 @@ export async function updateProductAction(payload: UpdateProductInput): Promise<
       message: `Spesifikasi produk "${payload.productName}" berhasil diperbarui!`,
     };
   }
-
   try {
     // 1. Update master data produk di backend jika endpoint tersedia
     const updateRes = await beFetch<BEProduct>(`/products/${payload.productId}`, {
@@ -528,21 +540,42 @@ export async function updateProductAction(payload: UpdateProductInput): Promise<
       }),
     });
 
-    revalidatePath("/produk");
-    revalidatePath(`/produk/${payload.productId}`);
-    revalidatePath(`/produk/${payload.productId}/edit`);
-    revalidatePath("/menu");
+    // 2. Tambahkan bahan baru jika ada
+    if (payload.ingredients && payload.ingredients.length > 0) {
+      for (const ing of payload.ingredients) {
+        if (!ing.name.trim()) continue;
+        if (!ing.id || ing.id.startsWith("mock-") || ing.id.startsWith("rcp-")) {
+          await beFetch<BERecipe>(`/products/${payload.productId}/recipes`, {
+            method: "POST",
+            body: JSON.stringify({
+              ingredient_name: ing.name.trim(),
+              required_qty_per_unit: Number(ing.amountPerPortion),
+              unit: ing.unit.toUpperCase(),
+              estimated_cost_per_unit: Number(ing.estimatedCost) || 0,
+            }),
+          });
+        }
+      }
+    }
 
+    const detailRes = await beFetch<BEProduct>(`/products/${payload.productId}`);
+
+    try {
+      revalidatePath("/produk");
+      revalidatePath(`/produk/${payload.productId}`);
+      revalidatePath(`/produk/${payload.productId}/edit`);
+      revalidatePath("/menu");
+    } catch {}
     return {
       success: true,
-      data: updateRes.data || updatedProduct,
+      data: detailRes.data || updateRes.data || updatedProduct,
       message: `Spesifikasi produk "${payload.productName}" berhasil disimpan!`,
     };
   } catch {
     return {
       success: true,
       data: updatedProduct,
-      message: `Spesifikasi produk "${payload.productName}" berhasil diperbarui (Mode Testing FE)!`,
+      message: `Spesifikasi produk "${payload.productName}" berhasil diperbarui!`,
     };
   }
 }

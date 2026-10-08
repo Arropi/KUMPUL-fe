@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MenuAddDialog } from "./menu/menu-add-dialog";
 import { MenuCard } from "./menu/menu-card";
+import { MenuDetailDialog } from "./menu/menu-detail-dialog";
 import { Pagination15 } from "@/components/ui/pagination";
 import { getUmkmProductsAction } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
@@ -69,6 +70,20 @@ export function UmkmMenuView() {
   const [sortBy, setSortBy] = React.useState<MenuSortOption>("MARGIN_DESC");
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<BEProduct | null>(null);
+  const [detailProduct, setDetailProduct] = React.useState<BEProduct | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = React.useState(false);
+
+  const handleOpenDetail = (prod: BEProduct) => {
+    setDetailProduct(prod);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleEditFromDetail = (prod: BEProduct) => {
+    setIsDetailModalOpen(false);
+    setDetailProduct(null);
+    setEditingProduct(prod);
+    setIsAddModalOpen(true);
+  };
 
   // Pagination state (Watermelon UI Pagination-15)
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -368,6 +383,7 @@ export function UmkmMenuView() {
                 product={prod}
                 onDeleted={handleProductDeleted}
                 onEdit={handleEditProduct}
+                onDetail={handleOpenDetail}
                 onRecipeUpdated={loadProducts}
               />
             ))}
@@ -402,6 +418,18 @@ export function UmkmMenuView() {
           setEditingProduct(null);
         }}
         productToEdit={editingProduct}
+      />
+
+      {/* 5. Dialog Detail Produk & Sirkular Tabs */}
+      <MenuDetailDialog
+        key={detailProduct?.id || "none"}
+        product={detailProduct}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setDetailProduct(null);
+        }}
+        onEdit={handleEditFromDetail}
       />
     </div>
   );
