@@ -102,19 +102,7 @@ export function UmkmMenuView() {
       if (res.success && res.data && res.data.length > 0) {
         setProducts(res.data);
       } else {
-        let localMocks: BEProduct[] = [];
-        try {
-          const saved = localStorage.getItem("kumpul_mock_products");
-          if (saved) localMocks = JSON.parse(saved);
-        } catch { }
-        if (localMocks.length > 0) {
-          setProducts(localMocks);
-        } else {
-          setProducts(DEFAULT_SEED_PRODUCTS);
-          try {
-            localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
-          } catch { }
-        }
+        setProducts(DEFAULT_SEED_PRODUCTS);
       }
     } catch {
       toast.error("Gagal terhubung ke backend");
@@ -124,77 +112,17 @@ export function UmkmMenuView() {
   }, []);
 
   React.useEffect(() => {
-    let ignore = false;
-    getUmkmProductsAction()
-      .then((res) => {
-        let localMocks: BEProduct[] = [];
-        try {
-          const saved = localStorage.getItem("kumpul_mock_products");
-          if (saved) localMocks = JSON.parse(saved);
-        } catch { }
-
-        if (!ignore) {
-          if (res.success && res.data && res.data.length > 0) {
-            const backendIds = new Set(res.data.map((p) => p.id));
-            const uniqueMocks = localMocks.filter((m) => !backendIds.has(m.id));
-            setProducts([...uniqueMocks, ...res.data]);
-          } else if (localMocks.length > 0) {
-            setProducts(localMocks);
-          } else {
-            // Seed awal produk realistis sesuai brief.md
-            setProducts(DEFAULT_SEED_PRODUCTS);
-            try {
-              localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
-            } catch { }
-          }
-        }
-      })
-      .catch(() => {
-        if (!ignore) {
-          try {
-            const saved = localStorage.getItem("kumpul_mock_products");
-            if (saved) {
-              setProducts(JSON.parse(saved));
-            } else {
-              setProducts(DEFAULT_SEED_PRODUCTS);
-              localStorage.setItem("kumpul_mock_products", JSON.stringify(DEFAULT_SEED_PRODUCTS));
-            }
-          } catch { }
-        }
-      })
-      .finally(() => {
-        if (!ignore) setIsLoading(false);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+    loadProducts();
+  }, [loadProducts]);
 
   const handleProductAdded = (newProduct: BEProduct) => {
-    setProducts((prev) => {
-      const updated = [newProduct, ...prev.filter((p) => p.id !== newProduct.id)];
-      try {
-        localStorage.setItem(
-          "kumpul_mock_products",
-          JSON.stringify(updated.filter((p) => p.id.startsWith("mock-")))
-        );
-      } catch { }
-      return updated;
-    });
+    setProducts((prev) => [newProduct, ...prev.filter((p) => p.id !== newProduct.id)]);
+    loadProducts();
   };
 
   const handleProductDeleted = (deletedId: string) => {
-    setProducts((prev) => {
-      const updated = prev.filter((p) => p.id !== deletedId);
-      try {
-        localStorage.setItem(
-          "kumpul_mock_products",
-          JSON.stringify(updated.filter((p) => p.id.startsWith("mock-")))
-        );
-      } catch { }
-      return updated;
-    });
+    setProducts((prev) => prev.filter((p) => p.id !== deletedId));
+    loadProducts();
   };
 
   const handleEditProduct = (prod: BEProduct) => {

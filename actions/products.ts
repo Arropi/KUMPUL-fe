@@ -540,13 +540,23 @@ export async function updateProductAction(payload: UpdateProductInput): Promise<
       }),
     });
 
-    // 2. Tambahkan bahan baru jika ada
+    // 2. Sinkronkan resep bahan (tambah baru atau perbarui yang ada)
     if (payload.ingredients && payload.ingredients.length > 0) {
       for (const ing of payload.ingredients) {
         if (!ing.name.trim()) continue;
         if (!ing.id || ing.id.startsWith("mock-") || ing.id.startsWith("rcp-")) {
           await beFetch<BERecipe>(`/products/${payload.productId}/recipes`, {
             method: "POST",
+            body: JSON.stringify({
+              ingredient_name: ing.name.trim(),
+              required_qty_per_unit: Number(ing.amountPerPortion),
+              unit: ing.unit.toUpperCase(),
+              estimated_cost_per_unit: Number(ing.estimatedCost) || 0,
+            }),
+          });
+        } else {
+          await beFetch<BERecipe>(`/products/${payload.productId}/recipes/${ing.id}`, {
+            method: "PUT",
             body: JSON.stringify({
               ingredient_name: ing.name.trim(),
               required_qty_per_unit: Number(ing.amountPerPortion),
