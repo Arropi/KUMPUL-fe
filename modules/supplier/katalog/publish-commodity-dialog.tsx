@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
 import { Calendar, Globe2, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
+import { publishSupplierCommodityAction } from "@/actions/supplier-catalog";
 
 interface PublishCommodityDialogProps {
   isOpen: boolean;
@@ -62,7 +63,7 @@ export function PublishCommodityDialog({
     }
   }, [isOpen, commodity]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -82,9 +83,16 @@ export function PublishCommodityDialog({
     }
 
     setIsSubmitting(true);
+    try {
+      const res = await publishSupplierCommodityAction(commodity.id, {
+        productionDate,
+        closedDate: expiryDate,
+      });
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+      if (!res.success) {
+        setErrorMessage(res.message || "Gagal mempublikasikan komoditas ke bursa pasokan.");
+        return;
+      }
 
       const updated: SupplierCommodity = {
         ...commodity,
@@ -105,7 +113,11 @@ export function PublishCommodityDialog({
 
       onPublishSuccess(updated);
       onClose();
-    }, 500);
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Terjadi kendala saat publikasi.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const primaryPrice = commodity.priceTiers[0]?.pricePerUnit || 0;

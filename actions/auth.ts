@@ -91,12 +91,14 @@ export async function loginWithCredentialsAction(payload: {
   const beToken = beRes.data.token;
   const entityId = beRes.data.entity_id;
   const activeRoleType = beRes.data.active_role?.role_type;
+  const activeRoleId = beRes.data.active_role?.id;
   const effectiveRole: UserRole = activeRoleType === "SUPPLIER" ? "supplier" : "umkm";
 
   const session: UserSession = {
     email,
     name: userName,
     role: effectiveRole,
+    roleId: activeRoleId,
     provider: "credentials",
     supabaseUserId,
     token: beToken,
@@ -168,11 +170,13 @@ export async function registerWithCredentialsAction(payload: {
     const beToken = beLoginRes.data.token;
     const entityId = beLoginRes.data.entity_id;
     const activeRoleType = beLoginRes.data.active_role?.role_type;
+    const activeRoleId = beLoginRes.data.active_role?.id;
     const effectiveRole: UserRole = activeRoleType === "SUPPLIER" ? "supplier" : "umkm";
     const session: UserSession = {
       email,
       name: email.split("@")[0],
       role: effectiveRole,
+      roleId: activeRoleId,
       provider: "credentials",
       supabaseUserId,
       token: beToken,
@@ -301,11 +305,22 @@ export async function completeBusinessRegistrationAction(payload: {
     };
   }
 
+  // Dapatkan active role ID dari respons registrasi atau login
+  let activeRoleId: string | undefined =
+    completeRes.data.active_role?.id || completeRes.data.business_role?.id;
+  if (!activeRoleId) {
+    const loginAfter = await callBackendLogin({ user_id: targetUserId, role: beRole });
+    if (loginAfter.success && loginAfter.data?.active_role?.id) {
+      activeRoleId = loginAfter.data.active_role.id;
+    }
+  }
+
   // 5. Bangun sesi pengguna
   const session: UserSession = {
     email: targetEmail,
     name: legalName.trim(),
     role,
+    roleId: activeRoleId,
     provider: "credentials",
     supabaseUserId: targetUserId,
     token: beToken,

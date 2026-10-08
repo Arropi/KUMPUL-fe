@@ -92,6 +92,7 @@ export async function switchRoleAction(
 
     let beToken = "";
     let entityId = "";
+    let roleId: string | undefined = undefined;
 
     // 3. Database Check ke Backend Database KUMPUL melalui /auth/login
     try {
@@ -117,6 +118,7 @@ export async function switchRoleAction(
       } else if (beRes.success && beRes.data?.token) {
         beToken = beRes.data.token;
         entityId = beRes.data.entity_id;
+        roleId = beRes.data.active_role?.id;
       }
     } catch {
       // Backend offline atau error jaringan
@@ -179,6 +181,7 @@ export async function switchRoleAction(
       supabaseUserId,
       token: beToken,
       entityId,
+      roleId,
     };
 
     // 6. Simpan cookie sesi terautentikasi di server

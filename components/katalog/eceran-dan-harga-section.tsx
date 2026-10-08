@@ -13,24 +13,20 @@ import type {
 interface EceranDanHargaSectionProps {
   unit: string;
   minOrderQty: number;
-  allowRetail: boolean;
-  setAllowRetail: (val: boolean) => void;
-  retailPrice: number;
-  setRetailPrice: (val: number) => void;
   enablePriceTiers: boolean;
   setEnablePriceTiers: (val: boolean) => void;
   priceTiers: PriceTierRange[];
   setPriceTiers: React.Dispatch<React.SetStateAction<PriceTierRange[]>>;
   errors: KatalogFormErrors;
+  allowRetail?: boolean;
+  setAllowRetail?: (val: boolean) => void;
+  retailPrice?: number;
+  setRetailPrice?: (val: number) => void;
 }
 
 export function EceranDanHargaSection({
   unit,
   minOrderQty,
-  allowRetail,
-  setAllowRetail,
-  retailPrice,
-  setRetailPrice,
   enablePriceTiers,
   setEnablePriceTiers,
   priceTiers,
@@ -98,63 +94,15 @@ export function EceranDanHargaSection({
     <Card className="p-5 sm:p-6 space-y-6 bg-surface border-border shadow-elevation-1 rounded-2xl">
       <div className="border-b border-border/80 pb-3">
         <h2 className="font-heading font-bold text-base text-text-primary">
-          3. Penjualan Eceran &amp; Skema Peningkatan Harga
+          2. Skema Tingkatan Harga Pasokan (Tiered Pricing)
         </h2>
         <p className="font-body text-xs text-text-secondary mt-0.5">
-          Atur opsi penjualan eceran di bawah batas minimum dan konfigurasi
-          rentang kuota harga bertingkat.
+          Atur opsi penawaran harga grosir bertingkat berdasarkan kuota volume pembelian.
         </p>
       </div>
 
-      {/* Bagian Eceran */}
-      <div className="space-y-4">
-        <div className="rounded-xl border border-border/80 bg-background/60 p-4 transition-colors">
-          <label
-            htmlFor="allow-retail"
-            className="flex items-start gap-3 cursor-pointer select-none"
-          >
-            <div className="pt-0.5">
-              <Checkbox
-                id="allow-retail"
-                checked={allowRetail}
-                onCheckedChange={(checked) => setAllowRetail(Boolean(checked))}
-              />
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs sm:text-sm font-semibold text-text-primary block">
-                Terima penjualan eceran atau kurang dari Batas minimum penjualan
-              </span>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Izinkan pembeli atau UMKM memesan dengan kuota lebih sedikit
-                dari batas MOQ yang telah ditentukan.
-              </p>
-            </div>
-          </label>
-
-          {allowRetail && (
-            <div className="mt-4 pt-4 border-t border-border/70 max-w-sm">
-              <Input
-                id="retail-price"
-                type="number"
-                min={0}
-                label={`Harga Eceran per ${unit} (Rp)`}
-                placeholder="Contoh: 15000"
-                value={retailPrice <= 0 ? "" : retailPrice.toString()}
-                onChange={(e) =>
-                  setRetailPrice(Math.max(0, Number(e.target.value)))
-                }
-                error={errors.retailPrice}
-                helperText={`Harga berlaku untuk pembelian di bawah ${minOrderQty > 0 ? minOrderQty : "batas minimum"} ${unit}`}
-                required
-                className="min-h-[44px] tabular-nums font-semibold"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Bagian Peningkatan Harga Bertingkat */}
-      <div className="space-y-4 pt-2">
+      <div className="space-y-4">
         <div className="rounded-xl border border-border/80 bg-background/60 p-4 transition-colors">
           <label
             htmlFor="enable-price-tiers"

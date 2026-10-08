@@ -12,10 +12,10 @@ export interface KatalogFormData {
   minOrderQty: number;
   estimatedStock: number;
   leadTimeDays: number;
-  harvestDate: string;
-  autoActivateMarketplace: boolean;
-  allowRetail: boolean;
-  retailPrice: number;
+  harvestDate?: string;
+  autoActivateMarketplace?: boolean;
+  allowRetail?: boolean;
+  retailPrice?: number;
   enablePriceTiers: boolean;
   priceTiers: PriceTierRange[];
   description: string;

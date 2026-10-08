@@ -21,7 +21,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { createCommodityBatchTagAction } from "@/actions/supplier-catalog";
+import {
+  createCommodityBatchTagAction,
+  getCommodityBatchTagsAction,
+} from "@/actions/supplier-catalog";
+import { uploadFileAction } from "@/actions/upload";
+import type { BECommodityBatchTag } from "@/lib/api/types";
 
 interface VerifikasiKepatuhanViewProps {
   commodity: SupplierCommodity;
@@ -67,22 +72,51 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
   const [storageTemp, setStorageTemp] = React.useState<StorageTemperature>(
     (commodity.batchTag?.storageTemperature as StorageTemperature) || "AMBIENT"
   );
+  // Objek berkas fisik untuk upload ke Supabase Storage
+  const [rawFile, setRawFile] = React.useState<File | null>(null);
+  // Default null: jangan ada berkas ter-attach terlebih dahulu
   const [uploadedFile, setUploadedFile] = React.useState<{
     name: string;
     size: string;
     type: string;
-  } | null>({
-    name: "Sertifikat_Uji_Mutu_Laboratorium_2026.pdf",
-    size: "1.4 MB",
-    type: "application/pdf",
-  });
+  } | null>(null);
+
+  const [existingBatchTags, setExistingBatchTags] = React.useState<BECommodityBatchTag[]>([]);
+  const [isLoadingExisting, setIsLoadingExisting] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
+
+  // Ambil riwayat berkas dari endpoint BE: GET /commodity-batch-tags/commodity/{commodity_id}
+  React.useEffect(() => {
+    let isMounted = true;
+    async function loadExistingTags() {
+      try {
+        setIsLoadingExisting(true);
+        const res = await getCommodityBatchTagsAction(commodity.id);
+        if (isMounted && res.success && res.data && res.data.length > 0) {
+          setExistingBatchTags(res.data);
+          const latestTag = res.data[0];
+          if (latestTag.storage_temperature_type) {
+            setStorageTemp(latestTag.storage_temperature_type as StorageTemperature);
+          }
+        }
+      } catch {
+        // abaikan
+      } finally {
+        if (isMounted) setIsLoadingExisting(false);
+      }
+    }
+    loadExistingTags();
+    return () => {
+      isMounted = false;
+    };
+  }, [commodity.id]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setRawFile(file);
     const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
     setUploadedFile({
       name: file.name,
@@ -93,6 +127,7 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
   };
 
   const handleRemoveFile = () => {
+    setRawFile(null);
     setUploadedFile(null);
     toast.info("Berkas lampiran penunjang dihapus.");
   };
@@ -100,7 +135,7 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!uploadedFile) {
+    if (!uploadedFile && !rawFile && existingBatchTags.length === 0) {
       toast.error("Wajib mengunggah minimal 1 berkas penunjang dokumen sertifikasi / uji lab.");
       return;
     }
@@ -108,22 +143,42 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
     setIsSubmitting(true);
 
     try {
+      let fileUrlToSubmit = existingBatchTags[0]?.supporting_file_url || null;
+
+      // Jika ada file fisik baru yang dipilih, unggah ke Supabase Storage terlebih dahulu
+      if (rawFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", rawFile);
+        uploadFormData.append("folder", "batch-documents");
+
+        const uploadRes = await uploadFileAction(uploadFormData);
+        if (!uploadRes.success || !uploadRes.url) {
+          toast.error(uploadRes.message || "Gagal mengunggah berkas dokumen ke Supabase Storage.");
+          setIsSubmitting(false);
+          return;
+        }
+        fileUrlToSubmit = uploadRes.url;
+      }
+
+      // Tidak menyertakan isVerified secara paksa agar backend Express memanggil Gemini AI untuk melakukan audit dan mengisi verification_notes
       const res = await createCommodityBatchTagAction({
         commodityId: commodity.id,
-        supportingFileUrl: `https://storage.supabase.co/kumpul-files/docs/${encodeURIComponent(uploadedFile.name)}`,
+        supportingFileUrl: fileUrlToSubmit,
         storageTemperatureType: storageTemp,
-        isVerified: true,
       });
 
       if (res.success) {
         setIsSuccess(true);
+        const aiSummary = res.data?.verification_notes;
         toast.success(
-          `Kepatuhan mutu & cara penyimpanan ${commodity.name} berhasil disimpan!`,
-          "Verifikasi Berhasil"
+          aiSummary
+            ? `Hasil Evaluasi AI: ${aiSummary}`
+            : `Kepatuhan mutu & cara penyimpanan ${commodity.name} berhasil disimpan!`,
+          res.data?.is_verified ? "Lulus Verifikasi Mutu" : "Dokumen Disimpan"
         );
         setTimeout(() => {
           router.push(`/katalog/${commodity.id}`);
-        }, 1200);
+        }, 1500);
       } else {
         toast.error(res.message || "Gagal menyimpan verifikasi kepatuhan.");
       }
@@ -244,14 +299,70 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
                 <span>2. Berkas Penunjang Dokumen Mutu (Supporting Files)</span>
               </h2>
               <p className="text-xs text-text-secondary mt-1">
-                Unggah salinan dokumen sertifikat uji lab mutu, Certificate of Analysis (CoA), sertifikasi Halal, atau hasil audit higienitas komoditas.
+                Unggah salinan dokumen sertifikat uji lab mutu, Certificate of Analysis (CoA), sertifikasi Halal, atau hasil audit higienitas komoditas untuk dievaluasi otomatis oleh AI KUMPUL.
               </p>
             </div>
 
+            {/* Riwayat Dokumen Terdaftar dari BE (GET /commodity-batch-tags/commodity/{commodity_id}) */}
+            {isLoadingExisting ? (
+              <div className="p-4 rounded-xl border border-border bg-background animate-pulse text-xs text-text-muted">
+                Memuat data dokumen verifikasi dari server...
+              </div>
+            ) : existingBatchTags.length > 0 && !uploadedFile ? (
+              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold text-text-primary truncate">
+                          {existingBatchTags[0].supporting_file_url
+                            ? decodeURIComponent(
+                                existingBatchTags[0].supporting_file_url.split("/").pop() || "Dokumen_Mutu_Terverifikasi.pdf"
+                              )
+                            : "Dokumen Mutu Terdaftar"}
+                        </p>
+                        <Badge variant={existingBatchTags[0].is_verified ? "success" : "warning"}>
+                          {existingBatchTags[0].is_verified ? "Lulus Verifikasi AI" : "Menunggu Audit"}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-text-muted mt-0.5">
+                        Tersimpan di sistem &bull; Suhu: {existingBatchTags[0].storage_temperature_type}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById("supporting-file-input")?.click()}
+                    className="text-xs font-semibold shrink-0 cursor-pointer"
+                  >
+                    Unggah Berkas Baru
+                  </Button>
+                </div>
+
+                {existingBatchTags[0].verification_notes && (
+                  <div className="rounded-lg bg-surface p-3 border border-border/80 text-xs">
+                    <span className="font-semibold text-text-primary block text-[11px] mb-0.5">
+                      Hasil Catatan Evaluasi AI:
+                    </span>
+                    <p className="text-text-secondary leading-relaxed text-[11px]">
+                      {existingBatchTags[0].verification_notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* Input Upload Berkas Baru */}
             {uploadedFile ? (
-              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 flex items-center justify-between gap-3">
+              <div className="p-4 rounded-xl border border-primary/40 bg-primary/5 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
@@ -259,7 +370,7 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
                       {uploadedFile.name}
                     </p>
                     <p className="text-[11px] text-text-muted">
-                      {uploadedFile.size} &bull; Berkas Siap Diajukan
+                      {uploadedFile.size} &bull; Berkas baru siap diajukan untuk audit AI
                     </p>
                   </div>
                 </div>
@@ -273,7 +384,7 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-            ) : (
+            ) : existingBatchTags.length === 0 ? (
               <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-colors bg-background">
                 <Upload className="w-8 h-8 text-text-muted mx-auto mb-2" />
                 <p className="text-xs font-bold text-text-primary">
@@ -299,6 +410,14 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
                   Pilih Berkas Dokumen
                 </Button>
               </div>
+            ) : (
+              <input
+                type="file"
+                id="supporting-file-input"
+                onChange={handleFileUpload}
+                accept=".pdf,.png,.jpg,.jpeg"
+                className="hidden"
+              />
             )}
           </Card>
 
@@ -313,11 +432,17 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
               type="submit"
               variant="primary"
               size="md"
-              disabled={isSubmitting || !uploadedFile}
+              disabled={isSubmitting || (!uploadedFile && existingBatchTags.length === 0)}
               className="font-semibold text-xs sm:text-sm min-h-[44px] px-6 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               <ShieldCheck className="w-4 h-4 mr-1.5" />
-              <span>{isSubmitting ? "Memproses Verifikasi..." : "Kirim Verifikasi Kepatuhan"}</span>
+              <span>
+                {isSubmitting
+                  ? "Memproses Verifikasi AI..."
+                  : uploadedFile
+                  ? "Kirim & Verifikasi dengan AI"
+                  : "Simpan Perubahan"}
+              </span>
             </Button>
           </div>
         </form>
