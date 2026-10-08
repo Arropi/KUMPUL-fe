@@ -26,10 +26,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/components/ui/toast";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
-import { KitchenInventorySection } from "@/modules/umkm/menu/kitchen-inventory-section";
-import { getUmkmProductsAction } from "@/actions/products";
-import type { BEProduct } from "@/lib/api/types";
-import { DEFAULT_SEED_PRODUCTS } from "@/lib/menu-intelligence";
 import { beFetch } from "@/lib/api/be-client";
 import { RefreshCw } from "lucide-react";
 
@@ -122,47 +118,6 @@ export function UmkmDashboardView() {
   const [joinQuantity, setJoinQuantity] = React.useState<number>(50);
   const [deliveryMethod, setDeliveryMethod] = React.useState<"HEMAT_HUB" | "DIRECT_DELIVERY">("HEMAT_HUB");
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
-  const [products, setProducts] = React.useState<BEProduct[]>([]);
-
-  // Load products (backend atau localStorage) untuk sinkronisasi inventaris dapur
-  React.useEffect(() => {
-    let ignore = false;
-    getUmkmProductsAction()
-      .then((res) => {
-        let localMocks: BEProduct[] = [];
-        try {
-          const saved = localStorage.getItem("kumpul_mock_products");
-          if (saved) localMocks = JSON.parse(saved);
-        } catch {}
-
-        if (!ignore) {
-          if (res.success && res.data && res.data.length > 0) {
-            const backendIds = new Set(res.data.map((p) => p.id));
-            const uniqueMocks = localMocks.filter((m) => !backendIds.has(m.id));
-            setProducts([...uniqueMocks, ...res.data]);
-          } else if (localMocks.length > 0) {
-            setProducts(localMocks);
-          } else {
-            setProducts(DEFAULT_SEED_PRODUCTS);
-          }
-        }
-      })
-      .catch(() => {
-        if (!ignore) {
-          try {
-            const saved = localStorage.getItem("kumpul_mock_products");
-            if (saved) setProducts(JSON.parse(saved));
-            else setProducts(DEFAULT_SEED_PRODUCTS);
-          } catch {
-            setProducts(DEFAULT_SEED_PRODUCTS);
-          }
-        }
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
 
   // Load pools from backend
   React.useEffect(() => {
@@ -728,12 +683,7 @@ export function UmkmDashboardView() {
         </article>
       </section>
 
-      {/* 6. Pengolahan Stok Bahan Baku Dapur (Kitchen Inventory & Alert Restock) */}
-      <section className="space-y-4">
-        <KitchenInventorySection products={products} />
-      </section>
-
-      {/* 7. Autonomous MOQ Pooling Radar Section */}
+      {/* 6. Autonomous MOQ Pooling Radar Section */}
       <section className="space-y-4">
         {loadingPools ? (
           <div className="text-center py-8">
