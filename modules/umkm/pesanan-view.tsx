@@ -191,7 +191,7 @@ function PurchaseOrderRow({
         <div className="min-w-0 flex-1 space-y-1.5">
           {/* Line 1: Order number, date, case badge */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-mono text-xs font-bold text-text-primary">
+            <span className="font-mono text-xs font-bold text-text-primary truncate" title={order.orderNumber}>
               {order.orderNumber}
             </span>
             <span className="text-text-muted text-[11px]">&bull; {order.orderDate}</span>
@@ -214,7 +214,7 @@ function PurchaseOrderRow({
 
           {/* Line 2: Commodity title + volume */}
           <div className="flex flex-wrap items-baseline gap-2">
-            <h3 className="font-heading text-sm sm:text-base font-bold text-text-primary group-hover:text-primary transition-colors">
+            <h3 className="font-heading text-sm sm:text-base font-bold text-text-primary group-hover:text-primary transition-colors line-clamp-1" title={order.commodityName}>
               {order.commodityName}
             </h3>
             <span className="text-xs text-text-muted tabular-nums">
@@ -236,7 +236,7 @@ function PurchaseOrderRow({
                 Hemat {formatCurrency(order.savingsAmount)}
               </span>
             )}
-            <span className="text-text-muted text-[11px] truncate max-w-xs">
+            <span className="text-text-muted text-[11px] truncate max-w-xs" title={order.deliveryLocation || "Titik Hub Belum Ditentukan"}>
               &bull; {order.deliveryLocation || "Titik Hub Belum Ditentukan"}
             </span>
           </div>
@@ -359,7 +359,7 @@ function WasteSaleRow({
 
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-mono text-xs font-bold text-text-primary">
+            <span className="font-mono text-xs font-bold text-text-primary truncate" title={order.orderNumber}>
               {order.orderNumber}
             </span>
             <span className="text-text-muted text-[11px]">&bull; {order.orderDate}</span>
@@ -369,7 +369,7 @@ function WasteSaleRow({
           </div>
 
           <div className="flex flex-wrap items-baseline gap-2">
-            <h3 className="font-heading text-sm sm:text-base font-bold text-text-primary group-hover:text-circular-waste transition-colors">
+            <h3 className="font-heading text-sm sm:text-base font-bold text-text-primary group-hover:text-circular-waste transition-colors line-clamp-1" title={order.listingTitle}>
               {order.listingTitle}
             </h3>
             <span className="text-xs text-text-muted tabular-nums">
@@ -384,7 +384,7 @@ function WasteSaleRow({
                 {formatCurrency(order.totalPrice)}
               </strong>
             </span>
-            <span className="text-text-muted text-[11px]">
+            <span className="text-text-muted text-[11px] truncate max-w-xs" title={`Pembeli: ${order.buyerName} (${order.buyerType})`}>
               &bull; Pembeli: <strong className="text-text-primary">{order.buyerName}</strong> ({order.buyerType})
             </span>
             <span className="text-text-muted text-[11px] flex items-center gap-1">
@@ -975,7 +975,7 @@ export function UmkmPesananView() {
                     {getStatusBadge(selectedOrder.status).label}
                   </span>
                 </div>
-                <DialogTitle className="font-heading text-lg font-bold text-text-primary mt-1">
+                <DialogTitle className="font-heading text-lg font-bold text-text-primary mt-1 line-clamp-2" title={selectedOrder.commodityName}>
                   {selectedOrder.commodityName}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-text-muted">
@@ -1052,12 +1052,12 @@ export function UmkmPesananView() {
                         selectedOrder.poolParticipants.map((part, idx) => (
                           <div
                             key={idx}
-                            className="flex justify-between items-center text-xs p-1.5 rounded-lg bg-surface-subtle"
+                            className="flex justify-between items-center text-xs p-1.5 rounded-lg bg-surface-subtle gap-2"
                           >
-                            <span className="font-medium text-text-primary truncate">
+                            <span className="font-medium text-text-primary truncate" title={`${part.name} (${part.city})`}>
                               {part.name} ({part.city})
                             </span>
-                            <span className="text-text-muted font-bold tabular-nums">
+                            <span className="text-text-muted font-bold tabular-nums shrink-0">
                               {part.qty} {selectedOrder.unit}
                             </span>
                           </div>
@@ -1192,10 +1192,10 @@ export function UmkmPesananView() {
                   {selectedOrder.supplierContact && (
                     <div className="p-3 rounded-xl bg-surface border border-border text-xs space-y-1">
                       <span className="text-text-muted">Kontak Supplier Hulu:</span>
-                      <p className="font-bold text-text-primary">{selectedOrder.supplierContact.name}</p>
+                      <p className="font-bold text-text-primary truncate" title={selectedOrder.supplierContact.name}>{selectedOrder.supplierContact.name}</p>
                       {selectedOrder.supplierContact.phone && (
                         <p className="text-text-secondary flex items-center gap-1">
-                          <Phone className="size-3" /> {selectedOrder.supplierContact.phone}
+                          <Phone className="size-3 shrink-0" /> <span className="truncate">{selectedOrder.supplierContact.phone}</span>
                         </p>
                       )}
                     </div>
@@ -1225,18 +1225,18 @@ export function UmkmPesananView() {
                   {/* Kontak Host Hub */}
                   <div className="p-3.5 rounded-xl bg-surface border border-border text-xs space-y-1.5">
                     <div className="flex items-center gap-1.5 font-bold text-text-primary">
-                      <Store className="size-4 text-emerald-700" />
+                      <Store className="size-4 text-emerald-700 shrink-0" />
                       <span>Titik Pengambilan Host Hub:</span>
                     </div>
-                    <p className="font-semibold text-text-primary">
+                    <p className="font-semibold text-text-primary truncate" title={selectedOrder.hostContact?.name || selectedOrder.deliveryLocation || "Hub Konsolidasi Sentra"}>
                       {selectedOrder.hostContact?.name || selectedOrder.deliveryLocation || "Hub Konsolidasi Sentra"}
                     </p>
                     {selectedOrder.hostContact?.address && (
-                      <p className="text-text-muted text-[11px]">{selectedOrder.hostContact.address}</p>
+                      <p className="text-text-muted text-[11px] line-clamp-2" title={selectedOrder.hostContact.address}>{selectedOrder.hostContact.address}</p>
                     )}
                     {selectedOrder.hostContact?.phone && (
                       <p className="text-text-secondary flex items-center gap-1 pt-0.5">
-                        <Phone className="size-3 text-primary" /> {selectedOrder.hostContact.phone}
+                        <Phone className="size-3 text-primary shrink-0" /> <span className="truncate">{selectedOrder.hostContact.phone}</span>
                       </p>
                     )}
                   </div>
@@ -1280,7 +1280,7 @@ export function UmkmPesananView() {
                         <span className="font-heading font-black text-sm text-text-primary">NOTA KUMPUL</span>
                         <p className="text-[10px] text-text-muted">Bukti Transaksi Resmi Platform</p>
                       </div>
-                      <span className="font-mono text-xs font-bold text-text-secondary">
+                      <span className="font-mono text-xs font-bold text-text-secondary truncate max-w-[150px]" title={selectedOrder.poNumber || selectedOrder.orderNumber}>
                         {selectedOrder.poNumber || selectedOrder.orderNumber}
                       </span>
                     </div>
@@ -1292,11 +1292,11 @@ export function UmkmPesananView() {
                       </div>
                       <div>
                         <span className="text-text-muted">Metode Logistik:</span>
-                        <p className="font-medium text-text-primary">{selectedOrder.deliveryMethod}</p>
+                        <p className="font-medium text-text-primary truncate">{selectedOrder.deliveryMethod}</p>
                       </div>
                       <div>
                         <span className="text-text-muted">Komoditas:</span>
-                        <p className="font-medium text-text-primary">{selectedOrder.commodityName}</p>
+                        <p className="font-medium text-text-primary truncate" title={selectedOrder.commodityName}>{selectedOrder.commodityName}</p>
                       </div>
                       <div>
                         <span className="text-text-muted">Volume Diterima:</span>
@@ -1436,9 +1436,9 @@ export function UmkmPesananView() {
                   <span className="text-text-muted">Nomor Pesanan:</span>
                   <span className="font-mono font-bold text-text-primary">{selectedSale.orderNumber}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Residu:</span>
-                  <span className="font-bold text-text-primary">{selectedSale.listingTitle}</span>
+                <div className="flex justify-between gap-2">
+                  <span className="text-text-muted shrink-0">Residu:</span>
+                  <span className="font-bold text-text-primary truncate max-w-[200px]" title={selectedSale.listingTitle}>{selectedSale.listingTitle}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-muted">Volume:</span>
@@ -1452,9 +1452,9 @@ export function UmkmPesananView() {
                     {formatCurrency(selectedSale.totalPrice)}
                   </strong>
                 </div>
-                <div className="flex justify-between border-t border-border/60 pt-2">
-                  <span className="text-text-muted">Pembeli:</span>
-                  <span className="font-bold text-text-primary">{selectedSale.buyerName}</span>
+                <div className="flex justify-between border-t border-border/60 pt-2 gap-2">
+                  <span className="text-text-muted shrink-0">Pembeli:</span>
+                  <span className="font-bold text-text-primary truncate max-w-[200px]" title={selectedSale.buyerName}>{selectedSale.buyerName}</span>
                 </div>
                 {selectedSale.buyerPhone && (
                   <div className="flex justify-between items-center">

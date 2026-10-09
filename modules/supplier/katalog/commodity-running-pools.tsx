@@ -722,12 +722,14 @@ export function CommodityRunningPools({
                     <div className="divide-y divide-border rounded-xl border border-border bg-background overflow-hidden max-h-52 overflow-y-auto custom-scrollbar">
                       {selectedPoolForDetail.participants.map((p, idx) => (
                         <div key={p.id || idx} className="p-3 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-xs text-text-primary flex items-center gap-1.5">
-                              <Building2 className="size-3.5 text-primary" />
-                              {p.umkm_name || `UMKM #${p.umkm_role_id?.slice(0, 6)}`}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-xs text-text-primary flex items-center gap-1.5 min-w-0">
+                              <Building2 className="size-3.5 text-primary shrink-0" />
+                              <span className="truncate" title={p.umkm_name || `UMKM #${p.umkm_role_id?.slice(0, 6)}`}>
+                                {p.umkm_name || `UMKM #${p.umkm_role_id?.slice(0, 6)}`}
+                              </span>
                             </span>
-                            <span className="font-mono text-xs font-bold text-primary tabular-nums">
+                            <span className="font-mono text-xs font-bold text-primary tabular-nums shrink-0">
                               {p.order_qty} {commodity.wholesaleUnit}
                             </span>
                           </div>
@@ -744,9 +746,9 @@ export function CommodityRunningPools({
                             </span>
                           </div>
 
-                          <div className="flex items-start gap-1 text-[11px] text-text-muted">
+                          <div className="flex items-start gap-1 text-[11px] text-text-muted min-w-0">
                             <MapPin className="size-3 text-text-muted shrink-0 mt-0.5" />
-                            <span className="line-clamp-1 text-text-secondary font-medium">
+                            <span className="truncate text-text-secondary font-medium" title={`Lokasi: ${p.final_delivery_address || "-"}`}>
                               Lokasi: {p.final_delivery_address || "-"}
                             </span>
                           </div>

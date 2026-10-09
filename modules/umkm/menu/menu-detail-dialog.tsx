@@ -349,7 +349,7 @@ export function MenuDetailDialog({
         <div className="px-6 py-5 pr-36 sm:pr-64 border-b border-border/80 bg-surface shrink-0">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <DialogTitle className="text-lg sm:text-xl font-heading font-bold text-text-primary leading-tight">
+              <DialogTitle className="text-lg sm:text-xl font-heading font-bold text-text-primary leading-tight line-clamp-2" title={product.product_name}>
                 {product.product_name}
               </DialogTitle>
               <Badge variant="primary" className="text-[11px] uppercase font-bold tracking-wider">
@@ -458,12 +458,12 @@ export function MenuDetailDialog({
 
                           return (
                             <TableRow key={item.id} className="hover:bg-surface-subtle/50">
-                              <TableCell className="align-top">
+                              <TableCell className="align-top max-w-[240px]">
                                 <div className="space-y-1">
-                                  <span className="font-bold text-text-primary text-xs block">
+                                  <span className="font-bold text-text-primary text-xs block truncate" title={item.name}>
                                     {item.name}
                                   </span>
-                                  <span className="text-[11px] text-text-muted block leading-relaxed">
+                                  <span className="text-[11px] text-text-muted block leading-relaxed line-clamp-2" title={item.handlingNote}>
                                     {item.handlingNote}
                                   </span>
                                 </div>
@@ -641,9 +641,9 @@ export function MenuDetailDialog({
 
                           return (
                             <TableRow key={item.id} className="hover:bg-surface-subtle/50">
-                              <TableCell className="align-middle">
-                                <div className="space-y-1">
-                                  <span className="font-bold text-text-primary text-xs block">
+                              <TableCell className="align-middle max-w-[200px]">
+                                <div className="space-y-1 min-w-0">
+                                  <span className="font-bold text-text-primary text-xs block truncate" title={item.ingredient_name}>
                                     {item.ingredient_name}
                                   </span>
                                   {getSectorBadge(item.sector)}
@@ -727,15 +727,15 @@ export function MenuDetailDialog({
                     {recommendations.hemat && (
                       <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface-subtle/50 flex flex-col justify-between gap-3 hover:border-border-strong transition-all">
                         <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-bold text-xs sm:text-sm text-text-primary">
+                          <div className="flex items-start justify-between gap-2 min-w-0">
+                            <h4 className="font-bold text-xs sm:text-sm text-text-primary truncate" title={recommendations.hemat.commodityName}>
                               {recommendations.hemat.commodityName}
                             </h4>
-                            <Badge variant="waste" className="text-[10px] font-bold">
+                            <Badge variant="waste" className="text-[10px] font-bold shrink-0">
                               {recommendations.hemat.badgeLabel}
                             </Badge>
                           </div>
-                          <p className="text-xs text-text-secondary leading-relaxed">
+                          <p className="text-xs text-text-secondary leading-relaxed line-clamp-3" title={recommendations.hemat.reason}>
                             {recommendations.hemat.reason}
                           </p>
                         </div>
@@ -761,15 +761,15 @@ export function MenuDetailDialog({
                     {recommendations.sehat && (
                       <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface-subtle/50 flex flex-col justify-between gap-3 hover:border-border-strong transition-all">
                         <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-bold text-xs sm:text-sm text-text-primary">
+                          <div className="flex items-start justify-between gap-2 min-w-0">
+                            <h4 className="font-bold text-xs sm:text-sm text-text-primary truncate" title={recommendations.sehat.commodityName}>
                               {recommendations.sehat.commodityName}
                             </h4>
-                            <Badge variant="primary" className="text-[10px] font-bold">
+                            <Badge variant="primary" className="text-[10px] font-bold shrink-0">
                               {recommendations.sehat.badgeLabel}
                             </Badge>
                           </div>
-                          <p className="text-xs text-text-secondary leading-relaxed">
+                          <p className="text-xs text-text-secondary leading-relaxed line-clamp-3" title={recommendations.sehat.reason}>
                             {recommendations.sehat.reason}
                           </p>
                         </div>

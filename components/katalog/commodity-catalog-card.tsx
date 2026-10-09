@@ -197,22 +197,22 @@ export function CommodityCatalogCard({
 
           {/* Sektor, SKU, dan Lokasi */}
           <div className="flex items-center justify-between text-[11px] text-text-muted mb-1 gap-2">
-            <div className="flex items-center gap-1.5 truncate">
-              <span className="font-mono font-semibold uppercase">{item.sku}</span>
+            <div className="flex items-center gap-1.5 truncate min-w-0" title={`${item.sku} • ${item.sector}`}>
+              <span className="font-mono font-semibold uppercase shrink-0">{item.sku}</span>
               <span>&bull;</span>
               <span className="truncate">{item.sector}</span>
             </div>
             {/* Metadata Lokasi Wajib */}
-            <div className="inline-flex items-center gap-1 text-[11px] text-text-secondary shrink-0 max-w-[45%]">
+            <div className="inline-flex items-center gap-1 text-[11px] text-text-secondary shrink-0 max-w-[45%]" title={locationDisplay}>
               <MapPin className="size-3 text-primary shrink-0" />
               <span className="truncate font-medium">{locationDisplay}</span>
               {item.distanceKm != null && (
-                <span className="text-[10px] text-text-muted">({item.distanceKm} km)</span>
+                <span className="text-[10px] text-text-muted shrink-0">({item.distanceKm} km)</span>
               )}
             </div>
           </div>
 
-          <h2 className="font-heading font-bold text-base text-text-primary line-clamp-1">
+          <h2 className="font-heading font-bold text-base text-text-primary line-clamp-1" title={item.name}>
             {item.name}
           </h2>
         </div>

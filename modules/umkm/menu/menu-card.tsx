@@ -81,7 +81,7 @@ export function MenuCard({ product, onDeleted, onEdit, onDetail }: MenuCardProps
                   {product.product_name}
                 </h3>
               </button>
-              <span className="text-[11px] text-text-secondary block mt-0.5">
+              <span className="text-[11px] text-text-secondary block mt-0.5 truncate" title={`${iterationsPerDay} sesi/hari • ${batchUnits} ${product.unit || "unit"}/sesi (${dailyOutput} ${product.unit || "unit"}/hari)`}>
                 {iterationsPerDay} sesi/hari &bull; {batchUnits} {product.unit || "unit"}/sesi ({dailyOutput} {product.unit || "unit"}/hari)
               </span>
             </div>
@@ -189,7 +189,7 @@ export function MenuCard({ product, onDeleted, onEdit, onDetail }: MenuCardProps
                         key={idx}
                         className="flex items-center justify-between gap-1 text-text-secondary text-[11px]"
                       >
-                        <span className="truncate">
+                        <span className="truncate" title={`• ${w.name} (${w.dailyVolume} ${w.unit}/hari)`}>
                           &bull; {w.name} ({w.dailyVolume} {w.unit}/hari)
                         </span>
                         <span className="font-semibold text-circular-waste shrink-0 tabular-nums">

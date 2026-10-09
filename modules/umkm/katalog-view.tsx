@@ -167,11 +167,11 @@ export function UmkmKatalogView() {
                   </div>
 
                   {/* Judul & Info Supplier */}
-                  <div className="space-y-1">
-                    <h3 className="font-heading text-base font-bold text-text-primary leading-snug line-clamp-1">
+                  <div className="space-y-1 min-w-0">
+                    <h3 className="font-heading text-base font-bold text-text-primary leading-snug line-clamp-1" title={item.name}>
                       {item.name}
                     </h3>
-                    <p className="text-xs text-text-muted truncate">
+                    <p className="text-xs text-text-muted truncate" title={`${item.supplierName} • ${item.originCity}`}>
                       {item.supplierName} &bull; {item.originCity}
                     </p>
                   </div>
@@ -291,10 +291,10 @@ export function UmkmKatalogView() {
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold border border-primary/20 w-fit">
                   <span>Paspor Mutu Terverifikasi KUMPUL</span>
                 </div>
-                <DialogTitle className="font-heading text-lg font-bold text-text-primary mt-2">
+                <DialogTitle className="font-heading text-lg font-bold text-text-primary mt-2 line-clamp-2" title={selectedDetail.name}>
                   {selectedDetail.name}
                 </DialogTitle>
-                <DialogDescription className="text-xs text-text-muted">
+                <DialogDescription className="text-xs text-text-muted truncate" title={`SKU: ${selectedDetail.sku} • Supplier: ${selectedDetail.supplierName}`}>
                   SKU: <span className="font-mono text-text-primary font-bold">{selectedDetail.sku}</span> &bull; Supplier: {selectedDetail.supplierName}
                 </DialogDescription>
               </DialogHeader>

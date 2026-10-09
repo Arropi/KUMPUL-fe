@@ -142,11 +142,11 @@ export function ProfileHeroCard({
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-primary text-text-inverse border-4 border-surface shadow-elevation-2 flex items-center justify-center font-heading font-extrabold text-2xl sm:text-3xl shrink-0">
               {initials}
             </div>
-            <div className="pb-1">
-              <h1 className="text-xl sm:text-2xl font-bold font-heading text-text-primary tracking-tight">
+            <div className="pb-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold font-heading text-text-primary tracking-tight line-clamp-1" title={brandName || profile.legalName}>
                 {brandName || profile.legalName}
               </h1>
-              <p className="text-xs sm:text-sm font-semibold text-text-secondary">
+              <p className="text-xs sm:text-sm font-semibold text-text-secondary line-clamp-1" title={profile.legalName}>
                 {profile.legalName}
               </p>
             </div>
@@ -179,9 +179,9 @@ export function ProfileHeroCard({
             ) : (
               <p className="text-text-muted text-xs italic">Belum terdata</p>
             )}
-            <p className="text-text-secondary text-[11px] truncate flex items-center gap-1">
+            <p className="text-text-secondary text-[11px] truncate flex items-center gap-1" title={profile.contactEmail || "-"}>
               <Mail className="w-2.5 h-2.5" />
-              <span>{profile.contactEmail || "-"}</span>
+              <span className="truncate">{profile.contactEmail || "-"}</span>
             </p>
           </div>
 
@@ -194,7 +194,7 @@ export function ProfileHeroCard({
             <p className="font-mono text-text-primary font-medium text-[11px] break-all">
               {profile.npwpNib || "-"}
             </p>
-            <p className="text-text-secondary text-[11px] truncate flex items-center gap-1">
+            <p className="text-text-secondary text-[11px] truncate flex items-center gap-1" title={profile.address || "-"}>
               <MapPin className="w-2.5 h-2.5 shrink-0" />
               <span className="truncate">{profile.address || "-"}</span>
             </p>

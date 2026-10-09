@@ -224,19 +224,19 @@ export function ProfileBankAccountsCard({
                 key={acc.id}
                 className="p-3.5 sm:px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
               >
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-text-primary text-sm">
+                    <span className="font-bold text-text-primary text-sm truncate" title={acc.bank_name}>
                       {acc.bank_name}
                     </span>
                     {acc.is_primary && (
-                      <Badge variant="success" className="text-[10px] font-bold py-0.5">
+                      <Badge variant="success" className="text-[10px] font-bold py-0.5 shrink-0">
                         <Check className="w-3 h-3 mr-1" />
                         Rekening Utama
                       </Badge>
                     )}
                   </div>
-                  <p className="font-mono text-xs text-text-secondary tracking-wider">
+                  <p className="font-mono text-xs text-text-secondary tracking-wider truncate" title={`${acc.account_number} • a.n. ${acc.account_holder}`}>
                     {acc.account_number} &bull; a.n. {acc.account_holder}
                   </p>
                 </div>
