@@ -257,7 +257,7 @@ export function HomeView({
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
               }`}
             >
-              🔥 Pool Terbuka Saja
+              Pool Terbuka Saja
             </button>
             <button
               type="button"
@@ -268,7 +268,7 @@ export function HomeView({
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
               }`}
             >
-              🛡️ Terverifikasi Mutu AI
+              Terverifikasi Mutu AI
             </button>
           </div>
         </Card>

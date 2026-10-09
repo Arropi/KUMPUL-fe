@@ -11,14 +11,8 @@ import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
   ShoppingCart,
   ArrowRight,
-  Sparkles,
-  BarChart2,
   AlertTriangle,
   MapPin,
-  Flame,
-  CheckCircle2,
-  Building2,
-  Recycle,
 } from "lucide-react";
 
 export interface CriticalStockNotice {
@@ -132,13 +126,11 @@ export function CommodityCatalogCard({
                 </span>
               )
             ) : isWaste ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-700/95 text-white backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold shadow-xs">
-                <Recycle className="size-3 text-amber-200" />
+              <span className="inline-flex items-center rounded-full bg-amber-700/95 text-white backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold shadow-xs">
                 <span>Hasil Limbah</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-dark/95 text-white backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold shadow-xs">
-                <Building2 className="size-3 text-primary-light" />
+              <span className="inline-flex items-center rounded-full bg-primary-dark/95 text-white backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold shadow-xs">
                 <span>Pasokan Supplier</span>
               </span>
             )}
@@ -147,12 +139,11 @@ export function CommodityCatalogCard({
           {/* Badge Penanda Label Terverifikasi Mutu Gemini AI */}
           <div className="pointer-events-auto">
             {isHygienePassed ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600/95 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                <CheckCircle2 className="size-3 text-white" />
+              <span className="inline-flex items-center rounded-full bg-emerald-600/95 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
                 Terverifikasi Mutu AI
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+              <span className="inline-flex items-center rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
                 Audit Higienis
               </span>
             )}
@@ -189,8 +180,7 @@ export function CommodityCatalogCard({
             </div>
           ) : recipeTag ? (
             <div className="mb-2">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg shadow-xs">
-                <Sparkles className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span className="inline-flex items-center text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg shadow-xs">
                 <span className="truncate">{recipeTag}</span>
               </span>
             </div>
@@ -199,8 +189,7 @@ export function CommodityCatalogCard({
           {/* Benchmark Tag for Supplier */}
           {benchmarkTag && (
             <div className="mb-2">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/10 border border-primary/25 px-2.5 py-0.5 rounded-lg shadow-xs">
-                <BarChart2 className="w-3 h-3 text-primary shrink-0" />
+              <span className="inline-flex items-center text-[11px] font-bold text-primary bg-primary/10 border border-primary/25 px-2.5 py-0.5 rounded-lg shadow-xs">
                 <span className="truncate">{benchmarkTag}</span>
               </span>
             </div>
@@ -233,16 +222,14 @@ export function CommodityCatalogCard({
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             {/* Penanda Tiering Price: HANYA jika > 1 tier */}
             {hasTieringPrice && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 border border-purple-500/25 px-2 py-0.5 text-[10px] font-bold text-purple-700">
-                <Sparkles className="size-2.5 text-purple-600" />
+              <span className="inline-flex items-center rounded-md bg-purple-500/10 border border-purple-500/25 px-2 py-0.5 text-[10px] font-bold text-purple-700">
                 <span>Diskon Bertingkat ({item.priceTiers.length} Tier)</span>
               </span>
             )}
 
-            {/* Revisi 2: Penanda Terbuka Pool: HANYA jika sudah terdapat pool terbuka */}
+            {/* Penanda Terbuka Pool: HANYA jika sudah terdapat pool terbuka */}
             {hasOpenPools && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                <Flame className="size-2.5 text-amber-600 animate-pulse" />
+              <span className="inline-flex items-center rounded-md bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-800">
                 <span>
                   Pool Terbuka {openPoolsCount > 1 ? `(${openPoolsCount} Pool)` : ""}
                 </span>

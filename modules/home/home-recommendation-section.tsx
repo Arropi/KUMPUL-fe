@@ -474,8 +474,7 @@ export function HomeRecommendationSection({
                     className="p-4 bg-surface border-border rounded-2xl shadow-elevation-1 space-y-3 flex flex-col justify-between"
                   >
                     <div>
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg w-fit">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <div className="text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg w-fit">
                         <span>Paspor Mutu Gemini AI</span>
                       </div>
                       <h3 className="font-heading font-bold text-base text-text-primary mt-2">
@@ -574,9 +573,8 @@ export function HomeRecommendationSection({
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
-                    <Flame className="w-3 h-3 text-amber-600 animate-pulse" />
-                    <span>Hemat {pool.estimated_savings_percentage}%</span>
+                  <span className="text-[11px] font-bold text-amber-800 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-md">
+                    Hemat {pool.estimated_savings_percentage}%
                   </span>
                   {pool.target_delivery_date && (
                     <span className="text-[10px] text-text-muted font-medium">
