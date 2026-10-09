@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
+import { getRequestOrigin } from "@/lib/url-helper";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const role = searchParams.get("role") || "umkm";
 
   const clientId = process.env.GOOGLE_CLIENT_ID as string;
-  const appUrl =
-    process.env.APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    new URL(request.url).origin;
+  const appUrl = getRequestOrigin(request);
   const redirectUri =
     process.env.GOOGLE_REDIRECT_URI ||
     `${appUrl}/api/auth/callback/google`;

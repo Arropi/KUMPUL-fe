@@ -2,9 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { UserRole } from "@/constants/auth";
 import { callBackendLogin, callBackendRegister } from "@/lib/be-auth";
+import { getRequestOrigin } from "@/lib/url-helper";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = getRequestOrigin(request);
   const code = searchParams.get("code");
   const role = (searchParams.get("role") as UserRole) || "umkm";
   const defaultPath = "/home";

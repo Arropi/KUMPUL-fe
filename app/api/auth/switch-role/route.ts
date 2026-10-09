@@ -3,13 +3,14 @@ import { NextResponse } from "next/server";
 import { UserRole, UserSession } from "@/constants/auth";
 import { callBackendLogin } from "@/lib/be-auth";
 import { cookies } from "next/headers";
+import { getRequestOrigin } from "@/lib/url-helper";
 
 async function handleSwitchRole(
   request: Request,
   targetRole: UserRole,
   customRedirect?: string | null
 ) {
-  const { origin } = new URL(request.url);
+  const origin = getRequestOrigin(request);
   const normalizedRole: UserRole = targetRole === "supplier" ? "supplier" : "umkm";
 
   const cookieStore = await cookies();
