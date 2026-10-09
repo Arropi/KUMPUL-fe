@@ -55,8 +55,8 @@ export function Dialog3({
       {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
       <AlertDialogContent className="border-border/60 rounded-2xl border bg-surface p-6 sm:p-7 shadow-elevation-2 max-w-md">
         <AlertDialogHeader className="place-items-start text-left">
-          <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-            <TriangleAlert className="size-6 text-red-600 dark:text-red-400" />
+          <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-red-900/15 border border-red-900/25">
+            <TriangleAlert className="size-6 text-red-700" />
           </div>
           <AlertDialogTitle className="text-base sm:text-lg font-heading font-semibold text-text-primary">
             {title}
