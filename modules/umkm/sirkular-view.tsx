@@ -261,36 +261,26 @@ type FilterTab = "SEMUA" | "ADA_PEMBELI" | "LEWAT_KADALUARSA" | "MENDEKATI_KADAL
 export const WASTE_CATEGORY_OPTIONS: Array<{
   value: BEWasteCategory;
   label: string;
-  badgeLabel: string;
-  description: string;
   badgeClass: string;
 }> = [
   {
     value: "ORGANIK_BASAH",
-    label: "Organik Basah (Ampas Kedelai, Sayur, Tulang)",
-    badgeLabel: "Organik Basah",
-    description: "Cepat terfermentasi (< 24 jam). Cocok untuk pakan ternak / maggot.",
+    label: "Organik Basah",
     badgeClass: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
   },
   {
     value: "ORGANIK_KERING",
-    label: "Organik Kering & Minyak Jelantah (UCO, Kopi, Cangkang)",
-    badgeLabel: "Organik Kering & UCO",
-    description: "Tahan berhari-hari dalam wadah tertutup. Cocok untuk biodiesel / briket.",
+    label: "Organik Kering",
     badgeClass: "bg-amber-50 text-amber-800 border-amber-200/80",
   },
   {
     value: "TEKSTIL_PERCA",
-    label: "Tekstil & Perca Kain",
-    badgeLabel: "Tekstil Perca",
-    description: "Sisa potongan kain garmen/konveksi untuk daur ulang lap/keset.",
+    label: "Tekstil Perca",
     badgeClass: "bg-purple-50 text-purple-800 border-purple-200/80",
   },
   {
     value: "ANORGANIK",
-    label: "Anorganik (Kardus, Jeriken, Karung Kemasan)",
-    badgeLabel: "Anorganik",
-    description: "Material kemasan padat untuk disetor ke Bank Sampah daur ulang.",
+    label: "Anorganik",
     badgeClass: "bg-blue-50 text-blue-800 border-blue-200/80",
   },
 ];
@@ -831,7 +821,7 @@ export function UmkmSirkularView() {
                             WASTE_CATEGORY_OPTIONS.find((c) => c.value === item.category)?.badgeClass ||
                             "bg-surface-subtle text-text-secondary border-border"
                           }`}>
-                            {WASTE_CATEGORY_OPTIONS.find((c) => c.value === item.category)?.badgeLabel || item.category}
+                            {WASTE_CATEGORY_OPTIONS.find((c) => c.value === item.category)?.label || item.category}
                           </span>
                         )}
                       </div>
@@ -1045,9 +1035,8 @@ export function UmkmSirkularView() {
               </div>
               {/* 2. KATEGORI LIMBAH */}
               <div className="space-y-1.5">
-                <label className="font-heading text-xs font-bold text-text-primary flex items-center justify-between">
-                  <span>Kategori Limbah *</span>
-                  <span className="text-[10px] text-text-muted font-normal">Sesuai karakteristik</span>
+                <label className="font-heading text-xs font-bold text-text-primary">
+                  Kategori Limbah *
                 </label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1063,11 +1052,8 @@ export function UmkmSirkularView() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="start"
-                    className="w-[calc(100vw-3rem)] sm:w-96 max-h-64 overflow-y-auto p-1.5 rounded-xl shadow-elevation-2 bg-surface border border-border custom-scrollbar z-50"
+                    className="w-[calc(100vw-3rem)] sm:w-64 max-h-64 overflow-y-auto p-1 rounded-xl shadow-elevation-2 bg-surface border border-border custom-scrollbar z-50"
                   >
-                    <div className="px-2.5 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider border-b border-border/60 mb-1 select-none">
-                      Pilih Kategori Limbah
-                    </div>
                     <DropdownMenuRadioGroup
                       value={newCategory}
                       onValueChange={(val) => setNewCategory(val as BEWasteCategory)}
@@ -1076,12 +1062,9 @@ export function UmkmSirkularView() {
                         <DropdownMenuRadioItem
                           key={cat.value}
                           value={cat.value}
-                          className="py-2 px-2.5 rounded-lg cursor-pointer hover:bg-surface-subtle flex flex-col items-start gap-0.5 text-left"
+                          className="py-2 px-2.5 rounded-lg cursor-pointer hover:bg-surface-subtle text-xs font-medium text-text-primary"
                         >
-                          <span className="text-xs font-bold text-text-primary">{cat.label}</span>
-                          <span className="text-[10px] text-text-muted font-normal leading-snug">
-                            {cat.description}
-                          </span>
+                          {cat.label}
                         </DropdownMenuRadioItem>
                       ))}
                     </DropdownMenuRadioGroup>
