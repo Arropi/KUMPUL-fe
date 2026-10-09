@@ -20,6 +20,33 @@ export async function switchRoleAction(
   return executeSwitchRole(targetRole);
 }
 
+/**
+ * Server Action: Mengambil data pengguna dari sesi Supabase.
+ * Berjalan 100% di server-side (Node.js) sehingga kredensial Supabase
+ * aman dan tidak perlu diekspos ke browser bundle via NEXT_PUBLIC_*.
+ */
+export async function getAuthSessionUserAction(): Promise<{
+  userId?: string;
+  email?: string;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user?.id) {
+      return {
+        userId: user.id,
+        email: user.email || "",
+      };
+    }
+  } catch {
+    // Abaikan jika sesi tidak ada
+  }
+  return {};
+}
+
 // Server Action: Login dengan Email & Password (Token Exchange Opsi A)
 export async function loginWithCredentialsAction(payload: {
   email: string;

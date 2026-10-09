@@ -20,13 +20,13 @@ export default function RootLayout({
         <ToastProvider>{children}</ToastProvider>
         <Script
           src={
-            process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ||
             process.env.MIDTRANS_SNAP_URL ||
+            process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ||
             "https://app.sandbox.midtrans.com/snap/snap.js"
           }
           data-client-key={
-            process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ||
             process.env.MIDTRANS_CLIENT_KEY ||
+            process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ||
             "Mid-client-C8Oep56Dwkx5eJ19"
           }
           strategy="afterInteractive"

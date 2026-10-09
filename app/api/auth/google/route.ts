@@ -5,9 +5,13 @@ export async function GET(request: Request) {
   const role = searchParams.get("role") || "umkm";
 
   const clientId = process.env.GOOGLE_CLIENT_ID as string;
+  const appUrl =
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    new URL(request.url).origin;
   const redirectUri =
     process.env.GOOGLE_REDIRECT_URI ||
-    `${process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/callback/google`;
+    `${appUrl}/api/auth/callback/google`;
 
 
   const statePayload = Buffer.from(

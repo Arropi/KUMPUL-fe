@@ -9,9 +9,11 @@ import { MapPicker } from "@/components/ui/map-picker";
 import { RoleSwitcher } from "@/modules/auth/role-switcher";
 import { toast } from "@/components/ui/toast";
 import { UserRole } from "@/constants/auth";
-import { completeBusinessRegistrationAction } from "@/actions/auth";
+import {
+  completeBusinessRegistrationAction,
+  getAuthSessionUserAction,
+} from "@/actions/auth";
 import { BESectorType } from "@/lib/be-auth";
-import { createClient } from "@/lib/supabase/client";
 
 export interface BusinessStepProps {
   userId: string;
@@ -106,13 +108,12 @@ export function BusinessStep({
     if (email) setEffectiveEmail(email);
 
     if (!userId || !email) {
-      const supabase = createClient();
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          if (!userId && user.id) setEffectiveUserId(user.id);
-          if (!email && user.email) setEffectiveEmail(user.email);
-        }
-      }).catch(() => {});
+      getAuthSessionUserAction()
+        .then((userData) => {
+          if (!userId && userData.userId) setEffectiveUserId(userData.userId);
+          if (!email && userData.email) setEffectiveEmail(userData.email);
+        })
+        .catch(() => {});
     }
   }, [userId, email]);
 
@@ -199,12 +200,11 @@ export function BusinessStep({
 
     if (!finalUserId) {
       try {
-        const supabase = createClient();
-        const { data } = await supabase.auth.getUser();
-        if (data?.user?.id) {
-          finalUserId = data.user.id;
-          if (!finalEmail && data.user.email) finalEmail = data.user.email;
-          setEffectiveUserId(data.user.id);
+        const userData = await getAuthSessionUserAction();
+        if (userData.userId) {
+          finalUserId = userData.userId;
+          if (!finalEmail && userData.email) finalEmail = userData.email;
+          setEffectiveUserId(userData.userId);
         }
       } catch {
         // Abaikan
