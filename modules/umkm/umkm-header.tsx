@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/toast";
-import { MOCK_UMKM_PROFILE } from "@/constants/umkm";
+import { getBusinessProfileAction } from "@/actions/business-profile";
 import { switchRoleAction } from "@/actions/auth";
 
 interface UmkmHeaderProps {
@@ -14,7 +14,21 @@ interface UmkmHeaderProps {
 export function UmkmHeader({ onToggleMobileNav }: UmkmHeaderProps) {
   const router = useRouter();
   const [isSwitching, setIsSwitching] = React.useState(false);
+  const [businessName, setBusinessName] = React.useState("UMKM Kumpul");
 
+  React.useEffect(() => {
+    async function loadProfile() {
+      try {
+        const res = await getBusinessProfileAction();
+        if (res.success && res.entity?.legal_name) {
+          setBusinessName(res.entity.legal_name);
+        }
+      } catch {
+        // Safe fail
+      }
+    }
+    loadProfile();
+  }, []);
   const handleSwitchToSupplier = async () => {
     if (isSwitching) return;
     setIsSwitching(true);
@@ -62,7 +76,7 @@ export function UmkmHeader({ onToggleMobileNav }: UmkmHeaderProps) {
 
         <div className="hidden sm:flex items-center gap-2">
           <span className="text-xs font-semibold text-text-primary">
-            {MOCK_UMKM_PROFILE.name}
+            {businessName}
           </span>
           <span className="text-text-muted">&bull;</span>
           <span className="text-[11px] font-medium text-primary bg-[#EBF5F0] px-2.5 py-0.5 rounded-full border border-[#0D3B2E]/20">

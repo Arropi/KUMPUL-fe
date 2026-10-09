@@ -39,7 +39,6 @@ import {
   type RecentOrderSummary,
   type RecentWasteSummary,
 } from "@/actions/dashboard";
-import { MOCK_SUPPLIER_COMMODITIES } from "@/constants/supplier";
 
 export interface MappedActivePool {
   id: string;
@@ -104,9 +103,8 @@ export function UmkmDashboardView() {
     if (!dashboardData?.pools || dashboardData.pools.length === 0) return [];
 
     return dashboardData.pools.map((p) => {
-      const matchedCom = MOCK_SUPPLIER_COMMODITIES.find((c) => c.id === p.commodity_id);
-      const name = p.commodity_name || matchedCom?.name || "Komoditas Pertanian Pilihan";
-      const category = matchedCom?.sector || "Pertanian";
+      const name = p.commodity_name || "Komoditas Pertanian Pilihan";
+      const category = "Pertanian";
       const targetMoq = Number(p.target_moq) || 50;
       const acc = Number(p.accumulated_qty) || 0;
       const price = Number(p.locked_tier_price) || 35000;

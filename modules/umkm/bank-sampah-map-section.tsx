@@ -2,12 +2,9 @@
 
 import * as React from "react";
 import "leaflet/dist/leaflet.css";
-import {
-  MOCK_BANK_SAMPAH_POINTS,
-  MOCK_UMKM_PROFILE,
-  type BankSampahPoint,
-} from "@/constants/umkm";
+import type { BankSampahPoint } from "@/constants/umkm";
 import { getNearestOfftakersAction } from "@/actions/waste";
+import { getBusinessProfileAction } from "@/actions/business-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,19 +22,41 @@ import {
 } from "lucide-react";
 
 export function BankSampahMapSection() {
-  const [bankSampahList, setBankSampahList] = React.useState<BankSampahPoint[]>(MOCK_BANK_SAMPAH_POINTS);
+  const [bankSampahList, setBankSampahList] = React.useState<BankSampahPoint[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedPointId, setSelectedPointId] = React.useState<string>(MOCK_BANK_SAMPAH_POINTS[0]?.id || "");
+  const [selectedPointId, setSelectedPointId] = React.useState<string>("");
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
-
-  const umkmCoords = MOCK_UMKM_PROFILE.coordinates || { lat: -7.3248, lng: 112.7758 };
+  const [profileName, setProfileName] = React.useState<string>("Dapur UMKM");
+  const [profileAddress, setProfileAddress] = React.useState<string>("Surabaya, Jawa Timur");
+  const [umkmCoords, setUmkmCoords] = React.useState<{ lat: number; lng: number }>({
+    lat: -7.3248,
+    lng: 112.7758,
+  });
 
   React.useEffect(() => {
-    async function loadOfftakers() {
+    async function loadData() {
+      let currentLat = -7.3248;
+      let currentLng = 112.7758;
+
+      try {
+        const profRes = await getBusinessProfileAction();
+        if (profRes.success && profRes.entity) {
+          setProfileName(profRes.entity.legal_name || "Dapur UMKM");
+          setProfileAddress(profRes.entity.default_address || "Surabaya, Jawa Timur");
+          if (profRes.entity.latitude && profRes.entity.longitude) {
+            currentLat = Number(profRes.entity.latitude) || currentLat;
+            currentLng = Number(profRes.entity.longitude) || currentLng;
+            setUmkmCoords({ lat: currentLat, lng: currentLng });
+          }
+        }
+      } catch {
+        // Profil offline/fallback
+      }
+
       try {
         const res = await getNearestOfftakersAction({
-          latitude: umkmCoords.lat,
-          longitude: umkmCoords.lng,
+          latitude: currentLat,
+          longitude: currentLng,
           limit: 15,
         });
         if (res.success && res.data && res.data.length > 0) {
@@ -68,13 +87,15 @@ export function BankSampahMapSection() {
           }));
           setBankSampahList(mapped);
           if (mapped[0]) setSelectedPointId(mapped[0].id);
+        } else {
+          setBankSampahList([]);
         }
       } catch {
-        // Fallback to MOCK_BANK_SAMPAH_POINTS
+        setBankSampahList([]);
       }
     }
-    loadOfftakers();
-  }, [umkmCoords.lat, umkmCoords.lng]);
+    loadData();
+  }, []);
 
   // Leaflet map refs
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
@@ -158,10 +179,10 @@ export function BankSampahMapSection() {
             <span style="display: inline-block; width: 8px; height: 8px; border-radius: 9999px; background: #0D3B2E;"></span>
             <span style="font-size: 10px; font-weight: 700; color: #0D3B2E; text-transform: uppercase; letter-spacing: 0.05em;">Dapur Katering Saya</span>
           </div>
-          <strong style="display: block; color: #18201B; font-size: 14px; font-weight: 700; margin-bottom: 2px;">${MOCK_UMKM_PROFILE.name}</strong>
+          <strong style="display: block; color: #18201B; font-size: 14px; font-weight: 700; margin-bottom: 2px;">${profileName}</strong>
           <span style="display: inline-block; color: #5C6B62; font-size: 11px; margin-bottom: 8px;">Titik keberangkatan pengiriman mandiri</span>
           <div style="font-size: 11px; color: #18201B; line-height: 1.4; padding: 8px 10px; background: #F3EFE8; border-radius: 10px; border: 1px solid #E8E1D5;">
-            📍 ${MOCK_UMKM_PROFILE.address}
+            📍 ${profileAddress}
           </div>
         </div>
       `);
