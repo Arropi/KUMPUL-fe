@@ -3,10 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  MOCK_WASTE_LISTINGS,
   type WasteListing,
   type WasteBuyerOrder,
 } from "@/constants/umkm";
+import { getWasteListingsAction, createWasteListingAction } from "@/actions/waste";
+import type { BEWasteListing } from "@/lib/api/types";
 import { DEFAULT_SEED_PRODUCTS } from "@/lib/menu-intelligence";
 import type { BEProduct } from "@/lib/api/types";
 import { getUmkmProductsAction } from "@/actions/products";
@@ -259,8 +260,32 @@ const WASTE_UNITS = [
 
 type FilterTab = "SEMUA" | "ADA_PEMBELI" | "LEWAT_KADALUARSA" | "MENDEKATI_KADALUARSA" | "TERSEDIA";
 
+function mapBEWasteToUI(be: BEWasteListing): WasteListing {
+  const weight = Number(be.available_weight) || 0;
+  const price = Number(be.price_per_kg) || 0;
+  return {
+    id: be.id,
+    title: be.listing_title,
+    imageUrl: undefined,
+    description: be.notes || undefined,
+    totalVolume: weight,
+    volumeKg: weight,
+    unit: "Kg",
+    pricePerKg: price,
+    location: be.seller_address || "Surabaya, Jawa Timur",
+    expiryDate: be.expired_at ? be.expired_at.split("T")[0] : "",
+    status: be.listing_status === "SOLD_OUT" ? "HABIS_TERJUAL" : "TERSEDIA",
+    potentialRevenue: weight * price,
+    realizedRevenue: 0,
+    suitableOfftaker: "Sesama UMKM & Mitra Terdaftar",
+    buyerOrders: [],
+  };
+}
+
 export function UmkmSirkularView() {
-  const [wasteListings, setWasteListings] = React.useState<WasteListing[]>(MOCK_WASTE_LISTINGS);
+  const [wasteListings, setWasteListings] = React.useState<WasteListing[]>([]);
+  const [isLoadingListings, setIsLoadingListings] = React.useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
   const [products, setProducts] = React.useState<BEProduct[]>([]);
   const [activeFilter, setActiveFilter] = React.useState<FilterTab>("SEMUA");
 
@@ -347,6 +372,27 @@ export function UmkmSirkularView() {
     toast.success(`Saran harga AI ${formatCurrency(conditionData.price)}/${newUnit} berhasil diterapkan!`, "Rekomendasi AI");
   };
 
+  // Load listing limbah dari Backend Express
+  const loadListings = React.useCallback(async () => {
+    setIsLoadingListings(true);
+    try {
+      const res = await getWasteListingsAction();
+      if (res.success && res.data) {
+        setWasteListings(res.data.map(mapBEWasteToUI));
+      } else {
+        setWasteListings([]);
+      }
+    } catch {
+      setWasteListings([]);
+    } finally {
+      setIsLoadingListings(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadListings();
+  }, [loadListings]);
+
   // Load produk UMKM untuk integrasi asal limbah
   React.useEffect(() => {
     async function loadProducts() {
@@ -375,7 +421,6 @@ export function UmkmSirkularView() {
     }
     loadProducts();
   }, []);
-
   // Helper kalkulasi sisa hari kadaluarsa
   const getExpiryDiffDays = (dateStr?: string): number => {
     if (!dateStr) return 999;
@@ -459,56 +504,41 @@ export function UmkmSirkularView() {
     }
   };
 
-  // Tambah listing baru
-  const handleAddListing = (e: React.FormEvent) => {
+  // Tambah listing baru ke backend
+  const handleAddListing = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    const lowerTitle = newTitle.toLowerCase();
-    const derivedCategory =
-      lowerTitle.includes("minyak") || lowerTitle.includes("jelantah")
-        ? "Minyak Jelantah (UCO)"
-        : lowerTitle.includes("tahu") || lowerTitle.includes("kedelai")
-          ? "Ampas Kedelai / Tahu"
-          : lowerTitle.includes("telur")
-            ? "Cangkang Telur"
-            : lowerTitle.includes("kopi") || lowerTitle.includes("teh")
-              ? "Ampas Kopi & Teh"
-              : lowerTitle.includes("tulang")
-                ? "Tulang & Trimming Hewani"
-                : lowerTitle.includes("sayur") || lowerTitle.includes("kulit")
-                  ? "Residu Kulit & Sayur"
-                  : "Biomassa Organik Lainnya";
+    setIsSubmitting(true);
+    try {
+      const res = await createWasteListingAction({
+        title: newTitle.trim(),
+        availableWeight: newVolume,
+        pricePerKg: newPricePerUnit,
+        expiredAt: newExpiryDate,
+        notes: newDescription.trim() || undefined,
+      });
 
-    const newListing: WasteListing = {
-      id: `waste-${Date.now()}`,
-      title: newTitle.trim(),
-      category: derivedCategory,
-      imageUrl: newImageUrl.trim() || undefined,
-      description: newDescription.trim() || undefined,
-      totalVolume: newVolume,
-      volumeKg: newVolume,
-      unit: newUnit,
-      pricePerKg: newPricePerUnit,
-      location: "Rungkut, Surabaya",
-      expiryDate: newExpiryDate,
-      status: "TERSEDIA",
-      potentialRevenue: newVolume * newPricePerUnit,
-      realizedRevenue: 0,
-      suitableOfftaker: "Sesama UMKM & Mitra Terdaftar",
-      buyerOrders: [],
-    };
-
-    setWasteListings((prev) => [newListing, ...prev]);
-    setIsAddModalOpen(false);
-    setNewTitle("");
-    setNewVolume(50);
-    setNewUnit("Kg");
-    setNewPricePerUnit(1500);
-    setNewImageUrl("");
-    setNewDescription("");
-    setAiPriceInsight(null);
-    toast.success("Listing limbah berhasil ditayangkan! Pantau pesanan masuk di menu Pesanan.", "Listing Dibuat");
+      if (res.success && res.data) {
+        const newUI = mapBEWasteToUI(res.data);
+        setWasteListings((prev) => [newUI, ...prev]);
+        setIsAddModalOpen(false);
+        setNewTitle("");
+        setNewVolume(50);
+        setNewUnit("Kg");
+        setNewPricePerUnit(1500);
+        setNewImageUrl("");
+        setNewDescription("");
+        setAiPriceInsight(null);
+        toast.success("Listing limbah berhasil dipublikasikan ke Bursa Sirkular!", "Listing Dibuat");
+      } else {
+        toast.error(res.message || "Gagal membuat listing limbah di server.");
+      }
+    } catch {
+      toast.error("Terjadi kendala saat menghubungi server.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Filter listings
@@ -619,12 +649,25 @@ export function UmkmSirkularView() {
         </div>
 
         {/* Grid Kartu Limbah */}
-        {filteredListings.length === 0 ? (
+        {isLoadingListings ? (
+          <div className="p-12 text-center rounded-2xl border border-border bg-surface space-y-3">
+            <div className="size-8 mx-auto rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <p className="font-heading text-sm font-bold text-text-primary">
+              Memuat listing residu limbah dapur...
+            </p>
+          </div>
+        ) : filteredListings.length === 0 ? (
           <div className="p-8 text-center rounded-2xl border border-dashed border-border bg-surface-subtle space-y-2">
             <Recycle className="size-8 text-text-muted mx-auto" />
-            <p className="font-heading text-sm font-bold text-text-primary">Tidak ada limbah pada filter ini</p>
+            <p className="font-heading text-sm font-bold text-text-primary">
+              {wasteListings.length === 0
+                ? "Belum ada listing residu limbah aktif"
+                : "Tidak ada limbah pada filter ini"}
+            </p>
             <p className="font-sans text-xs text-text-muted">
-              Pilih tab &quot;Semua&quot; atau pasang listing limbah baru dari dapurmu.
+              {wasteListings.length === 0
+                ? 'Klik tombol "Jual Limbah Dapur" di atas untuk mempublikasikan sisa olahan dapur Anda.'
+                : 'Pilih tab "Semua" atau pasang listing limbah baru dari dapurmu.'}
             </p>
           </div>
         ) : (
@@ -744,7 +787,7 @@ export function UmkmSirkularView() {
                         </CardDescription>
                       ) : (
                         <CardDescription className="text-xs text-text-muted min-h-[2rem]">
-                          Kategori: <span className="font-medium text-text-secondary">{item.category || "Limbah Organik"}</span>
+                          {item.location || "Lokasi: Surabaya, Jawa Timur"}
                         </CardDescription>
                       )}
                     </CardHeader>
@@ -1185,6 +1228,7 @@ export function UmkmSirkularView() {
                 variant="secondary"
                 size="default"
                 onClick={() => setIsAddModalOpen(false)}
+                disabled={isSubmitting}
                 className="flex-1 min-h-[42px] cursor-pointer"
               >
                 Batal
@@ -1193,9 +1237,11 @@ export function UmkmSirkularView() {
                 type="submit"
                 variant="primary"
                 size="default"
+                disabled={isSubmitting}
+                isLoading={isSubmitting}
                 className="flex-1 font-bold min-h-[42px] cursor-pointer shadow-xs"
               >
-                Tayangkan Listing
+                {isSubmitting ? "Menayangkan..." : "Tayangkan Listing"}
               </Button>
             </div>
           </form>

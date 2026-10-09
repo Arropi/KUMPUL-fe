@@ -159,3 +159,64 @@ export interface BEBusinessRole {
   created_at?: string;
   updated_at?: string;
 }
+
+export type BEWasteCategory =
+  | "ORGANIK_BASAH"
+  | "ORGANIK_KERING"
+  | "TEKSTIL_PERCA"
+  | "ANORGANIK";
+
+export type BEWasteListingStatus =
+  | "AVAILABLE"
+  | "SOLD_OUT"
+  | "REFERRED_TO_OFFTAKER";
+
+export interface BEWasteListing {
+  id: string;
+  umkm_product_id?: string | null;
+  seller_role_id: string;
+  listing_title: string;
+  waste_category: BEWasteCategory;
+  available_weight: string | number;
+  price_per_kg: string | number;
+  is_marketplace_visible?: boolean;
+  listing_status: BEWasteListingStatus;
+  notes?: string | null;
+  expired_at: string;
+  created_at?: string;
+  updated_at?: string;
+  seller_business_name?: string;
+  seller_address?: string;
+  seller_latitude?: string | number;
+  seller_longitude?: string | number;
+}
+
+export interface BENearestOfftaker {
+  id: string;
+  org_name: string;
+  contact_person: string | null;
+  phone: string | null;
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  accepted_waste_types: string[];
+  service_area_city: string;
+  distance_km: number;
+}
+
+export interface BEWasteTransaction {
+  id: string;
+  listing_id: string;
+  listing_title: string;
+  waste_category: BEWasteCategory;
+  purchased_weight: string | number;
+  total_amount: string | number;
+  fulfillment_status: "PAID_HELD_IN_ESCROW" | "PICKED_UP" | "ACCEPTED_COMPLETED";
+  pickup_date: string | null;
+  pickup_code: string | null;
+  picked_up_at?: string | null;
+  payment_status: string;
+  created_at: string;
+  buyer_business_name?: string;
+  buyer_phone?: string | null;
+}

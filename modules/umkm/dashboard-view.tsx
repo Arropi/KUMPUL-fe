@@ -666,7 +666,7 @@ export function UmkmDashboardView() {
             </button>
 
             <Link
-              href="/umkm/sirkular"
+              href="/limbah"
               className="group flex items-start justify-between gap-3 rounded-2xl bg-surface/80 border border-border/70 p-3 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all shadow-xs"
             >
               <div className="flex min-w-0 flex-col gap-0.5">
@@ -966,7 +966,7 @@ export function UmkmDashboardView() {
           </CardContent>
 
           <div className="p-5 pt-0">
-            <Link href="/umkm/sirkular" className="block">
+            <Link href="/limbah" className="block">
               <Button variant="secondary" size="default" className="w-full font-bold min-h-[40px]">
                 Buka Bursa Limbah P2P &rarr;
               </Button>
