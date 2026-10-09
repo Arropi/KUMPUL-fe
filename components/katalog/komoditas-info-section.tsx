@@ -25,6 +25,7 @@ interface KomoditasInfoSectionProps {
   setImagePreviewUrl: (val: string | null) => void;
   setImageFile: (val: File | null) => void;
   errors: KatalogFormErrors;
+  isProfileComplete?: boolean;
 }
 
 const UNIT_OPTIONS = [
@@ -81,10 +82,12 @@ export function KomoditasInfoSection({
   setImagePreviewUrl,
   setImageFile,
   errors,
+  isProfileComplete = true,
 }: KomoditasInfoSectionProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isProfileComplete === false) return;
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
@@ -124,6 +127,7 @@ export function KomoditasInfoSection({
           accept="image/*"
           className="hidden"
           onChange={handleFileChange}
+          disabled={isProfileComplete === false}
         />
 
         {imagePreviewUrl ? (
@@ -147,8 +151,12 @@ export function KomoditasInfoSection({
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm py-1 px-1.5 cursor-pointer"
+                  onClick={() => {
+                    if (isProfileComplete === false) return;
+                    fileInputRef.current?.click();
+                  }}
+                  disabled={isProfileComplete === false}
+                  className="text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm py-1 px-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Ganti Foto
                 </button>
@@ -165,10 +173,23 @@ export function KomoditasInfoSection({
           </div>
         ) : (
           <div
-            onClick={() => fileInputRef.current?.click()}
-            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border hover:border-primary/50 hover:bg-surface-subtle transition-colors rounded-xl cursor-pointer text-center group"
+            onClick={() => {
+              if (isProfileComplete === false) return;
+              fileInputRef.current?.click();
+            }}
+            className={`flex flex-col items-center justify-center p-6 border-2 border-dashed transition-colors rounded-xl text-center group ${
+              isProfileComplete === false
+                ? "border-amber-300 bg-amber-50/50 cursor-not-allowed"
+                : "border-border hover:border-primary/50 hover:bg-surface-subtle transition-colors cursor-pointer"
+            }`}
           >
-            <div className="size-10 rounded-full bg-background border border-border flex items-center justify-center text-text-muted group-hover:text-primary mb-2 transition-colors">
+            <div
+              className={`size-10 rounded-full border flex items-center justify-center mb-2 transition-colors ${
+                isProfileComplete === false
+                  ? "bg-amber-100 border-amber-200 text-amber-700"
+                  : "bg-background border-border text-text-muted group-hover:text-primary"
+              }`}
+            >
               <svg
                 className="size-5"
                 viewBox="0 0 24 24"
@@ -184,12 +205,25 @@ export function KomoditasInfoSection({
                 <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
               </svg>
             </div>
-            <p className="text-xs font-semibold text-text-primary">
-              Pilih foto komoditas dari komputer
-            </p>
-            <p className="text-[11px] text-text-muted mt-0.5">
-              Format JPG, PNG, atau WEBP (Maksimal 5 MB)
-            </p>
+            {isProfileComplete === false ? (
+              <>
+                <p className="text-xs font-semibold text-amber-800">
+                  Lengkapi Profil Dahulu untuk Unggah Foto
+                </p>
+                <p className="text-[11px] text-amber-600 mt-0.5">
+                  Nomor telepon, rekening bank, dan kapasitas gudang harus terisi lengkap terlebih dahulu.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold text-text-primary">
+                  Pilih foto komoditas dari komputer
+                </p>
+                <p className="text-[11px] text-text-muted mt-0.5">
+                  Format JPG, PNG, atau WEBP (Maksimal 5 MB)
+                </p>
+              </>
+            )}
           </div>
         )}
       </div>

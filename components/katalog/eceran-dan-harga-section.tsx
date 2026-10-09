@@ -13,6 +13,7 @@ import type {
 interface EceranDanHargaSectionProps {
   unit: string;
   minOrderQty: number;
+  basePrice?: number;
   enablePriceTiers: boolean;
   setEnablePriceTiers: (val: boolean) => void;
   priceTiers: PriceTierRange[];
@@ -27,23 +28,56 @@ interface EceranDanHargaSectionProps {
 export function EceranDanHargaSection({
   unit,
   minOrderQty,
+  basePrice,
   enablePriceTiers,
   setEnablePriceTiers,
   priceTiers,
   setPriceTiers,
   errors,
 }: EceranDanHargaSectionProps) {
-  // Pastikan rentang pertama selalu sinkron dengan nilai MOQ dan tak bisa diubah
+  // Pastikan rentang pertama selalu sinkron dengan MOQ, dan rentang berikutnya selalu batas atas sebelumnya + 1
   React.useEffect(() => {
     setPriceTiers((prev) => {
       if (prev.length === 0) return prev;
-      if (prev[0].minQty === minOrderQty) return prev;
+      let hasChanges = false;
       const updated = [...prev];
-      const newMax = Math.max(updated[0].maxQty, minOrderQty + 10);
-      updated[0] = { ...updated[0], minQty: minOrderQty, maxQty: newMax };
-      return updated;
+
+      const firstMin = minOrderQty > 0 ? minOrderQty : 1;
+      if (updated[0].minQty !== firstMin) {
+        hasChanges = true;
+        const newMax = Math.max(updated[0].maxQty, firstMin + 10);
+        updated[0] = { ...updated[0], minQty: firstMin, maxQty: newMax };
+      }
+
+      for (let i = 1; i < updated.length; i++) {
+        const expectedMin = updated[i - 1].maxQty + 1;
+        if (updated[i].minQty !== expectedMin) {
+          hasChanges = true;
+          const newMax = Math.max(updated[i].maxQty, expectedMin + 10);
+          updated[i] = { ...updated[i], minQty: expectedMin, maxQty: newMax };
+        }
+      }
+
+      return hasChanges ? updated : prev;
     });
   }, [minOrderQty, setPriceTiers]);
+
+  // Pastikan harga tier tidak melebihi basePrice jika basePrice berubah
+  React.useEffect(() => {
+    if (basePrice !== undefined && basePrice > 0) {
+      setPriceTiers((prev) => {
+        let hasChanges = false;
+        const updated = prev.map((tier) => {
+          if (tier.price > basePrice) {
+            hasChanges = true;
+            return { ...tier, price: basePrice };
+          }
+          return tier;
+        });
+        return hasChanges ? updated : prev;
+      });
+    }
+  }, [basePrice, setPriceTiers]);
 
   const handleAddTier = () => {
     const lastTier = priceTiers[priceTiers.length - 1];
@@ -53,7 +87,13 @@ export function EceranDanHargaSection({
         ? minOrderQty
         : 1;
     const newMax = newMin + 20;
-    const newPrice = lastTier ? Math.max(0, lastTier.price - 500) : 10000;
+
+    // Harga tier baru: default lebih murah dari tier sebelumnya atau sama dengan basePrice jika baru
+    const fallbackPrice = basePrice && basePrice > 0 ? basePrice : 10000;
+    let newPrice = lastTier ? Math.max(0, lastTier.price - 500) : fallbackPrice;
+    if (basePrice && basePrice > 0 && newPrice > basePrice) {
+      newPrice = basePrice;
+    }
 
     setPriceTiers((prev) => [
       ...prev,
@@ -68,7 +108,16 @@ export function EceranDanHargaSection({
 
   const handleRemoveTier = (id: string) => {
     if (priceTiers.length <= 1) return;
-    setPriceTiers((prev) => prev.filter((tier) => tier.id !== id));
+    setPriceTiers((prev) => {
+      const filtered = prev.filter((tier) => tier.id !== id);
+      // Sinkronisasi ulang batas bawah baris-baris setelah yang dihapus
+      for (let i = 1; i < filtered.length; i++) {
+        const expectedMin = filtered[i - 1].maxQty + 1;
+        const newMax = Math.max(filtered[i].maxQty, expectedMin + 10);
+        filtered[i] = { ...filtered[i], minQty: expectedMin, maxQty: newMax };
+      }
+      return filtered;
+    });
   };
 
   const handleUpdateTier = (
@@ -76,18 +125,47 @@ export function EceranDanHargaSection({
     field: "minQty" | "maxQty" | "price",
     value: number,
   ) => {
-    setPriceTiers((prev) =>
-      prev.map((tier, idx) => {
-        if (tier.id === id) {
-          // Cegah perubahan minQty pada rentang pertama karena harus selalu sama dengan MOQ
-          if (idx === 0 && field === "minQty") {
-            return tier;
-          }
-          return { ...tier, [field]: value };
+    setPriceTiers((prev) => {
+      const targetIndex = prev.findIndex((tier) => tier.id === id);
+      if (targetIndex === -1) return prev;
+
+      // minQty selalu disabled dan diatur otomatis
+      if (field === "minQty") {
+        return prev;
+      }
+
+      const updated = [...prev];
+
+      if (field === "price") {
+        let finalPrice = Math.max(0, value);
+        // Harga yang diterapkan tidak bisa melebihi value dari harga utama
+        if (basePrice && basePrice > 0 && finalPrice > basePrice) {
+          finalPrice = basePrice;
         }
-        return tier;
-      }),
-    );
+        updated[targetIndex] = { ...updated[targetIndex], price: finalPrice };
+        return updated;
+      }
+
+      if (field === "maxQty") {
+        const newMax = Math.max(0, value);
+        updated[targetIndex] = { ...updated[targetIndex], maxQty: newMax };
+
+        // Cascade update minQty (dan sesuaikan maxQty jika perlu) untuk semua baris setelah targetIndex
+        for (let i = targetIndex + 1; i < updated.length; i++) {
+          const prevMax = updated[i - 1].maxQty;
+          const nextMin = prevMax > 0 ? prevMax + 1 : 1;
+          const nextMax = Math.max(updated[i].maxQty, nextMin + 10);
+          updated[i] = {
+            ...updated[i],
+            minQty: nextMin,
+            maxQty: nextMax,
+          };
+        }
+        return updated;
+      }
+
+      return prev;
+    });
   };
 
   return (
@@ -163,9 +241,13 @@ export function EceranDanHargaSection({
                           <span className="text-xs font-bold text-text-primary">
                             Rentang {index + 1}
                           </span>
-                          {isFirstTier && (
+                          {isFirstTier ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                               Terkunci dari MOQ
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-text-secondary">
+                              Batas Bawah Otomatis (+1)
                             </span>
                           )}
                         </div>
@@ -190,7 +272,7 @@ export function EceranDanHargaSection({
                             type="number"
                             min={1}
                             label={`Batas Bawah (${unit})${isFirstTier ? " (MOQ)" : ""}`}
-                            placeholder="Contoh: 5"
+                            placeholder={isFirstTier ? minOrderQty.toString() : "Contoh: 5"}
                             value={
                               isFirstTier
                                 ? minOrderQty.toString()
@@ -198,20 +280,13 @@ export function EceranDanHargaSection({
                                   ? ""
                                   : tier.minQty.toString()
                             }
-                            onChange={(e) =>
-                              handleUpdateTier(
-                                tier.id,
-                                "minQty",
-                                Math.max(0, Number(e.target.value)),
-                              )
-                            }
-                            disabled={isFirstTier}
+                            disabled={true}
                             helperText={
                               isFirstTier
                                 ? "Terkunci dari nilai MOQ dan tidak dapat diubah"
-                                : undefined
+                                : "Otomatis batas atas baris sebelumnya + 1"
                             }
-                            className={`min-h-[44px] tabular-nums ${isFirstTier ? "bg-neutral-100/80 cursor-not-allowed text-text-secondary" : ""}`}
+                            className="min-h-[44px] tabular-nums bg-neutral-100/80 cursor-not-allowed text-text-secondary select-none"
                           />
                         </div>
 
@@ -220,7 +295,7 @@ export function EceranDanHargaSection({
                           <Input
                             id={`max-qty-${tier.id}`}
                             type="number"
-                            min={isFirstTier ? minOrderQty : tier.minQty}
+                            min={tier.minQty + 1}
                             label={`Batas Atas (${unit})`}
                             placeholder="Contoh: 50"
                             value={
@@ -243,8 +318,13 @@ export function EceranDanHargaSection({
                             id={`price-${tier.id}`}
                             type="number"
                             min={0}
+                            max={basePrice && basePrice > 0 ? basePrice : undefined}
                             label={`Harga yang Diterapkan (Rp)`}
-                            placeholder="Contoh: 12000"
+                            placeholder={
+                              basePrice && basePrice > 0
+                                ? `Maks. Rp ${basePrice.toLocaleString("id-ID")}`
+                                : "Contoh: 12000"
+                            }
                             value={tier.price <= 0 ? "" : tier.price.toString()}
                             onChange={(e) =>
                               handleUpdateTier(
@@ -253,8 +333,23 @@ export function EceranDanHargaSection({
                                 Math.max(0, Number(e.target.value)),
                               )
                             }
-                            className="min-h-[44px] tabular-nums font-semibold"
+                            helperText={
+                              basePrice && basePrice > 0
+                                ? `Maksimal Rp ${basePrice.toLocaleString("id-ID")} (harga utama)`
+                                : undefined
+                            }
+                            className={`min-h-[44px] tabular-nums font-semibold ${
+                              basePrice && basePrice > 0 && tier.price > basePrice
+                                ? "border-error focus-visible:ring-error"
+                                : ""
+                            }`}
                           />
+                          {basePrice && basePrice > 0 && tier.price > basePrice && (
+                            <p className="text-[11px] text-error font-medium mt-1">
+                              Harga tidak boleh melebihi harga utama (Rp{" "}
+                              {basePrice.toLocaleString("id-ID")})
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getOrderStatusBadge } from "./helpers";
-import { beFetch } from "@/lib/api/be-client";
+import { getSupplierPosAction } from "@/actions/orders";
 
 export function SupplierPesananView() {
   const [orders, setOrders] = React.useState<ConsolidatedPO[]>([]);
@@ -28,26 +28,25 @@ export function SupplierPesananView() {
   React.useEffect(() => {
     async function loadOrders() {
       setLoadingOrders(true);
+      setErrorOrders(null);
       try {
-        const res = await beFetch<ConsolidatedPO[]>(
-          `/api/orders/supplier/pos?limit=20&offset=0`
-        );
+        const res = await getSupplierPosAction();
         if (res.success) {
           setOrders(res.data ?? []);
         } else {
           setOrders([]);
-          setErrorOrders(res.message ?? 'Gagal memuat daftar pesanan');
+          setErrorOrders(res.message ?? "Gagal memuat daftar pesanan");
         }
       } catch (err) {
         console.error(err);
         setOrders([]);
-        setErrorOrders('Gagal memuat daftar pesanan');
+        setErrorOrders("Gagal memuat daftar pesanan");
       } finally {
         setLoadingOrders(false);
       }
     }
     loadOrders();
-  }, []); // empty deps for now
+  }, []);
 
   const filteredOrders = orders.filter((po) => {
     const matchSearch =
@@ -233,7 +232,7 @@ export function SupplierPesananView() {
                     </TableCell>
 
                     <TableCell className="text-right align-top">
-                      <Link href={`/supplier/pesanan/${po.id}`}>
+                      <Link href={`/pesanan/${po.id}`}>
                         <Button variant="primary" size="sm" className="font-semibold text-xs min-h-[40px]">
                           Buka Rincian
                         </Button>
@@ -288,7 +287,7 @@ export function SupplierPesananView() {
                       {formatCurrency(po.grandTotalAmount)}
                     </p>
                   </div>
-                  <Link href={`/supplier/pesanan/${po.id}`}>
+                  <Link href={`/pesanan/${po.id}`}>
                     <Button variant="primary" size="sm" className="font-semibold text-xs min-h-[44px]">
                       Buka Rincian &amp; Manifest
                     </Button>

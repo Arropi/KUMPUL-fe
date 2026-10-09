@@ -324,6 +324,12 @@ export function MapPicker({
 
       mapInstanceRef.current = map;
       markerRef.current = marker;
+
+      setTimeout(() => {
+        if (isMounted && mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 300);
     }
 
     initMap();

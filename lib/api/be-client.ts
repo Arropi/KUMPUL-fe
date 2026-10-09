@@ -20,10 +20,20 @@ export async function beFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<{ success: boolean; data?: T; message?: string; errorCode?: string }> {
-  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  let cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
+  const buildUrl = (base: string) => {
+    const cleanBase = base.replace(/\/$/, "");
+    if (cleanBase.endsWith("/api") && (cleanEndpoint === "/api" || cleanEndpoint.startsWith("/api/"))) {
+      const trimmed = cleanEndpoint.replace(/^\/api/, "");
+      return `${cleanBase}${trimmed || "/"}`;
+    }
+    return `${cleanBase}${cleanEndpoint}`;
+  };
+
   const urls = [
-    `${DEFAULT_BACKEND_URL}${cleanEndpoint}`,
-    `${FALLBACK_BACKEND_URL}${cleanEndpoint}`,
+    buildUrl(DEFAULT_BACKEND_URL),
+    buildUrl(FALLBACK_BACKEND_URL),
   ];
 
   let lastError: Error | null = null;

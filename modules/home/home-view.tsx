@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   MOCK_SUPPLIER_COMMODITIES,
   SupplierCommodity,
@@ -23,10 +24,10 @@ import { Search, ChevronDown, Sparkles, ShoppingBag, Plus } from "lucide-react";
 import { getAllMarketplaceCatalogsAction } from "@/actions/supplier-catalog";
 import { mapBEToSupplierCommodity } from "@/modules/supplier/helpers";
 import { HomeRecommendationSection } from "./home-recommendation-section";
-import { UmkmPurchaseCard } from "@/modules/supplier/katalog/umkm-purchase-card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { CreatePoolDialog } from "@/modules/supplier/katalog/create-pool-dialog";
 import { beFetch } from "@/lib/api/be-client";
-import type { MatchedCommodity } from "./home-recommendation-section";
+import type { BEBusinessEntity } from "@/lib/api/types";
+import type { MatchedCommodity, RawRecommendationsData } from "./home-recommendation-section";
 
 const SECTOR_OPTIONS = [
   { value: "ALL", label: "Semua Sektor" },
@@ -41,20 +42,28 @@ interface HomeViewProps {
   initialSession?: UserSession | null;
   catalog: SupplierCommodity[];
   recommendations: MatchedCommodity[];
+  rawRecommendations?: RawRecommendationsData | null;
   catalogError: boolean;
   recsError: boolean;
+  userProfile?: BEBusinessEntity | null;
 }
 
 export function HomeView({
   initialSession,
   catalog,
   recommendations,
+  rawRecommendations,
   catalogError,
-  recsError
+  recsError,
+  userProfile,
 }: HomeViewProps) {
+  const router = useRouter();
   const [commodities, setCommodities] = React.useState<SupplierCommodity[]>(catalog);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
+  const [onlyReadyStock, setOnlyReadyStock] = React.useState<boolean>(false);
+  const [onlyOpenPools, setOnlyOpenPools] = React.useState<boolean>(false);
+  const [onlyVerified, setOnlyVerified] = React.useState<boolean>(false);
   const [purchasingCommodity, setPurchasingCommodity] =
     React.useState<SupplierCommodity | null>(null);
 
@@ -74,10 +83,20 @@ export function HomeView({
     const matchSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.batchTag.licenseNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      item.batchTag.licenseNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.sellerCity && item.sellerCity.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.batchTag.originLocation &&
+        item.batchTag.originLocation.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchSector = selectedSector === "ALL" || item.sector === selectedSector;
-    return matchSearch && matchSector;
+    const matchReadyStock = !onlyReadyStock || item.availableStock > 0;
+    const matchPool =
+      !onlyOpenPools ||
+      Boolean(item.hasOpenPools || (item.activePools && item.activePools.length > 0));
+    const matchVerified =
+      !onlyVerified || item.batchTag.hygieneStatus === "TERVERIFIKASI";
+
+    return matchSearch && matchSector && matchReadyStock && matchPool && matchVerified;
   });
 
   return (
@@ -127,8 +146,9 @@ export function HomeView({
         role={role}
         commodities={commodities}
         recommendations={recommendations}
+        rawRecommendations={rawRecommendations}
         recsError={recsError}
-        onPurchase={setPurchasingCommodity}
+        onPurchase={isUmkm ? setPurchasingCommodity : undefined}
       />
 
       {/* 3. Section Seluruh Komoditas di Bursa */}
@@ -150,13 +170,13 @@ export function HomeView({
         </div>
 
         {/* Filter & Pencarian */}
-        <Card className="p-4 sm:p-5 bg-surface border-border shadow-elevation-1 rounded-2xl">
+        <Card className="p-4 sm:p-5 bg-surface border-border shadow-elevation-1 rounded-2xl space-y-3.5">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             <div className="flex-1 relative max-w-md">
               <Search className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <Input
                 id="search-commodity"
-                placeholder="Cari komoditas, SKU, atau izin mutu..."
+                placeholder="Cari komoditas, SKU, izin mutu, kota..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 min-h-[42px]"
@@ -191,6 +211,44 @@ export function HomeView({
               </DropdownMenu>
             </div>
           </div>
+
+          {/* Filter Pills Tambahan */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
+            <span className="text-xs font-semibold text-text-muted mr-1">Filter Cepat:</span>
+            <button
+              type="button"
+              onClick={() => setOnlyReadyStock(!onlyReadyStock)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                onlyReadyStock
+                  ? "bg-primary text-white border-primary shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+              }`}
+            >
+              Ready Stock
+            </button>
+            <button
+              type="button"
+              onClick={() => setOnlyOpenPools(!onlyOpenPools)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                onlyOpenPools
+                  ? "bg-amber-600 text-white border-amber-600 shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+              }`}
+            >
+              🔥 Pool Terbuka Saja
+            </button>
+            <button
+              type="button"
+              onClick={() => setOnlyVerified(!onlyVerified)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                onlyVerified
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+              }`}
+            >
+              🛡️ Terverifikasi Mutu AI
+            </button>
+          </div>
         </Card>
 
         {/* Grid Komoditas */}
@@ -210,29 +268,27 @@ export function HomeView({
                 key={item.id}
                 item={item}
                 role={role}
-                onPurchase={setPurchasingCommodity}
+                pageContext="home"
+                onPurchase={isUmkm ? setPurchasingCommodity : undefined}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Modal Dialog Formulir Pembelian Langsung di Beranda */}
-      <Dialog
-        open={!!purchasingCommodity}
-        onOpenChange={(open) => {
-          if (!open) setPurchasingCommodity(null);
-        }}
-      >
-        <DialogContent className="max-w-xl p-0 border-0 bg-transparent shadow-none [&>button:first-child]:hidden">
-          {purchasingCommodity && (
-            <UmkmPurchaseCard
-              commodity={purchasingCommodity}
-              onClose={() => setPurchasingCommodity(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Dialog Beli / Buat Pool di Beranda */}
+      {purchasingCommodity && (
+        <CreatePoolDialog
+          isOpen={!!purchasingCommodity}
+          onClose={() => setPurchasingCommodity(null)}
+          commodity={purchasingCommodity}
+          userProfile={userProfile}
+          onSuccess={() => {
+            setPurchasingCommodity(null);
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }

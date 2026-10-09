@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { HomeView } from "@/modules/home/home-view";
 import { UserRole, UserSession } from "@/constants/auth";
 import { fetchHomeData } from "@/lib/actions/server-actions";
+import { getBusinessProfileAction } from "@/actions/business-profile";
 
 export const metadata: Metadata = {
   title: "Beranda | KUMPUL",
@@ -53,8 +54,14 @@ export default async function HomePage() {
     }
   }
 
-  // Fetch data for home page using server actions
-  const { catalog, recommendations, catalogError, recsError } = await fetchHomeData();
+  // Fetch data for home page using server actions & business profile
+  const [homeData, profileRes] = await Promise.all([
+    fetchHomeData(),
+    getBusinessProfileAction(),
+  ]);
+
+  const { catalog, recommendations, rawRecommendations, catalogError, recsError } = homeData;
+  const userProfile = profileRes.success && profileRes.entity ? profileRes.entity : null;
 
   return (
     <React.Suspense
@@ -68,8 +75,10 @@ export default async function HomePage() {
         initialSession={session}
         catalog={catalog}
         recommendations={recommendations}
+        rawRecommendations={rawRecommendations}
         catalogError={catalogError}
         recsError={recsError}
+        userProfile={userProfile}
       />
     </React.Suspense>
   );
