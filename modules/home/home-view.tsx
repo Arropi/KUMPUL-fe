@@ -18,6 +18,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
+import { Pagination15 } from "@/components/ui/pagination";
 import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
 import { UserRole, UserSession } from "@/constants/auth";
 import { Search, ChevronDown, Sparkles, ShoppingBag, Plus } from "lucide-react";
@@ -68,6 +69,9 @@ export function HomeView({
   const [purchasingCommodity, setPurchasingCommodity] =
     React.useState<SupplierCommodity | null>(null);
 
+  // Pagination state (Watermelon UI Pagination-15)
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [pageSize, setPageSize] = React.useState<number>(6);
   // Handle deep link from AI ingredient recommendations or search parameters
   React.useEffect(() => {
     const searchParam = searchParams.get("search");
@@ -121,6 +125,16 @@ export function HomeView({
     return matchSearch && matchSector && matchReadyStock && matchPool && matchVerified;
   });
 
+  // Reset halaman saat filter berubah
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedSector, onlyReadyStock, onlyOpenPools, onlyVerified]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCommodities.length / pageSize));
+  const paginatedCommodities = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredCommodities.slice(start, start + pageSize);
+  }, [filteredCommodities, currentPage, pageSize]);
   return (
     <div className="space-y-8 pb-10">
       {/* 1. Header Marketplace */}
@@ -284,16 +298,32 @@ export function HomeView({
             </p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredCommodities.map((item) => (
-              <CommodityCatalogCard
-                key={item.id}
-                item={item}
-                role={role}
-                pageContext="home"
-                onPurchase={isUmkm ? setPurchasingCommodity : undefined}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {paginatedCommodities.map((item) => (
+                <CommodityCatalogCard
+                  key={item.id}
+                  item={item}
+                  role={role}
+                  pageContext="home"
+                  onPurchase={isUmkm ? setPurchasingCommodity : undefined}
+                />
+              ))}
+            </div>
+
+            {/* Watermelon UI Pagination-15 Component */}
+            {filteredCommodities.length > 0 && (
+              <Pagination15
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={filteredCommodities.length}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[6, 9, 12, 24]}
+                itemLabel="komoditas"
               />
-            ))}
+            )}
           </div>
         )}
       </div>
