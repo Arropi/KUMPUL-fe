@@ -14,17 +14,20 @@ import type { BEProduct } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
 import { deleteProductAction } from "@/actions/products";
 import { calculateCircularMargin } from "@/lib/menu-intelligence";
+import { MenuDetailDialog } from "./menu-detail-dialog";
 
 interface MenuCardProps {
   product: BEProduct;
   onDeleted: (productId: string) => void;
   onEdit?: (product: BEProduct) => void;
   onRecipeUpdated?: (product: BEProduct) => void;
+  onDetail?: (product: BEProduct) => void;
 }
 
-export function MenuCard({ product, onDeleted, onEdit }: MenuCardProps) {
+export function MenuCard({ product, onDeleted, onEdit, onDetail }: MenuCardProps) {
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isInternalDetailOpen, setIsInternalDetailOpen] = React.useState(false);
 
   // Komputasi komparasi margin finansial sirkular
   const fin = React.useMemo(() => {
@@ -60,9 +63,16 @@ export function MenuCard({ product, onDeleted, onEdit }: MenuCardProps) {
           {/* 1. Header: Nama Produk & Tombol Hapus */}
           <div className="flex items-start justify-between gap-2.5">
             <div className="min-w-0 flex-1">
-              <Link
-                href={`/produk/${product.id}`}
-                className="block group-hover:text-primary transition-colors"
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDetail) {
+                    onDetail(product);
+                  } else {
+                    setIsInternalDetailOpen(true);
+                  }
+                }}
+                className="text-left block group-hover:text-primary transition-colors cursor-pointer w-full"
               >
                 <h3
                   className="font-heading font-bold text-base sm:text-lg text-text-primary line-clamp-1 leading-snug group-hover:text-primary transition-colors"
@@ -70,7 +80,7 @@ export function MenuCard({ product, onDeleted, onEdit }: MenuCardProps) {
                 >
                   {product.product_name}
                 </h3>
-              </Link>
+              </button>
               <span className="text-[11px] text-text-secondary block mt-0.5">
                 {iterationsPerDay} sesi/hari &bull; {batchUnits} {product.unit || "unit"}/sesi ({dailyOutput} {product.unit || "unit"}/hari)
               </span>
@@ -197,14 +207,19 @@ export function MenuCard({ product, onDeleted, onEdit }: MenuCardProps) {
         {/* 5. Aksi Navigasi: Rincian Produk & Edit Langsung (Modal Edit) */}
         <div className="flex items-center gap-2 pt-3.5 mt-auto border-t border-border/60">
           <Button
-            asChild
+            type="button"
             variant="primary"
             size="sm"
-            className="flex-1"
+            onClick={() => {
+              if (onDetail) {
+                onDetail(product);
+              } else {
+                setIsInternalDetailOpen(true);
+              }
+            }}
+            className="flex-1 cursor-pointer"
           >
-            <Link href={`/produk/${product.id}`}>
-              Detail
-            </Link>
+            Detail
           </Button>
 
           {onEdit ? (
@@ -246,6 +261,18 @@ export function MenuCard({ product, onDeleted, onEdit }: MenuCardProps) {
         isLoading={isDeleting}
         onConfirm={executeDeleteProduct}
       />
+
+      {!onDetail && (
+        <MenuDetailDialog
+          product={product}
+          isOpen={isInternalDetailOpen}
+          onClose={() => setIsInternalDetailOpen(false)}
+          onEdit={(prod) => {
+            setIsInternalDetailOpen(false);
+            onEdit?.(prod);
+          }}
+        />
+      )}
     </>
   );
 }

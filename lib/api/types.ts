@@ -11,6 +11,8 @@ export interface BEProduct {
   created_at?: string;
   updated_at?: string;
   recipes?: BERecipe[];
+  category?: string;
+  waste_items?: unknown[];
 }
 
 export interface BERecipe {
@@ -21,6 +23,7 @@ export interface BERecipe {
   unit: string;
   total_batch_required_qty?: string | number;
   estimated_cost_per_unit?: string | number;
+  sector?: string;
   created_at?: string;
   updated_at?: string;
 }

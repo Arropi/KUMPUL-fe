@@ -8,7 +8,6 @@ import { toast } from "@/components/ui/toast";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
@@ -25,14 +24,6 @@ import {
   type CreateProductRecipeItemInput,
 } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
-import { formatCurrency } from "@/lib/format";
-import {
-  PRODUCT_UNITS,
-  COMMON_INGREDIENT_UNITS,
-  WASTE_PRESETS,
-  type WasteItemInput,
-  type SectorType,
-} from "./menu-types";
 
 interface MenuAddDialogProps {
   isOpen: boolean;
@@ -104,13 +95,6 @@ export function MenuAddDialog({
   const [batchUnits, setBatchUnits] = React.useState<number>(50);
   const [sellingPrice, setSellingPrice] = React.useState<number>(25000);
 
-// 4. Limbah Sirkular
-  const [wastes, setWastes] = React.useState<WasteItemInput[]>([]);
-
-  // 2. Parameter Produksi: Iterasi Hari Produksi
-  const [iterationsPerDay, setIterationsPerDay] = React.useState<number>(1);
-  const [unitsPerIteration, setUnitsPerIteration] = React.useState<number>(50);
-
   // 3. Bill of Materials (BOM) Resep Lintas 7 Sektor
   const [ingredients, setIngredients] = React.useState<CreateProductRecipeItemInput[]>([
     {
@@ -166,8 +150,6 @@ export function MenuAddDialog({
           }))
         );
       }
-      // Reset wastes when editing a product (since we don't have waste data from BE)
-      setWastes([]);
     } else {
       setProductName("");
       setProductUnit("PORSI");
@@ -179,33 +161,11 @@ export function MenuAddDialog({
         { name: "Minyak Goreng Sawit", amountPerPortion: 0.05, unit: "LITER", estimatedCost: 1000 },
         { name: "Cabai Rawit Merah", amountPerPortion: 0.03, unit: "KG", estimatedCost: 1500 },
       ]);
-      // Reset wastes when creating a new product
-      setWastes([]);
     }
   }, [productToEdit, isOpen]);
 
   // Kalkulasi instan HPP & Output Harian
   const totalDailyOutput = (Number(productionIterations) || 1) * (Number(batchUnits) || 1);
-
-  const totalEstimatedHpp = React.useMemo(() => {
-    return ingredients.reduce(
-      (sum, item) => sum + (Number(item.estimatedCost) || 0),
-      0
-    );
-  }, [ingredients]);
-
-  const projectedPureMarginPct = React.useMemo(() => {
-    if (sellingPrice <= 0) return 0;
-    return Math.max(0, ((sellingPrice - totalEstimatedHpp) / sellingPrice) * 100);
-  }, [sellingPrice, totalEstimatedHpp]);
-
-  // Estimasi residu limbah (sekitar 5-8% dari modal bahan)
-  const estimatedWasteRevenuePerPortion = Math.round(totalEstimatedHpp * 0.08);
-  const projectedCircularMarginPct = React.useMemo(() => {
-    if (sellingPrice <= 0) return 0;
-    const totalEarnings = (sellingPrice - totalEstimatedHpp) + estimatedWasteRevenuePerPortion;
-    return Math.max(0, (totalEarnings / sellingPrice) * 100);
-  }, [sellingPrice, totalEstimatedHpp, estimatedWasteRevenuePerPortion]);
 
   const handleAddIngredientRow = () => {
     setIngredients((prev) => [
@@ -238,19 +198,6 @@ export function MenuAddDialog({
       copy[index] = { ...copy[index], [field]: value };
       return copy;
     });
-  };
-
-  // Handlers Limbah Sirkular
-  const handleAddWasteRow = () => {
-    setWastes((prev) => [
-      ...prev,
-      {
-        wasteName: "",
-        volumePerIteration: 1.0,
-        unit: "KG",
-        potentialPricePerUnit: 1500,
-      },
-    ]);
   };
 
 
@@ -327,7 +274,7 @@ export function MenuAddDialog({
             {isEditMode ? "Edit Spesifikasi Menu & Resep" : "Tambah Produk & Resep Bahan Baku"}
           </DialogTitle>
           <DialogDescription className="text-xs text-text-secondary mt-1">
-            Konfigurasi ritme produksi harian, takaran resep bahan baku, dan komparasi margin sirkular.
+            Konfigurasi ritme produksi harian dan takaran resep bahan baku kebutuhan produk.
           </DialogDescription>
         </div>
 
@@ -339,7 +286,7 @@ export function MenuAddDialog({
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-primary" />
                 <h3 className="text-xs font-heading font-bold text-text-primary uppercase tracking-wider">
-                  1. Informasi Produk &amp; Ritme Produksi Harian
+                  Informasi Produk &amp; Ritme Produksi Harian
                 </h3>
               </div>
 
@@ -439,7 +386,7 @@ export function MenuAddDialog({
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-primary" />
                   <h3 className="text-xs font-heading font-bold text-text-primary uppercase tracking-wider">
-                    2. Rincian Resep Bahan Baku (BOM per {productUnit})
+                    Rincian Resep Bahan Baku (BOM per {productUnit})
                   </h3>
                 </div>
                 <Button
@@ -558,68 +505,6 @@ export function MenuAddDialog({
               </div>
             </div>
 
-            {/* Bagian 3: Komparasi Margin Sirkular Live Preview (brief.md Seksi 3.2) */}
-            <div className="p-4 rounded-2xl bg-surface-subtle/70 border border-border/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold font-heading text-text-primary uppercase tracking-wider">
-                  3. Analisis Finansial Komparatif (Live Preview)
-                </span>
-                <span className="text-[11px] font-bold text-circular-waste bg-circular-waste-light px-2 py-0.5 rounded-md border border-circular-waste/20">
-                  +{(projectedCircularMarginPct - projectedPureMarginPct).toFixed(1)}% Sirkular Boost
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {/* Skenario A: Konvensional */}
-                <div className="p-3 rounded-xl bg-surface border border-border space-y-1.5">
-                  <span className="text-[11px] font-bold text-text-secondary block">
-                    Skenario A: Konvensional
-                  </span>
-                  <div className="flex justify-between text-text-muted">
-                    <span>HPP Bahan Pokok:</span>
-                    <span className="font-semibold text-text-primary">{formatCurrency(totalEstimatedHpp)}</span>
-                  </div>
-                  <div className="flex justify-between text-text-muted">
-                    <span>Laba Bersih per Unit:</span>
-                    <span className="font-semibold text-text-primary">{formatCurrency(Math.max(0, sellingPrice - totalEstimatedHpp))}</span>
-                  </div>
-                  <div className="pt-1 border-t border-border flex justify-between font-bold">
-                    <span>Margin Murni:</span>
-                    <span className="text-primary">{projectedPureMarginPct.toFixed(1)}%</span>
-                  </div>
-                </div>
-
-                {/* Skenario B: Sirkular KUMPUL */}
-                <div className="p-3 rounded-xl bg-circular-waste-light/40 border border-circular-waste/25 space-y-1.5">
-                  <span className="text-[11px] font-bold text-circular-waste block">
-                    Skenario B: Sirkular KUMPUL
-                  </span>
-                  <div className="flex justify-between text-text-muted">
-                    <span>Pendapatan Residu:</span>
-                    <span className="font-semibold text-circular-waste">+{formatCurrency(estimatedWasteRevenuePerPortion)} / {productUnit}</span>
-                  </div>
-                  <div className="flex justify-between text-text-muted">
-                    <span>Laba Bersih Ter-Boost:</span>
-                    <span className="font-semibold text-circular-waste">{formatCurrency(Math.max(0, sellingPrice - totalEstimatedHpp) + estimatedWasteRevenuePerPortion)}</span>
-                  </div>
-                  <div className="pt-1 border-t border-circular-waste/20 flex justify-between font-bold">
-                    <span>Margin Sirkular:</span>
-                    <span className="text-circular-waste">{projectedCircularMarginPct.toFixed(1)}%</span>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddWasteRow}
-                className="text-xs font-semibold gap-1 border-emerald-500/30 text-emerald-800 hover:bg-emerald-500/10 min-h-[32px]"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Tambah Residu
-              </Button>
-            </div>
           </div>
 
           {/* Sticky Modal Footer */}

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   MOCK_SUPPLIER_COMMODITIES,
   SupplierCommodity,
@@ -58,6 +58,7 @@ export function HomeView({
   userProfile,
 }: HomeViewProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [commodities, setCommodities] = React.useState<SupplierCommodity[]>(catalog);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
@@ -67,9 +68,30 @@ export function HomeView({
   const [purchasingCommodity, setPurchasingCommodity] =
     React.useState<SupplierCommodity | null>(null);
 
-  // Update local commodities state when props catalog changes (if needed)
+  // Handle deep link from AI ingredient recommendations or search parameters
   React.useEffect(() => {
-    setCommodities(catalog);
+    const searchParam = searchParams.get("search");
+    const commodityIdParam = searchParams.get("commodityId");
+
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+    if (commodityIdParam) {
+      const allItems = commodities.length > 0 ? commodities : MOCK_SUPPLIER_COMMODITIES;
+      const found =
+        allItems.find((c) => c.id === commodityIdParam) ||
+        MOCK_SUPPLIER_COMMODITIES.find((c) => c.id === commodityIdParam);
+      if (found) {
+        setPurchasingCommodity(found);
+      }
+    }
+  }, [searchParams, commodities]);
+
+  // Update local commodities state when props catalog changes
+  React.useEffect(() => {
+    if (catalog && catalog.length > 0) {
+      setCommodities(catalog);
+    }
   }, [catalog]);
 
   const role: UserRole = initialSession?.role || "umkm";

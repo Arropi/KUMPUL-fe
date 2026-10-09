@@ -48,6 +48,13 @@ export async function beFetch<T>(
             ...((options.headers as Record<string, string>) || {}),
           };
 
+      // Auto-attach authorization token if running on browser client
+      if (!headers["Authorization"] && typeof document !== "undefined") {
+        const match = document.cookie.match(/(?:^|;\s*)kumpul_token=([^;]+)/);
+        if (match) {
+          headers["Authorization"] = `Bearer ${decodeURIComponent(match[1])}`;
+        }
+      }
       const res = await fetch(url, {
         ...options,
         headers,

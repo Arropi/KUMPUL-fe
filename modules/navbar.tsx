@@ -37,6 +37,13 @@ export function Navbar({
   const isSupplier = role === "supplier";
   const navItems = React.useMemo(() => getNavItemsForRole(role), [role]);
 
+  // Reset status hover saat rute berpindah agar animasi tidak tertahan
+  const [prevPathname, setPrevPathname] = React.useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setHoveredIndex(null);
+  }
+
   const sidebarRef = React.useRef<HTMLElement>(null);
   const mobileDrawerRef = React.useRef<HTMLDivElement>(null);
 
@@ -147,7 +154,9 @@ export function Navbar({
           <Link
             key={item.id}
             href={item.href}
+            scroll={false}
             onClick={() => {
+              setHoveredIndex(null);
               if (isMobileView && onCloseMobile) {
                 onCloseMobile();
               }
@@ -155,7 +164,7 @@ export function Navbar({
             onMouseEnter={() => setHoveredIndex(index)}
             title={!expanded ? item.label : undefined}
             className={cn(
-              "relative cursor-pointer min-h-[42px] rounded-xl flex items-center transition-all duration-150 active:scale-[0.98]",
+              "relative cursor-pointer min-h-[42px] rounded-xl flex items-center transition-colors duration-150 active:scale-[0.98]",
               expanded ? "px-3.5 py-2.5" : "justify-center px-2 py-2"
             )}
           >
@@ -163,11 +172,11 @@ export function Navbar({
             <AnimatePresence>
               {isSelected && (
                 <motion.div
-                  className="bg-primary-light border border-primary/20 absolute inset-0 z-0 rounded-xl shadow-xs"
+                  className="bg-primary-light border border-primary/20 absolute inset-0 z-0 rounded-xl shadow-xs pointer-events-none"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
                 />
               )}
             </AnimatePresence>
@@ -177,7 +186,7 @@ export function Navbar({
               {isHovered && (
                 <motion.span
                   layoutId={isMobileView ? "mobile-hover-bg" : "sidebar-hover-bg"}
-                  className="bg-surface-subtle/90 absolute inset-0 z-0 rounded-xl"
+                  className="bg-surface-subtle/90 absolute inset-0 z-0 rounded-xl pointer-events-none"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -193,26 +202,26 @@ export function Navbar({
             {/* Icon, Label, and Badge Content */}
             <div
               className={cn(
-                "relative z-10 flex items-center w-full gap-3",
+                "relative z-10 flex items-center w-full gap-3 select-none pointer-events-none",
                 !expanded && "justify-center"
               )}
             >
               <span
                 className={cn(
-                  "shrink-0 transition-colors duration-150",
+                  "shrink-0 transition-colors duration-150 inline-flex items-center justify-center w-5 h-5",
                   isSelected
                     ? "text-primary"
                     : "text-text-muted group-hover:text-text-primary"
                 )}
               >
-                <IconComponent className="w-5 h-5" />
+                <IconComponent className="w-5 h-5 shrink-0" />
               </span>
 
               {expanded && (
                 <div className="flex items-center justify-between flex-1 min-w-0 gap-2">
                   <span
                     className={cn(
-                      "font-sans text-xs truncate",
+                      "font-sans text-xs truncate transition-colors duration-150",
                       isSelected
                         ? "text-primary font-bold"
                         : "text-text-secondary font-medium"
@@ -245,7 +254,7 @@ export function Navbar({
         }}
         transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
         className={cn(
-          "hidden md:flex flex-col justify-between border-r border-border bg-surface p-3 shrink-0 sticky top-0 h-screen overflow-y-auto overscroll-contain select-none z-20",
+          "hidden md:flex flex-col justify-between border-r border-border bg-surface p-3 shrink-0 h-screen overflow-y-auto overscroll-contain select-none z-20",
           isOpen ? "shadow-elevation-1" : "items-center"
         )}
       >
@@ -260,6 +269,7 @@ export function Navbar({
             {isOpen && (
               <Link
                 href="/home"
+                scroll={false}
                 className="flex items-center min-w-0 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-transform active:scale-[0.98]"
               >
                 {/* Logo from /public/logo/without-bg.svg */}
@@ -275,8 +285,7 @@ export function Navbar({
             )}
 
             <div className="flex items-center shrink-0">
-              <motion.button
-                layout
+              <button
                 type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
                 title={isOpen ? "Tutup Sidebar (Collapse)" : "Buka Sidebar (Expand)"}
@@ -287,7 +296,7 @@ export function Navbar({
                   icon={SidebarLeftIcon}
                   className="size-4.5"
                 />
-              </motion.button>
+              </button>
             </div>
           </div>
 
@@ -402,6 +411,7 @@ export function Navbar({
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <Link
                   href="/home"
+                  scroll={false}
                   className="flex items-center min-w-0"
                   onClick={onCloseMobile}
                 >

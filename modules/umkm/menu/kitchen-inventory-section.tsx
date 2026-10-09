@@ -4,19 +4,22 @@ import * as React from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  SlidersHorizontal,
-  RefreshCw,
   Search,
   ShoppingCart,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Pagination15 } from "@/components/ui/pagination";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
 import {
   Table,
@@ -45,6 +48,9 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
   const [editingItem, setEditingItem] = React.useState<KitchenStockItem | null>(null);
   const [newStockValue, setNewStockValue] = React.useState<string>("");
 
+  // Pagination state untuk mengantisipasi bahan dapur yang banyak
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [pageSize, setPageSize] = React.useState<number>(6);
   // Muat stok fisik dari localStorage
   React.useEffect(() => {
     try {
@@ -104,11 +110,22 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
     });
   }, [inventoryItems, searchQuery, statusFilter]);
 
+  // Reset halaman saat filter pencarian atau status berganti
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  const paginatedItems = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, currentPage, pageSize]);
+
   const criticalCount = inventoryItems.filter((i) => i.status === "KRITIS").length;
   const warningCount = inventoryItems.filter((i) => i.status === "MENIPIS").length;
 
   return (
-    <Card className="rounded-2xl border border-border bg-surface shadow-elevation-1 p-5 sm:p-6 space-y-5">
+    <Card id="kitchen-inventory" className="rounded-2xl border border-border bg-surface shadow-elevation-1 p-5 sm:p-6 space-y-5 scroll-mt-8">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
@@ -123,9 +140,15 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
         {/* Ringkasan Status & Aksi Cepat */}
         <div className="flex items-center gap-2 flex-wrap">
           {criticalCount > 0 && (
-            <Badge variant="warning" className="gap-1 font-bold text-[11px]">
+            <span className="inline-flex items-center gap-1.5 font-bold text-[11px] text-red-700 bg-red-50 border border-red-200/80 px-2.5 py-1 rounded-full select-none">
               <AlertTriangle className="size-3" />
               <span>{criticalCount} Bahan Kritis</span>
+            </span>
+          )}
+          {warningCount > 0 && (
+            <Badge variant="warning" className="gap-1.5 font-bold text-[11px] py-1 rounded-full">
+              <AlertTriangle className="size-3" />
+              <span>{warningCount} Menipis</span>
             </Badge>
           )}
           <Link href="/home">
@@ -181,13 +204,13 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
 
       {/* Tabel Inventaris Dapur */}
       {filteredItems.length === 0 ? (
-        <div className="py-10 text-center rounded-xl bg-surface-subtle/50 border border-dashed border-border text-xs text-text-muted">
+        <div className="py-12 text-center rounded-2xl bg-surface-subtle/50 border border-dashed border-border text-xs text-text-muted">
           {searchQuery
             ? "Tidak ditemukan bahan baku yang sesuai kata kunci."
             : "Belum ada kebutuhan bahan baku terdaftar dari menu aktif."}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border shadow-xs bg-surface">
+        <div className="overflow-hidden rounded-2xl border border-border shadow-elevation-1 bg-surface">
           <Table>
             <TableHeader className="bg-surface-subtle/80 shadow-[inset_0px_1px_2px_0px_rgba(255,255,255,1),inset_0px_-1px_4px_0px_rgba(0,0,0,0.05)]">
               <TableRow>
@@ -201,7 +224,7 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredItems.map((item) => {
+              {paginatedItems.map((item) => {
                 const isKritis = item.status === "KRITIS";
                 const isMenipis = item.status === "MENIPIS";
 
@@ -219,7 +242,7 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
                     </TableCell>
 
                     <TableCell>
-                      <span className="text-[11px] font-semibold text-text-secondary bg-surface-subtle px-2 py-0.5 rounded border border-border/60">
+                      <span className="text-[11px] font-semibold text-text-secondary bg-surface-subtle px-2.5 py-0.5 rounded-full border border-border/60">
                         {item.sector}
                       </span>
                     </TableCell>
@@ -239,7 +262,7 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
 
                     <TableCell className="text-center tabular-nums">
                       <span
-                        className={`inline-block font-bold text-xs px-2.5 py-0.5 rounded-md ${
+                        className={`inline-block font-bold text-xs px-2.5 py-0.5 rounded-full ${
                           isKritis
                             ? "bg-red-100 text-red-700"
                             : isMenipis
@@ -253,39 +276,41 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
 
                     <TableCell className="text-center">
                       {isKritis ? (
-                        <span className="inline-block text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-md">
+                        <span className="inline-flex items-center justify-center text-[11px] font-bold text-red-700 bg-red-50 border border-red-200/80 px-2.5 py-0.5 rounded-full select-none">
                           KRITIS
                         </span>
                       ) : isMenipis ? (
-                        <span className="inline-block text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-md">
+                        <Badge variant="warning" className="text-[11px] font-bold px-2.5 py-0.5 rounded-full">
                           MENIPIS
-                        </span>
+                        </Badge>
                       ) : (
-                        <span className="inline-block text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-md">
+                        <Badge variant="success" className="text-[11px] font-bold px-2.5 py-0.5 rounded-full">
                           AMAN
-                        </span>
+                        </Badge>
                       )}
                     </TableCell>
 
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             setEditingItem(item);
                             setNewStockValue(String(item.currentStock));
                           }}
-                          className="px-2.5 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-border/60 border border-border/70 rounded-lg transition cursor-pointer"
+                          className="h-8 min-h-[32px] px-3 text-xs rounded-xl font-semibold cursor-pointer"
                         >
                           Opname
-                        </button>
+                        </Button>
                         {(isKritis || isMenipis) && (
                           <Link href={`/home?q=${encodeURIComponent(item.ingredientName)}`}>
                             <Button
                               type="button"
                               variant="primary"
                               size="sm"
-                              className="text-[11px] font-bold px-2.5 py-1 min-h-[30px] rounded-lg shadow-xs cursor-pointer"
+                              className="text-[11px] font-bold px-3 min-h-[32px] h-8 rounded-xl shadow-xs cursor-pointer"
                             >
                               Restock
                             </Button>
@@ -298,6 +323,22 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
               })}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Pagination untuk mengantisipasi jumlah bahan baku yang banyak */}
+      {filteredItems.length > 0 && (
+        <div className="pt-2 border-t border-border/60">
+          <Pagination15
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={filteredItems.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[6, 10, 15, 25]}
+            itemLabel="bahan"
+          />
         </div>
       )}
 
@@ -343,7 +384,7 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
                   placeholder={`Contoh: 15.5`}
                   required
                   autoFocus
-                  className="rounded-xl h-11 text-sm bg-surface"
+                  className="rounded-xl h-11 text-sm bg-surface border-border"
                 />
               </div>
             </div>
@@ -354,7 +395,7 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
                 variant="outline"
                 size="sm"
                 onClick={() => setEditingItem(null)}
-                className="rounded-xl px-4 min-h-[40px]"
+                className="rounded-xl px-4 min-h-[40px] cursor-pointer"
               >
                 Batal
               </Button>
@@ -362,7 +403,7 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
                 type="submit"
                 variant="primary"
                 size="sm"
-                className="rounded-xl px-5 min-h-[40px] font-bold"
+                className="rounded-xl px-5 min-h-[40px] font-bold cursor-pointer"
               >
                 Simpan Stok
               </Button>
