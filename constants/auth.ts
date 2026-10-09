@@ -17,8 +17,8 @@ export const AUTH_ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
     title: "Masuk sebagai UMKM",
     badgeLabel: "Pelaku Usaha",
     shortDescription: "Kelola pasokan bahan baku dan kuota pesanan usaha Anda.",
-    identifierLabel: "Email atau Nomor WhatsApp",
-    identifierPlaceholder: "nama@usaha.id atau 081234567890",
+    identifierLabel: "Email Operasional",
+    identifierPlaceholder: "nama@usaha.id",
     submitButtonText: "Masuk sebagai UMKM",
     defaultEmail: "umkm@kumpul.id",
   },
@@ -27,10 +27,41 @@ export const AUTH_ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
     title: "Masuk sebagai Supplier",
     badgeLabel: "Mitra Pemasok",
     shortDescription: "Kelola katalog pasokan komoditas dan pemenuhan pesanan.",
-    identifierLabel: "Email atau ID Supplier",
-    identifierPlaceholder: "distribusi@pemasok.co.id atau SUP-1029",
+    identifierLabel: "Email Operasional",
+    identifierPlaceholder: "distribusi@pemasok.co.id",
     submitButtonText: "Masuk sebagai Supplier",
     defaultEmail: "supplier@kumpul.id",
+  },
+};
+
+export interface RegisterRoleConfig {
+  id: UserRole;
+  title: string;
+  badgeLabel: string;
+  shortDescription: string;
+  businessNameLabel: string;
+  businessNamePlaceholder: string;
+  submitButtonText: string;
+}
+
+export const REGISTER_ROLE_CONFIGS: Record<UserRole, RegisterRoleConfig> = {
+  umkm: {
+    id: "umkm",
+    title: "Daftar Akun Pelaku UMKM",
+    badgeLabel: "Pelaku Usaha",
+    shortDescription: "Dapatkan akses pooling kuota grosir dan bahan baku terverifikasi.",
+    businessNameLabel: "Nama Usaha / Kedai / Warung",
+    businessNamePlaceholder: "Contoh: Warung Sejahtera Mandiri",
+    submitButtonText: "Daftar Sekarang",
+  },
+  supplier: {
+    id: "supplier",
+    title: "Daftar Akun Mitra Supplier",
+    badgeLabel: "Mitra Pemasok",
+    shortDescription: "Jangkau agregasi pesanan UMKM dan perluas saluran distribusi grosir.",
+    businessNameLabel: "Nama Perusahaan / Kelompok Tani",
+    businessNamePlaceholder: "Contoh: PT Agroniaga Nusantara",
+    submitButtonText: "Daftar Sekarang",
   },
 };
 
@@ -42,4 +73,41 @@ export interface UserSession {
   role: UserRole;
   picture?: string;
   provider: "google" | "credentials";
+  supabaseUserId?: string;
+  token?: string;
+  entityId?: string;
+  roleId?: string;
+}
+
+export interface AuthLogEvent {
+  timestamp: string;
+  action:
+    | "LOGIN"
+    | "REGISTER"
+    | "REGISTER_COMPLETE"
+    | "GOOGLE_AUTH_INIT"
+    | "GOOGLE_AUTH_CALLBACK"
+    | "LOGOUT";
+  provider: "credentials" | "google";
+  status: "SUCCESS" | "FAILED";
+  role: UserRole;
+  email: string;
+  name?: string;
+  businessName?: string;
+  redirectTo?: string;
+  metadata?: Record<string, unknown>;
+  error?: string;
+}
+
+export interface AuthActionResult {
+  success: boolean;
+  user?: UserSession;
+  redirectTo?: string;
+  error?: string;
+  errorCode?: string;
+  requiresBusinessStep?: boolean;
+  userId?: string;
+  email?: string;
+  role?: UserRole;
+  log?: AuthLogEvent;
 }

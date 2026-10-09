@@ -2,303 +2,315 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Toast } from "@/components/ui/toast";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  MOCK_SUPPLIER_COMMODITIES,
+  SupplierCommodity,
+} from "@/constants/supplier";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/toast";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
+import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
 import { UserRole, UserSession } from "@/constants/auth";
+import { Search, ChevronDown, Sparkles, ShoppingBag, Plus } from "lucide-react";
+import { getAllMarketplaceCatalogsAction } from "@/actions/supplier-catalog";
+import { mapBEToSupplierCommodity } from "@/modules/supplier/helpers";
+import { HomeRecommendationSection } from "./home-recommendation-section";
+import { CreatePoolDialog } from "@/modules/supplier/katalog/create-pool-dialog";
+import { beFetch } from "@/lib/api/be-client";
+import type { BEBusinessEntity } from "@/lib/api/types";
+import type { MatchedCommodity, RawRecommendationsData } from "./home-recommendation-section";
+
+const SECTOR_OPTIONS = [
+  { value: "ALL", label: "Semua Sektor" },
+  { value: "Pertanian", label: "Pertanian" },
+  { value: "FnB / Pengolahan", label: "FnB / Pengolahan" },
+  { value: "Peternakan", label: "Peternakan" },
+  { value: "Perikanan", label: "Perikanan" },
+  { value: "Perkebunan", label: "Perkebunan" },
+] as const;
 
 interface HomeViewProps {
   initialSession?: UserSession | null;
+  catalog: SupplierCommodity[];
+  recommendations: MatchedCommodity[];
+  rawRecommendations?: RawRecommendationsData | null;
+  catalogError: boolean;
+  recsError: boolean;
+  userProfile?: BEBusinessEntity | null;
 }
 
-export function HomeView({ initialSession }: HomeViewProps) {
+export function HomeView({
+  initialSession,
+  catalog,
+  recommendations,
+  rawRecommendations,
+  catalogError,
+  recsError,
+  userProfile,
+}: HomeViewProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const [commodities, setCommodities] = React.useState<SupplierCommodity[]>(catalog);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
+  const [onlyReadyStock, setOnlyReadyStock] = React.useState<boolean>(false);
+  const [onlyOpenPools, setOnlyOpenPools] = React.useState<boolean>(false);
+  const [onlyVerified, setOnlyVerified] = React.useState<boolean>(false);
+  const [purchasingCommodity, setPurchasingCommodity] =
+    React.useState<SupplierCommodity | null>(null);
 
-  // Membaca data pengguna dari sesi server atau parameter URL
-  const querySuccess = searchParams.get("login_success") === "true";
-  const queryRole = searchParams.get("role") as UserRole | null;
-  const queryName = searchParams.get("name");
-  const queryEmail = searchParams.get("email");
+  // Handle deep link from AI ingredient recommendations or search parameters
+  React.useEffect(() => {
+    const searchParam = searchParams.get("search");
+    const commodityIdParam = searchParams.get("commodityId");
 
-  const effectiveRole: UserRole =
-    initialSession?.role || queryRole || "umkm";
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+    if (commodityIdParam) {
+      const allItems = commodities.length > 0 ? commodities : MOCK_SUPPLIER_COMMODITIES;
+      const found =
+        allItems.find((c) => c.id === commodityIdParam) ||
+        MOCK_SUPPLIER_COMMODITIES.find((c) => c.id === commodityIdParam);
+      if (found) {
+        setPurchasingCommodity(found);
+      }
+    }
+  }, [searchParams, commodities]);
 
-  const effectiveName =
-    initialSession?.name || queryName || (effectiveRole === "supplier" ? "Mitra Supplier" : "Pelaku UMKM");
+  // Update local commodities state when props catalog changes
+  React.useEffect(() => {
+    if (catalog && catalog.length > 0) {
+      setCommodities(catalog);
+    }
+  }, [catalog]);
 
-  const effectiveEmail =
-    initialSession?.email || queryEmail || (effectiveRole === "supplier" ? "supplier@kumpul.id" : "umkm@kumpul.id");
+  const role: UserRole = initialSession?.role || "umkm";
+  const isSupplier = role === "supplier";
+  const isUmkm = role === "umkm";
 
-  const effectiveProvider =
-    initialSession?.provider || (queryEmail?.includes("@gmail.com") ? "google" : "credentials");
+  const selectedSectorLabel =
+    SECTOR_OPTIONS.find((s) => s.value === selectedSector)?.label || "Semua Sektor";
 
-  const [toast, setToast] = React.useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    type: "success" | "info" | "error";
-  }>({
-    isOpen: false,
-    title: "Login Berhasil",
-    message: "",
-    type: "success",
+  const filteredCommodities = commodities.filter((item) => {
+    const matchSearch =
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.batchTag.licenseNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.sellerCity && item.sellerCity.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.batchTag.originLocation &&
+        item.batchTag.originLocation.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchSector = selectedSector === "ALL" || item.sector === selectedSector;
+    const matchReadyStock = !onlyReadyStock || item.availableStock > 0;
+    const matchPool =
+      !onlyOpenPools ||
+      Boolean(item.hasOpenPools || (item.activePools && item.activePools.length > 0));
+    const matchVerified =
+      !onlyVerified || item.batchTag.hygieneStatus === "TERVERIFIKASI";
+
+    return matchSearch && matchSector && matchReadyStock && matchPool && matchVerified;
   });
 
-  React.useEffect(() => {
-    if (querySuccess) {
-      const roleLabel = effectiveRole === "supplier" ? "Mitra Supplier" : "Pelaku UMKM";
-      const timer = setTimeout(() => {
-        setToast({
-          isOpen: true,
-          title: "Login Berhasil",
-          message: `Selamat datang di portal KUMPUL, ${effectiveName} (${roleLabel}).`,
-          type: "success",
-        });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [querySuccess, effectiveRole, effectiveName]);
-
-  const isSupplier = effectiveRole === "supplier";
-
   return (
-    <div className="min-h-screen bg-[#F8FAF8] text-[#0F172A] flex flex-col font-sans selection:bg-[#EBF5F0] selection:text-[#0D3B2E]">
-      <Toast
-        isOpen={toast.isOpen}
-        title={toast.title}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast((prev) => ({ ...prev, isOpen: false }))}
-      />
-
-      {/* Navigasi Atas Bersih */}
-      <header className="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-neutral-200/80 shadow-[0_2px_12px_rgb(0,0,0,0.02)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/home"
-              className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D3B2E] rounded-lg p-1"
-            >
-              <span className="w-8 h-8 rounded-xl bg-[#0D3B2E] flex items-center justify-center text-white font-bold text-base shadow-xs">
-                K
-              </span>
-              <span className="font-bold text-lg text-[#0D3B2E] tracking-tight">KUMPUL</span>
-            </Link>
-            <span className="hidden sm:inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-[#EBF5F0] text-[#0D3B2E]">
-              {isSupplier ? "Portal Mitra Supplier" : "Portal Pelaku UMKM"}
+    <div className="space-y-8 pb-10">
+      {/* 1. Header Marketplace */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="p-1 rounded-lg bg-primary-light text-primary">
+              <Sparkles className="w-4 h-4" />
+            </span>
+            <span className="text-xs font-bold text-primary font-heading uppercase tracking-wider">
+              {isSupplier ? "Portal Pemasok & Bursa Pasokan" : "Bursa Pengadaan Bahan Baku UMKM"}
             </span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex flex-col text-right">
-              <span className="text-xs font-semibold text-neutral-800 leading-tight">
-                {effectiveName}
-              </span>
-              <span className="text-[11px] text-neutral-500 leading-tight">
-                {effectiveEmail}
-              </span>
-            </div>
-
-            <a
-              href={`/api/auth/logout?role=${effectiveRole}`}
-              className="min-h-[38px] px-3.5 py-1.5 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 active:scale-[0.96] text-neutral-700 text-xs font-medium transition-all shadow-xs hover:shadow-sm flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0D3B2E]"
-            >
-              <svg className="w-3.5 h-3.5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span>Keluar</span>
-            </a>
-          </div>
+          <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary">
+            {isSupplier ? "Bursa Pasokan Komoditas Pangan" : "Marketplace Pasokan Bahan Baku"}
+          </h1>
+          <p className="font-body text-xs sm:text-sm text-text-secondary mt-1">
+            {isSupplier
+              ? "Katalog pasokan komoditas bersertifikasi mutu dan fasilitas pooling untuk distribusi agregasi UMKM."
+              : "Beli kebutuhan bahan baku langsung dari pemasok terverifikasi dengan skema diskon pooling harga grosir."}
+          </p>
         </div>
-      </header>
 
-      {/* Konten Utama */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 md:py-10 space-y-8">
-        {/* Kartu Profil & Sambutan */}
-        <section className="bg-white rounded-2xl border border-neutral-200/80 p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.03)]">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="flex items-start sm:items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#0D3B2E] text-white flex items-center justify-center font-bold text-xl shrink-0 shadow-sm">
-                {effectiveName.charAt(0).toUpperCase()}
-              </div>
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
-                    {effectiveName}
-                  </h1>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#EBF5F0] text-[#0D3B2E]">
-                    {isSupplier ? "Mitra Supplier" : "Pelaku UMKM"}
-                  </span>
-                </div>
-                <p className="text-sm text-neutral-500">
-                  {effectiveEmail} &bull; Masuk via {effectiveProvider === "google" ? "Google OAuth" : "Kredensial Akun"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Link
-                href={`/login?role=${isSupplier ? "umkm" : "supplier"}`}
-                className="w-full sm:w-auto text-center px-4 py-2.5 rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 active:scale-[0.96] transition-all shadow-xs"
-              >
-                Ganti Peran ({isSupplier ? "UMKM" : "Supplier"})
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Bagian Fitur Terfokus Sesuai Peran */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-[#0F172A]">
-                {isSupplier ? "Aktivitas Pasokan & Permintaan" : "Katalog & Pengadaan Bahan Baku"}
-              </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                {isSupplier
-                  ? "Kelola inventaris bahan pangan dan pantau pesanan pooling yang masuk."
-                  : "Pantau pesanan bersama, kuota MOQ, dan sertifikasi paspor mutu bahan pangan."}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {isSupplier ? (
-              <>
-                <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.02)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF5F0] text-[#0D3B2E] flex items-center justify-center font-bold text-sm">
-                    01
-                  </div>
-                  <h3 className="font-semibold text-sm text-[#0F172A]">Pesanan Pooling Siap Proses</h3>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Tinjau pesanan kolektif dari kelompok UMKM yang telah memenuhi kuota minimum pemesanan (MOQ).
-                  </p>
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul pemrosesan pesanan pooling sedang dipersiapkan.", type: "info" })}
-                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer"
-                    >
-                      Buka Pesanan Masuk &rarr;
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.02)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF5F0] text-[#0D3B2E] flex items-center justify-center font-bold text-sm">
-                    02
-                  </div>
-                  <h3 className="font-semibold text-sm text-[#0F172A]">Katalog Komoditas Pangan</h3>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Perbarui harga grosir, stok ketersediaan, serta kapasitas pengiriman armada distribusi Anda.
-                  </p>
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul katalog komoditas sedang dipersiapkan.", type: "info" })}
-                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer"
-                    >
-                      Perbarui Pasokan &rarr;
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.02)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF5F0] text-[#0D3B2E] flex items-center justify-center font-bold text-sm">
-                    03
-                  </div>
-                  <h3 className="font-semibold text-sm text-[#0F172A]">Paspor Mutu & Kepatuhan</h3>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Unggah bukti uji kelayakan, sertifikasi halal, dan transparansi rantai pasok komoditas.
-                  </p>
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul sertifikasi paspor mutu sedang dipersiapkan.", type: "info" })}
-                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer"
-                    >
-                      Verifikasi Standar &rarr;
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.02)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF5F0] text-[#0D3B2E] flex items-center justify-center font-bold text-sm">
-                    01
-                  </div>
-                  <h3 className="font-semibold text-sm text-[#0F172A]">Autonomous MOQ Pooling</h3>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Gabungkan pesanan bahan baku usaha Anda dengan UMKM sekitar untuk mendapatkan harga grosir langsung dari supplier.
-                  </p>
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul pooling MOQ aktif sedang dipersiapkan.", type: "info" })}
-                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer"
-                    >
-                      Ikuti Pooling Aktif &rarr;
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.02)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF5F0] text-[#0D3B2E] flex items-center justify-center font-bold text-sm">
-                    02
-                  </div>
-                  <h3 className="font-semibold text-sm text-[#0F172A]">Paspor Mutu Pangan</h3>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Lacak keaslian asal bahan pangan, standar higienis, dan sertifikat mutu setiap lot pengiriman secara terbuka.
-                  </p>
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul pelacakan paspor mutu sedang dipersiapkan.", type: "info" })}
-                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer"
-                    >
-                      Periksa Paspor Mutu &rarr;
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.02)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#EBF5F0] text-[#0D3B2E] flex items-center justify-center font-bold text-sm">
-                    03
-                  </div>
-                  <h3 className="font-semibold text-sm text-[#0F172A]">Siklus Ekonomi Sirkular</h3>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Kelola residu bahan baku organik dan kemasan usaha Anda untuk disalurkan ke ekosistem daur ulang mitra.
-                  </p>
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setToast({ isOpen: true, title: "Informasi", message: "Modul ekonomi sirkular sedang dipersiapkan.", type: "info" })}
-                      className="text-xs font-semibold text-[#0D3B2E] hover:underline cursor-pointer"
-                    >
-                      Kelola Residu Usaha &rarr;
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-      </main>
-
-      {/* Footer Minimalis */}
-      <footer className="mt-auto border-t border-neutral-200/80 bg-white py-6">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-500">
-          <span>&copy; {new Date().getFullYear()} KUMPUL. Ekosistem Kolaborasi Rantai Pasok Pangan Terpadu.</span>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="hover:text-neutral-800 transition-colors">
-              Halaman Masuk
+        <div className="flex items-center gap-2.5">
+          {isSupplier ? (
+            <Link href="/katalog/tambah" className="shrink-0">
+              <Button variant="primary" size="md" className="font-semibold min-h-[42px] cursor-pointer">
+                <Plus className="w-4 h-4 mr-1.5" />
+                <span>+ Tambah Pasokan Komoditas</span>
+              </Button>
             </Link>
-            <a href={`/api/auth/logout?role=${effectiveRole}`} className="hover:text-[#DC2626] transition-colors">
-              Keluar Akun
-            </a>
-          </div>
+          ) : (
+            <Link href="/produk" className="shrink-0">
+              <Button variant="secondary" size="md" className="font-semibold min-h-[42px] cursor-pointer">
+                <ShoppingBag className="w-4 h-4 mr-1.5 text-primary" />
+                <span>Kelola Produk &amp; Resep</span>
+              </Button>
+            </Link>
+          )}
         </div>
-      </footer>
+      </div>
+
+      {/* 2. Section Rekomendasi Khusus */}
+      <HomeRecommendationSection
+        role={role}
+        commodities={commodities}
+        recommendations={recommendations}
+        rawRecommendations={rawRecommendations}
+        recsError={recsError}
+        onPurchase={isUmkm ? setPurchasingCommodity : undefined}
+      />
+
+      {/* 3. Section Seluruh Komoditas di Bursa */}
+      <div className="space-y-4 pt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
+              {isSupplier ? "Seluruh Pasokan Komoditas di Bursa" : "Katalog Seluruh Bahan Baku Tersedia"}
+            </h2>
+            <p className="text-xs text-text-secondary mt-0.5">
+              {isSupplier
+                ? "Daftar pasokan komoditas pangan grosir terdaftar di seluruh hub logistik KUMPUL."
+                : "Pilih bahan baku, periksa sertifikat mutu, dan klik beli untuk masuk ke rincian pesanan."}
+            </p>
+          </div>
+          <span className="text-xs font-semibold text-text-muted">
+            {filteredCommodities.length} Komoditas Ditemukan
+          </span>
+        </div>
+
+        {/* Filter & Pencarian */}
+        <Card className="p-4 sm:p-5 bg-surface border-border shadow-elevation-1 rounded-2xl space-y-3.5">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <div className="flex-1 relative max-w-md">
+              <Search className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Input
+                id="search-commodity"
+                placeholder="Cari komoditas, SKU, izin mutu, kota..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 min-h-[42px]"
+              />
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="default"
+                    className="h-10.5 w-full sm:w-auto sm:shrink-0 gap-2 rounded-xl px-3 text-xs sm:text-sm font-semibold shadow-xs justify-between cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-text-muted font-normal text-xs">Sektor:</span>
+                      <span className="font-semibold text-text-primary truncate">{selectedSectorLabel}</span>
+                    </div>
+                    <ChevronDown className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-48">
+                  <DropdownMenuRadioGroup value={selectedSector} onValueChange={setSelectedSector}>
+                    {SECTOR_OPTIONS.map((opt) => (
+                      <DropdownMenuRadioItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Filter Pills Tambahan */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
+            <span className="text-xs font-semibold text-text-muted mr-1">Filter Cepat:</span>
+            <button
+              type="button"
+              onClick={() => setOnlyReadyStock(!onlyReadyStock)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                onlyReadyStock
+                  ? "bg-primary text-white border-primary shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+              }`}
+            >
+              Ready Stock
+            </button>
+            <button
+              type="button"
+              onClick={() => setOnlyOpenPools(!onlyOpenPools)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                onlyOpenPools
+                  ? "bg-amber-600 text-white border-amber-600 shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+              }`}
+            >
+              🔥 Pool Terbuka Saja
+            </button>
+            <button
+              type="button"
+              onClick={() => setOnlyVerified(!onlyVerified)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                onlyVerified
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+              }`}
+            >
+              🛡️ Terverifikasi Mutu AI
+            </button>
+          </div>
+        </Card>
+
+        {/* Grid Komoditas */}
+        {filteredCommodities.length === 0 ? (
+          <Card className="p-12 text-center bg-surface border-dashed border-border rounded-2xl">
+            <p className="font-heading font-bold text-base text-text-primary">
+              Tidak ada komoditas ditemukan
+            </p>
+            <p className="font-body text-xs text-text-secondary mt-1">
+              Ubah kata kunci pencarian atau ganti filter sektor untuk melihat hasil lainnya.
+            </p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredCommodities.map((item) => (
+              <CommodityCatalogCard
+                key={item.id}
+                item={item}
+                role={role}
+                pageContext="home"
+                onPurchase={isUmkm ? setPurchasingCommodity : undefined}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Dialog Beli / Buat Pool di Beranda */}
+      {purchasingCommodity && (
+        <CreatePoolDialog
+          isOpen={!!purchasingCommodity}
+          onClose={() => setPurchasingCommodity(null)}
+          commodity={purchasingCommodity}
+          userProfile={userProfile}
+          onSuccess={() => {
+            setPurchasingCommodity(null);
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }

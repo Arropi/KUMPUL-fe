@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LoginView } from "@/modules/auth/login-view";
+import { AuthView } from "@/modules/auth/auth-view";
 
 export const metadata: Metadata = {
   title: "Masuk ke Akun | KUMPUL",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <LoginView />;
+  return <AuthView defaultMode="login" />;
 }

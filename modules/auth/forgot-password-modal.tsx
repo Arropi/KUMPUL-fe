@@ -46,7 +46,11 @@ export function ForgotPasswordModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim()) {
-      setError("Masukkan email atau nomor kontak akun Anda.");
+      setError("Masukkan alamat email akun Anda.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim())) {
+      setError("Format alamat email belum valid.");
       return;
     }
 
@@ -83,25 +87,25 @@ export function ForgotPasswordModal({
     >
       <div
         ref={modalRef}
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl shadow-black/10 border border-neutral-100 p-6 sm:p-7 flex flex-col gap-4 text-left"
+        className="w-full max-w-md bg-surface rounded-3xl shadow-2xl shadow-black/10 border border-border p-6 sm:p-7 flex flex-col gap-4 text-left"
       >
         <div className="flex items-start justify-between">
           <div>
             <h3
               id="modal-title"
-              className="font-heading text-lg font-bold text-neutral-900"
+              className="font-heading text-lg font-bold text-text-primary"
             >
               Atur Ulang Kata Sandi
             </h3>
-            <p className="font-sans text-xs text-neutral-500 mt-1">
-              Akun {roleTitle}. Tautan verifikasi akan dikirimkan ke kontak Anda.
+            <p className="font-sans text-xs text-text-muted mt-1">
+              Akun {roleTitle}. Tautan verifikasi akan dikirimkan ke email Anda.
             </p>
           </div>
           <button
             type="button"
             onClick={handleClose}
             aria-label="Tutup"
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer active:scale-[0.96]"
+            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors cursor-pointer active:scale-[0.96]"
           >
             <svg
               className="w-4 h-4"
