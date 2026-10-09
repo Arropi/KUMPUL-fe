@@ -7,6 +7,7 @@ import {
   MOCK_UMKM_PROFILE,
   type BankSampahPoint,
 } from "@/constants/umkm";
+import { getNearestOfftakersAction } from "@/actions/waste";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,10 +25,56 @@ import {
 } from "lucide-react";
 
 export function BankSampahMapSection() {
-  const [bankSampahList] = React.useState<BankSampahPoint[]>(MOCK_BANK_SAMPAH_POINTS);
+  const [bankSampahList, setBankSampahList] = React.useState<BankSampahPoint[]>(MOCK_BANK_SAMPAH_POINTS);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedPointId, setSelectedPointId] = React.useState<string>(MOCK_BANK_SAMPAH_POINTS[0]?.id || "");
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+
+  const umkmCoords = MOCK_UMKM_PROFILE.coordinates || { lat: -7.3248, lng: 112.7758 };
+
+  React.useEffect(() => {
+    async function loadOfftakers() {
+      try {
+        const res = await getNearestOfftakersAction({
+          latitude: umkmCoords.lat,
+          longitude: umkmCoords.lng,
+          limit: 15,
+        });
+        if (res.success && res.data && res.data.length > 0) {
+          const mapped: BankSampahPoint[] = res.data.map((off) => ({
+            id: off.id,
+            name: off.org_name,
+            category: "Bank Sampah Induk Kota",
+            address: off.address || "Surabaya, Jawa Timur",
+            subdistrict: off.service_area_city || "Surabaya",
+            distanceKm: off.distance_km || 1.5,
+            rating: 4.8,
+            userRatingsTotal: 45,
+            operatingHours: "08:00 - 16:00 WIB",
+            openStatus: "Buka Sekarang",
+            acceptedCommodities:
+              off.accepted_waste_types && off.accepted_waste_types.length > 0
+                ? off.accepted_waste_types
+                : ["Minyak Jelantah (UCO)", "Ampas Organik"],
+            contactPerson: off.contact_person || "Petugas Bank Sampah",
+            phone: off.phone || "0812-3456-7890",
+            hasDropbox24h: true,
+            googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${off.latitude},${off.longitude}`,
+            serviceFeatures: ["Penjemputan Mandiri", "Insentif Kompos", "Dropbox 24 Jam"],
+            coordinates: {
+              lat: Number(off.latitude),
+              lng: Number(off.longitude),
+            },
+          }));
+          setBankSampahList(mapped);
+          if (mapped[0]) setSelectedPointId(mapped[0].id);
+        }
+      } catch {
+        // Fallback to MOCK_BANK_SAMPAH_POINTS
+      }
+    }
+    loadOfftakers();
+  }, [umkmCoords.lat, umkmCoords.lng]);
 
   // Leaflet map refs
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
@@ -36,9 +83,6 @@ export function BankSampahMapSection() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markersRef = React.useRef<Map<string, any>>(new Map());
   const cardsContainerRef = React.useRef<HTMLDivElement>(null);
-
-  const umkmCoords = MOCK_UMKM_PROFILE.coordinates || { lat: -7.3248, lng: 112.7758 };
-
   // Filter Bank Sampah berdasarkan nama / jalan / kecamatan
   const filteredList = bankSampahList.filter((bs) => {
     if (!searchQuery) return true;
