@@ -19,8 +19,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans bg-background text-text-primary">
         <ToastProvider>{children}</ToastProvider>
         <Script
-          src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || "https://app.sandbox.midtrans.com/snap/snap.js"}
-          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "Mid-client-C8Oep56Dwkx5eJ19"}
+          src={process.env.MIDTRANS_SNAP_URL || "https://app.sandbox.midtrans.com/snap/snap.js"}
+          data-client-key={process.env.MIDTRANS_CLIENT_KEY || "Mid-client-C8Oep56Dwkx5eJ19"}
           strategy="afterInteractive"
         />
       </body>

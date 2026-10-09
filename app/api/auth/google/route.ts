@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const clientId = process.env.GOOGLE_CLIENT_ID as string;
   const redirectUri =
     process.env.GOOGLE_REDIRECT_URI ||
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/callback/google`;
+    `${process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/callback/google`;
 
 
   const statePayload = Buffer.from(
