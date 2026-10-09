@@ -2,11 +2,9 @@
 
 import * as React from "react";
 import "leaflet/dist/leaflet.css";
-import {
-  MOCK_BANK_SAMPAH_POINTS,
-  MOCK_UMKM_PROFILE,
-  type BankSampahPoint,
-} from "@/constants/umkm";
+import type { BankSampahPoint } from "@/constants/umkm";
+import { getNearestOfftakersAction } from "@/actions/waste";
+import { getBusinessProfileAction } from "@/actions/business-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,10 +22,80 @@ import {
 } from "lucide-react";
 
 export function BankSampahMapSection() {
-  const [bankSampahList] = React.useState<BankSampahPoint[]>(MOCK_BANK_SAMPAH_POINTS);
+  const [bankSampahList, setBankSampahList] = React.useState<BankSampahPoint[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedPointId, setSelectedPointId] = React.useState<string>(MOCK_BANK_SAMPAH_POINTS[0]?.id || "");
+  const [selectedPointId, setSelectedPointId] = React.useState<string>("");
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+  const [profileName, setProfileName] = React.useState<string>("Dapur UMKM");
+  const [profileAddress, setProfileAddress] = React.useState<string>("Surabaya, Jawa Timur");
+  const [umkmCoords, setUmkmCoords] = React.useState<{ lat: number; lng: number }>({
+    lat: -7.3248,
+    lng: 112.7758,
+  });
+
+  React.useEffect(() => {
+    async function loadData() {
+      let currentLat = -7.3248;
+      let currentLng = 112.7758;
+
+      try {
+        const profRes = await getBusinessProfileAction();
+        if (profRes.success && profRes.entity) {
+          setProfileName(profRes.entity.legal_name || "Dapur UMKM");
+          setProfileAddress(profRes.entity.default_address || "Surabaya, Jawa Timur");
+          if (profRes.entity.latitude && profRes.entity.longitude) {
+            currentLat = Number(profRes.entity.latitude) || currentLat;
+            currentLng = Number(profRes.entity.longitude) || currentLng;
+            setUmkmCoords({ lat: currentLat, lng: currentLng });
+          }
+        }
+      } catch {
+        // Profil offline/fallback
+      }
+
+      try {
+        const res = await getNearestOfftakersAction({
+          latitude: currentLat,
+          longitude: currentLng,
+          limit: 15,
+        });
+        if (res.success && res.data && res.data.length > 0) {
+          const mapped: BankSampahPoint[] = res.data.map((off) => ({
+            id: off.id,
+            name: off.org_name,
+            category: "Bank Sampah Induk Kota",
+            address: off.address || "Surabaya, Jawa Timur",
+            subdistrict: off.service_area_city || "Surabaya",
+            distanceKm: off.distance_km || 1.5,
+            rating: 4.8,
+            userRatingsTotal: 45,
+            operatingHours: "08:00 - 16:00 WIB",
+            openStatus: "Buka Sekarang",
+            acceptedCommodities:
+              off.accepted_waste_types && off.accepted_waste_types.length > 0
+                ? off.accepted_waste_types
+                : ["Minyak Jelantah (UCO)", "Ampas Organik"],
+            contactPerson: off.contact_person || "Petugas Bank Sampah",
+            phone: off.phone || "0812-3456-7890",
+            hasDropbox24h: true,
+            googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${off.latitude},${off.longitude}`,
+            serviceFeatures: ["Penjemputan Mandiri", "Insentif Kompos", "Dropbox 24 Jam"],
+            coordinates: {
+              lat: Number(off.latitude),
+              lng: Number(off.longitude),
+            },
+          }));
+          setBankSampahList(mapped);
+          if (mapped[0]) setSelectedPointId(mapped[0].id);
+        } else {
+          setBankSampahList([]);
+        }
+      } catch {
+        setBankSampahList([]);
+      }
+    }
+    loadData();
+  }, []);
 
   // Leaflet map refs
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
@@ -36,9 +104,6 @@ export function BankSampahMapSection() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markersRef = React.useRef<Map<string, any>>(new Map());
   const cardsContainerRef = React.useRef<HTMLDivElement>(null);
-
-  const umkmCoords = MOCK_UMKM_PROFILE.coordinates || { lat: -7.3248, lng: 112.7758 };
-
   // Filter Bank Sampah berdasarkan nama / jalan / kecamatan
   const filteredList = bankSampahList.filter((bs) => {
     if (!searchQuery) return true;
@@ -114,10 +179,10 @@ export function BankSampahMapSection() {
             <span style="display: inline-block; width: 8px; height: 8px; border-radius: 9999px; background: #0D3B2E;"></span>
             <span style="font-size: 10px; font-weight: 700; color: #0D3B2E; text-transform: uppercase; letter-spacing: 0.05em;">Dapur Katering Saya</span>
           </div>
-          <strong style="display: block; color: #18201B; font-size: 14px; font-weight: 700; margin-bottom: 2px;">${MOCK_UMKM_PROFILE.name}</strong>
+          <strong style="display: block; color: #18201B; font-size: 14px; font-weight: 700; margin-bottom: 2px;">${profileName}</strong>
           <span style="display: inline-block; color: #5C6B62; font-size: 11px; margin-bottom: 8px;">Titik keberangkatan pengiriman mandiri</span>
           <div style="font-size: 11px; color: #18201B; line-height: 1.4; padding: 8px 10px; background: #F3EFE8; border-radius: 10px; border: 1px solid #E8E1D5;">
-            📍 ${MOCK_UMKM_PROFILE.address}
+            📍 ${profileAddress}
           </div>
         </div>
       `);
@@ -242,14 +307,14 @@ export function BankSampahMapSection() {
 
         {/* Search Bar Sederhana & Tombol Recenter */}
         <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="size-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="flex-1 sm:w-64">
             <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari nama / kelurahan..."
-              className="pl-8.5 h-10 text-xs rounded-xl"
+              leftElement={<Search className="size-3.5" />}
+              className="h-10 text-xs rounded-xl"
             />
           </div>
 

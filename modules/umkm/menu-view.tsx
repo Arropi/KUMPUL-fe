@@ -21,7 +21,7 @@ import { KitchenInventorySection } from "./menu/kitchen-inventory-section";
 import { Pagination15 } from "@/components/ui/pagination";
 import { getUmkmProductsAction } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
-import { DEFAULT_SEED_PRODUCTS, calculateCircularMargin } from "@/lib/menu-intelligence";
+import { calculateCircularMargin } from "@/lib/menu-intelligence";
 
 export type MenuSortOption =
   | "MARGIN_DESC"
@@ -89,7 +89,7 @@ export function UmkmMenuView() {
 
   // Pagination state (Watermelon UI Pagination-15)
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(6);
+  const [pageSize, setPageSize] = React.useState(9);
 
   // Reset page when filter changes
   React.useEffect(() => {
@@ -99,10 +99,10 @@ export function UmkmMenuView() {
   const loadProducts = React.useCallback(async () => {
     try {
       const res = await getUmkmProductsAction();
-      if (res.success && res.data && res.data.length > 0) {
+      if (res.success && res.data) {
         setProducts(res.data);
       } else {
-        setProducts(DEFAULT_SEED_PRODUCTS);
+        setProducts([]);
       }
     } catch {
       toast.error("Gagal terhubung ke backend");
@@ -213,14 +213,14 @@ export function UmkmMenuView() {
       {/* 2. Search, Sort Dropdown & Quick Link */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         {/* Kolom Pencarian */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+        <div className="flex-1">
           <Input
             type="text"
             placeholder="Cari berdasarkan nama produk atau bahan baku..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-11 text-xs sm:text-sm bg-surface rounded-xl"
+            leftElement={<Search className="w-4 h-4" />}
+            className="h-11 text-xs sm:text-sm bg-surface rounded-xl"
           />
         </div>
 
@@ -328,7 +328,7 @@ export function UmkmMenuView() {
               totalItems={processedProducts.length}
               onPageChange={setCurrentPage}
               onPageSizeChange={setPageSize}
-              pageSizeOptions={[6, 9, 12, 24]}
+              pageSizeOptions={[9, 12, 18, 27]}
               itemLabel="produk"
             />
           )}

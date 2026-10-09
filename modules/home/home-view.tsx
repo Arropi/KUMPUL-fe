@@ -18,6 +18,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
+import { Pagination15 } from "@/components/ui/pagination";
 import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
 import { UserRole, UserSession } from "@/constants/auth";
 import { Search, ChevronDown, Sparkles, ShoppingBag, Plus } from "lucide-react";
@@ -68,6 +69,9 @@ export function HomeView({
   const [purchasingCommodity, setPurchasingCommodity] =
     React.useState<SupplierCommodity | null>(null);
 
+  // Pagination state (Watermelon UI Pagination-15)
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [pageSize, setPageSize] = React.useState<number>(9);
   // Handle deep link from AI ingredient recommendations or search parameters
   React.useEffect(() => {
     const searchParam = searchParams.get("search");
@@ -121,6 +125,16 @@ export function HomeView({
     return matchSearch && matchSector && matchReadyStock && matchPool && matchVerified;
   });
 
+  // Reset halaman saat filter berubah
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedSector, onlyReadyStock, onlyOpenPools, onlyVerified]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCommodities.length / pageSize));
+  const paginatedCommodities = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredCommodities.slice(start, start + pageSize);
+  }, [filteredCommodities, currentPage, pageSize]);
   return (
     <div className="space-y-8 pb-10">
       {/* 1. Header Marketplace */}
@@ -194,14 +208,14 @@ export function HomeView({
         {/* Filter & Pencarian */}
         <Card className="p-4 sm:p-5 bg-surface border-border shadow-elevation-1 rounded-2xl space-y-3.5">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            <div className="flex-1 relative max-w-md">
-              <Search className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="flex-1 max-w-md">
               <Input
                 id="search-commodity"
                 placeholder="Cari komoditas, SKU, izin mutu, kota..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 min-h-[42px]"
+                leftElement={<Search className="w-4 h-4" />}
+                className="min-h-[42px]"
               />
             </div>
 
@@ -257,7 +271,7 @@ export function HomeView({
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
               }`}
             >
-              🔥 Pool Terbuka Saja
+              Pool Terbuka Saja
             </button>
             <button
               type="button"
@@ -268,7 +282,7 @@ export function HomeView({
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
               }`}
             >
-              🛡️ Terverifikasi Mutu AI
+              Terverifikasi Mutu AI
             </button>
           </div>
         </Card>
@@ -284,16 +298,32 @@ export function HomeView({
             </p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredCommodities.map((item) => (
-              <CommodityCatalogCard
-                key={item.id}
-                item={item}
-                role={role}
-                pageContext="home"
-                onPurchase={isUmkm ? setPurchasingCommodity : undefined}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {paginatedCommodities.map((item) => (
+                <CommodityCatalogCard
+                  key={item.id}
+                  item={item}
+                  role={role}
+                  pageContext="home"
+                  onPurchase={isUmkm ? setPurchasingCommodity : undefined}
+                />
+              ))}
+            </div>
+
+            {/* Watermelon UI Pagination-15 Component */}
+            {filteredCommodities.length > 0 && (
+              <Pagination15
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={filteredCommodities.length}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[9, 12, 18, 27]}
+                itemLabel="komoditas"
               />
-            ))}
+            )}
           </div>
         )}
       </div>

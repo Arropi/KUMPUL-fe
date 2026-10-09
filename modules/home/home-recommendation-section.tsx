@@ -216,7 +216,7 @@ export function HomeRecommendationSection({
                     >
                       <div>
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-heading font-bold text-sm text-text-primary line-clamp-1">
+                          <h3 className="font-heading font-bold text-sm text-text-primary line-clamp-1" title={b.commodity_name}>
                             {b.commodity_name}
                           </h3>
                           {isCompetitive ? (
@@ -297,7 +297,7 @@ export function HomeRecommendationSection({
                       <span className="text-[10px] font-bold text-primary uppercase block">
                         Paling Banyak Dicari #{idx + 1}
                       </span>
-                      <h4 className="font-heading font-bold text-sm text-text-primary truncate">
+                      <h4 className="font-heading font-bold text-sm text-text-primary truncate" title={d.ingredient_name}>
                         {d.ingredient_name}
                       </h4>
                       <p className="text-xs text-text-muted mt-0.5">
@@ -474,14 +474,13 @@ export function HomeRecommendationSection({
                     className="p-4 bg-surface border-border rounded-2xl shadow-elevation-1 space-y-3 flex flex-col justify-between"
                   >
                     <div>
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg w-fit">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <div className="text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg w-fit">
                         <span>Paspor Mutu Gemini AI</span>
                       </div>
-                      <h3 className="font-heading font-bold text-base text-text-primary mt-2">
+                      <h3 className="font-heading font-bold text-base text-text-primary mt-2 line-clamp-1" title={alt.commodity_name}>
                         {alt.commodity_name}
                       </h3>
-                      <p className="text-xs text-text-secondary mt-1">
+                      <p className="text-xs text-text-secondary mt-1 truncate" title={`Pemasok: ${alt.supplier_name} • ${alt.seller_city}`}>
                         Pemasok: {alt.supplier_name} &bull; {alt.seller_city}
                       </p>
                       <div className="mt-2 text-sm font-extrabold text-primary">
@@ -517,7 +516,7 @@ export function HomeRecommendationSection({
                 if (matched) {
                   return (
                     <div key={`near-${near.commodity_id}`} className="relative">
-                      <div className="absolute -inset-0.5 rounded-2xl blur-[2px] opacity-75 pointer-events-none bg-gradient-to-r from-blue-500/25 to-indigo-500/25" />
+                      <div className="absolute -inset-0.5 rounded-2xl blur-[2px] opacity-75 pointer-events-none bg-gradient-to-r from-primary/20 to-emerald-500/20" />
                       <div className="relative">
                         <CommodityCatalogCard
                           item={matched}
@@ -541,10 +540,10 @@ export function HomeRecommendationSection({
                         <MapPin className="w-3 h-3 text-primary" />
                         <span>{near.seller_city}</span>
                       </div>
-                      <h3 className="font-heading font-bold text-base text-text-primary mt-2">
+                      <h3 className="font-heading font-bold text-base text-text-primary mt-2 line-clamp-1" title={near.commodity_name}>
                         {near.commodity_name}
                       </h3>
-                      <p className="text-xs text-text-secondary mt-1">
+                      <p className="text-xs text-text-secondary mt-1 truncate" title={`Pemasok: ${near.supplier_name} • Stok: ${near.stock} ${near.wholesale_unit}`}>
                         Pemasok: {near.supplier_name} &bull; Stok: {near.stock} {near.wholesale_unit}
                       </p>
                       <div className="mt-2 text-sm font-extrabold text-primary">
@@ -574,18 +573,17 @@ export function HomeRecommendationSection({
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
-                    <Flame className="w-3 h-3 text-amber-600 animate-pulse" />
-                    <span>Hemat {pool.estimated_savings_percentage}%</span>
+                  <span className="text-[11px] font-bold text-amber-800 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-md">
+                    Hemat {pool.estimated_savings_percentage}%
                   </span>
                   {pool.target_delivery_date && (
-                    <span className="text-[10px] text-text-muted font-medium">
+                    <span className="text-[10px] text-text-muted font-medium truncate">
                       Est. Tiba: {pool.target_delivery_date}
                     </span>
                   )}
                 </div>
 
-                <h3 className="font-heading font-bold text-sm text-text-primary mt-2">
+                <h3 className="font-heading font-bold text-sm text-text-primary mt-2 line-clamp-1" title={pool.commodity_name}>
                   {pool.commodity_name}
                 </h3>
                 <p className="text-xs text-text-secondary mt-1">

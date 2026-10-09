@@ -3,12 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  MOCK_WASTE_LISTINGS,
   type WasteListing,
   type WasteBuyerOrder,
 } from "@/constants/umkm";
-import { DEFAULT_SEED_PRODUCTS } from "@/lib/menu-intelligence";
-import type { BEProduct } from "@/lib/api/types";
+import { getWasteListingsAction, createWasteListingAction } from "@/actions/waste";
+import type { BEWasteListing, BEWasteCategory, BEProduct } from "@/lib/api/types";
 import { getUmkmProductsAction } from "@/actions/products";
 import { BankSampahMapSection } from "@/modules/umkm/bank-sampah-map-section";
 import { Button } from "@/components/ui/button";
@@ -256,17 +255,69 @@ const WASTE_UNITS = [
   "Pallet",
   "Koli",
 ] as const;
-
 type FilterTab = "SEMUA" | "ADA_PEMBELI" | "LEWAT_KADALUARSA" | "MENDEKATI_KADALUARSA" | "TERSEDIA";
 
+export const WASTE_CATEGORY_OPTIONS: Array<{
+  value: BEWasteCategory;
+  label: string;
+  badgeClass: string;
+}> = [
+  {
+    value: "ORGANIK_BASAH",
+    label: "Organik Basah",
+    badgeClass: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
+  },
+  {
+    value: "ORGANIK_KERING",
+    label: "Organik Kering",
+    badgeClass: "bg-amber-50 text-amber-800 border-amber-200/80",
+  },
+  {
+    value: "TEKSTIL_PERCA",
+    label: "Tekstil Perca",
+    badgeClass: "bg-purple-50 text-purple-800 border-purple-200/80",
+  },
+  {
+    value: "ANORGANIK",
+    label: "Anorganik",
+    badgeClass: "bg-blue-50 text-blue-800 border-blue-200/80",
+  },
+];
+
+function mapBEWasteToUI(be: BEWasteListing): WasteListing {
+  const weight = Number(be.available_weight) || 0;
+  const price = Number(be.price_per_kg) || 0;
+  return {
+    id: be.id,
+    title: be.listing_title,
+    category: be.waste_category,
+    imageUrl: undefined,
+    description: be.notes || undefined,
+    totalVolume: weight,
+    volumeKg: weight,
+    unit: "Kg",
+    pricePerKg: price,
+    location: be.seller_address || "Surabaya, Jawa Timur",
+    expiryDate: be.expired_at ? be.expired_at.split("T")[0] : "",
+    status: be.listing_status === "SOLD_OUT" ? "HABIS_TERJUAL" : "TERSEDIA",
+    potentialRevenue: weight * price,
+    realizedRevenue: 0,
+    suitableOfftaker: "Sesama UMKM & Mitra Terdaftar",
+    buyerOrders: [],
+  };
+}
+
 export function UmkmSirkularView() {
-  const [wasteListings, setWasteListings] = React.useState<WasteListing[]>(MOCK_WASTE_LISTINGS);
+  const [wasteListings, setWasteListings] = React.useState<WasteListing[]>([]);
+  const [isLoadingListings, setIsLoadingListings] = React.useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
   const [products, setProducts] = React.useState<BEProduct[]>([]);
   const [activeFilter, setActiveFilter] = React.useState<FilterTab>("SEMUA");
 
   // Form State Modal Tambah Listing
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState("");
+  const [newCategory, setNewCategory] = React.useState<BEWasteCategory>("ORGANIK_BASAH");
   const [newVolume, setNewVolume] = React.useState<number>(50);
   const [newUnit, setNewUnit] = React.useState<string>("Kg");
   const [newPricePerUnit, setNewPricePerUnit] = React.useState<number>(1500);
@@ -303,18 +354,23 @@ export function UmkmSirkularView() {
     let matchedBenchmark = AI_WASTE_BENCHMARKS[0]; // default: minyak jelantah
     if (lowerText.includes("minyak") || lowerText.includes("jelantah") || lowerText.includes("uco") || lowerText.includes("goreng")) {
       matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "jelantah") || AI_WASTE_BENCHMARKS[0];
+      setNewCategory("ORGANIK_KERING");
     } else if (lowerText.includes("tahu") || lowerText.includes("kedelai") || lowerText.includes("ampas")) {
       matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "ampas_tahu") || AI_WASTE_BENCHMARKS[1];
+      setNewCategory("ORGANIK_BASAH");
     } else if (lowerText.includes("telur") || lowerText.includes("cangkang") || lowerText.includes("kulit telur")) {
       matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "cangkang_telur") || AI_WASTE_BENCHMARKS[2];
+      setNewCategory("ORGANIK_KERING");
     } else if (lowerText.includes("kopi") || lowerText.includes("teh") || lowerText.includes("coffee")) {
       matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "ampas_kopi") || AI_WASTE_BENCHMARKS[3];
+      setNewCategory("ORGANIK_KERING");
     } else if (lowerText.includes("sayur") || lowerText.includes("buah") || lowerText.includes("kulit") || lowerText.includes("daun")) {
       matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "kulit_sayur") || AI_WASTE_BENCHMARKS[4];
+      setNewCategory("ORGANIK_BASAH");
     } else if (lowerText.includes("tulang") || lowerText.includes("daging") || lowerText.includes("ayam") || lowerText.includes("sapi") || lowerText.includes("ikan")) {
       matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "tulang_hewani") || AI_WASTE_BENCHMARKS[5];
+      setNewCategory("ORGANIK_BASAH");
     }
-
     // 2. Deteksi indikator kualitas & penanganan
     const isPremiumQuality =
       lowerText.includes("jernih") ||
@@ -347,35 +403,43 @@ export function UmkmSirkularView() {
     toast.success(`Saran harga AI ${formatCurrency(conditionData.price)}/${newUnit} berhasil diterapkan!`, "Rekomendasi AI");
   };
 
+  // Load listing limbah dari Backend Express
+  const loadListings = React.useCallback(async () => {
+    setIsLoadingListings(true);
+    try {
+      const res = await getWasteListingsAction();
+      if (res.success && res.data) {
+        setWasteListings(res.data.map(mapBEWasteToUI));
+      } else {
+        setWasteListings([]);
+      }
+    } catch {
+      setWasteListings([]);
+    } finally {
+      setIsLoadingListings(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadListings();
+  }, [loadListings]);
+
   // Load produk UMKM untuk integrasi asal limbah
   React.useEffect(() => {
     async function loadProducts() {
       try {
         const res = await getUmkmProductsAction();
-        if (res.success && res.data && res.data.length > 0) {
+        if (res.success && res.data) {
           setProducts(res.data);
           return;
         }
       } catch {
-        // Fallback to local storage or default seed
+        // Safe fail
       }
-      if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("kumpul_mock_products");
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setProducts(parsed);
-              return;
-            }
-          } catch { }
-        }
-      }
-      setProducts(DEFAULT_SEED_PRODUCTS);
+      setProducts([]);
     }
     loadProducts();
   }, []);
-
   // Helper kalkulasi sisa hari kadaluarsa
   const getExpiryDiffDays = (dateStr?: string): number => {
     if (!dateStr) return 999;
@@ -459,56 +523,43 @@ export function UmkmSirkularView() {
     }
   };
 
-  // Tambah listing baru
-  const handleAddListing = (e: React.FormEvent) => {
+  // Tambah listing baru ke backend
+  const handleAddListing = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    const lowerTitle = newTitle.toLowerCase();
-    const derivedCategory =
-      lowerTitle.includes("minyak") || lowerTitle.includes("jelantah")
-        ? "Minyak Jelantah (UCO)"
-        : lowerTitle.includes("tahu") || lowerTitle.includes("kedelai")
-          ? "Ampas Kedelai / Tahu"
-          : lowerTitle.includes("telur")
-            ? "Cangkang Telur"
-            : lowerTitle.includes("kopi") || lowerTitle.includes("teh")
-              ? "Ampas Kopi & Teh"
-              : lowerTitle.includes("tulang")
-                ? "Tulang & Trimming Hewani"
-                : lowerTitle.includes("sayur") || lowerTitle.includes("kulit")
-                  ? "Residu Kulit & Sayur"
-                  : "Biomassa Organik Lainnya";
+    setIsSubmitting(true);
+    try {
+      const res = await createWasteListingAction({
+        title: newTitle.trim(),
+        category: newCategory,
+        availableWeight: newVolume,
+        pricePerKg: newPricePerUnit,
+        expiredAt: newExpiryDate,
+        notes: newDescription.trim() || undefined,
+      });
 
-    const newListing: WasteListing = {
-      id: `waste-${Date.now()}`,
-      title: newTitle.trim(),
-      category: derivedCategory,
-      imageUrl: newImageUrl.trim() || undefined,
-      description: newDescription.trim() || undefined,
-      totalVolume: newVolume,
-      volumeKg: newVolume,
-      unit: newUnit,
-      pricePerKg: newPricePerUnit,
-      location: "Rungkut, Surabaya",
-      expiryDate: newExpiryDate,
-      status: "TERSEDIA",
-      potentialRevenue: newVolume * newPricePerUnit,
-      realizedRevenue: 0,
-      suitableOfftaker: "Sesama UMKM & Mitra Terdaftar",
-      buyerOrders: [],
-    };
-
-    setWasteListings((prev) => [newListing, ...prev]);
-    setIsAddModalOpen(false);
-    setNewTitle("");
-    setNewVolume(50);
-    setNewUnit("Kg");
-    setNewPricePerUnit(1500);
-    setNewImageUrl("");
-    setNewDescription("");
-    setAiPriceInsight(null);
-    toast.success("Listing limbah berhasil ditayangkan! Pantau pesanan masuk di menu Pesanan.", "Listing Dibuat");
+      if (res.success && res.data) {
+        const newUI = mapBEWasteToUI(res.data);
+        setWasteListings((prev) => [newUI, ...prev]);
+        setIsAddModalOpen(false);
+        setNewTitle("");
+        setNewCategory("ORGANIK_BASAH");
+        setNewVolume(50);
+        setNewUnit("Kg");
+        setNewPricePerUnit(1500);
+        setNewImageUrl("");
+        setNewDescription("");
+        setAiPriceInsight(null);
+        toast.success("Listing limbah berhasil dipublikasikan ke Bursa Sirkular!", "Listing Dibuat");
+      } else {
+        toast.error(res.message || "Gagal membuat listing limbah di server.");
+      }
+    } catch {
+      toast.error("Terjadi kendala saat menghubungi server.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Filter listings
@@ -619,12 +670,25 @@ export function UmkmSirkularView() {
         </div>
 
         {/* Grid Kartu Limbah */}
-        {filteredListings.length === 0 ? (
+        {isLoadingListings ? (
+          <div className="p-12 text-center rounded-2xl border border-border bg-surface space-y-3">
+            <div className="size-8 mx-auto rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <p className="font-heading text-sm font-bold text-text-primary">
+              Memuat listing residu limbah dapur...
+            </p>
+          </div>
+        ) : filteredListings.length === 0 ? (
           <div className="p-8 text-center rounded-2xl border border-dashed border-border bg-surface-subtle space-y-2">
             <Recycle className="size-8 text-text-muted mx-auto" />
-            <p className="font-heading text-sm font-bold text-text-primary">Tidak ada limbah pada filter ini</p>
+            <p className="font-heading text-sm font-bold text-text-primary">
+              {wasteListings.length === 0
+                ? "Belum ada listing residu limbah aktif"
+                : "Tidak ada limbah pada filter ini"}
+            </p>
             <p className="font-sans text-xs text-text-muted">
-              Pilih tab &quot;Semua&quot; atau pasang listing limbah baru dari dapurmu.
+              {wasteListings.length === 0
+                ? 'Klik tombol "Jual Limbah Dapur" di atas untuk mempublikasikan sisa olahan dapur Anda.'
+                : 'Pilih tab "Semua" atau pasang listing limbah baru dari dapurmu.'}
             </p>
           </div>
         ) : (
@@ -735,16 +799,26 @@ export function UmkmSirkularView() {
                   {/* Inner Card Section (Card-12 Pattern) */}
                   <Card className="rounded-t-none border-none shadow-none bg-transparent !py-0 !gap-3 flex-1 flex flex-col justify-between">
                     <CardHeader className="space-y-1 p-4 pb-0">
-                      <CardTitle className="text-sm sm:text-base font-heading font-bold text-text-primary line-clamp-1 leading-snug">
-                        {item.title}
-                      </CardTitle>
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-sm sm:text-base font-heading font-bold text-text-primary line-clamp-1 leading-snug flex-1" title={item.title}>
+                          {item.title}
+                        </CardTitle>
+                        {item.category && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${
+                            WASTE_CATEGORY_OPTIONS.find((c) => c.value === item.category)?.badgeClass ||
+                            "bg-surface-subtle text-text-secondary border-border"
+                          }`}>
+                            {WASTE_CATEGORY_OPTIONS.find((c) => c.value === item.category)?.label || item.category}
+                          </span>
+                        )}
+                      </div>
                       {item.description ? (
-                        <CardDescription className="text-xs text-text-secondary line-clamp-2 leading-relaxed min-h-[2rem]">
+                        <CardDescription className="text-xs text-text-secondary line-clamp-2 leading-relaxed min-h-[2rem]" title={item.description}>
                           {item.description}
                         </CardDescription>
                       ) : (
                         <CardDescription className="text-xs text-text-muted min-h-[2rem]">
-                          Kategori: <span className="font-medium text-text-secondary">{item.category || "Limbah Organik"}</span>
+                          {item.location || "Lokasi: Surabaya, Jawa Timur"}
                         </CardDescription>
                       )}
                     </CardHeader>
@@ -946,8 +1020,46 @@ export function UmkmSirkularView() {
                   className="w-full h-10 text-xs rounded-xl"
                 />
               </div>
+              {/* 2. KATEGORI LIMBAH */}
+              <div className="space-y-1.5">
+                <label className="font-heading text-xs font-bold text-text-primary">
+                  Kategori Limbah *
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center justify-between gap-2 h-10 w-full px-3.5 rounded-xl border border-border bg-surface text-xs font-medium text-text-primary shadow-xs outline-none cursor-pointer hover:border-primary/40 hover:bg-surface-subtle focus:ring-2 focus:ring-primary/20 transition-all text-left"
+                    >
+                      <span className="truncate">
+                        {WASTE_CATEGORY_OPTIONS.find((c) => c.value === newCategory)?.label || newCategory}
+                      </span>
+                      <ChevronDown className="size-3.5 text-text-muted shrink-0 ml-1" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-[calc(100vw-3rem)] sm:w-64 max-h-64 overflow-y-auto p-1 rounded-xl shadow-elevation-2 bg-surface border border-border custom-scrollbar z-50"
+                  >
+                    <DropdownMenuRadioGroup
+                      value={newCategory}
+                      onValueChange={(val) => setNewCategory(val as BEWasteCategory)}
+                    >
+                      {WASTE_CATEGORY_OPTIONS.map((cat) => (
+                        <DropdownMenuRadioItem
+                          key={cat.value}
+                          value={cat.value}
+                          className="py-2 px-2.5 rounded-lg cursor-pointer hover:bg-surface-subtle text-xs font-medium text-text-primary"
+                        >
+                          {cat.label}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-              {/* 2. VOLUME & SATUAN */}
+              {/* 3. VOLUME & SATUAN */}
               <div className="space-y-1.5">
                 <label className="font-heading text-xs font-bold text-text-primary flex items-center justify-between">
                   <span>Jumlah Volume &amp; Satuan</span>
@@ -1185,6 +1297,7 @@ export function UmkmSirkularView() {
                 variant="secondary"
                 size="default"
                 onClick={() => setIsAddModalOpen(false)}
+                disabled={isSubmitting}
                 className="flex-1 min-h-[42px] cursor-pointer"
               >
                 Batal
@@ -1193,9 +1306,11 @@ export function UmkmSirkularView() {
                 type="submit"
                 variant="primary"
                 size="default"
+                disabled={isSubmitting}
+                isLoading={isSubmitting}
                 className="flex-1 font-bold min-h-[42px] cursor-pointer shadow-xs"
               >
-                Tayangkan Listing
+                {isSubmitting ? "Menayangkan..." : "Tayangkan Listing"}
               </Button>
             </div>
           </form>

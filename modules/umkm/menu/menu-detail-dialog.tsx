@@ -29,8 +29,9 @@ import type { BEProduct, BERecipe } from "@/lib/api/types";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { calculateCircularMargin } from "@/lib/menu-intelligence";
 import { getProductWastePrediction } from "@/lib/ai-waste-prediction";
+import { beFetch } from "@/lib/api/be-client";
+import { cn } from "@/lib/utils";
 import { SECTOR_OPTIONS } from "./menu-types";
-
 interface MenuDetailDialogProps {
   product: BEProduct | null;
   isOpen: boolean;
@@ -45,111 +46,197 @@ interface SmartCommodityRecommendation {
   reason: string;
 }
 
+interface CommodityItem {
+  id: string;
+  name: string;
+}
+
+const INITIAL_BERANDA_COMMODITIES: CommodityItem[] = [];
+
 /**
  * Heuristik AI Alternatif Bahan Baku Cerdas:
- * Mengambil komoditas riil dari database Beranda / Marketplace KUMPUL.
- * Menghasilkan pasangan: Card Kiri (HEMAT / Penekanan Biaya) & Card Kanan (SEHAT / Nutrisi).
+ * Berdasarkan komoditas riil yang benar-benar tersedia di bursa Beranda KUMPUL.
+ * Jika tidak ada komoditas di Beranda yang sesuai dengan resep produk, mengembalikan null (tidak ditampilkan).
  */
-function getBerandaAiRecommendations(recipes: BERecipe[]): {
-  hemat: SmartCommodityRecommendation;
-  sehat: SmartCommodityRecommendation;
-} {
+function getBerandaAiRecommendations(
+  recipes: BERecipe[],
+  availableCommodities: CommodityItem[]
+): {
+  hemat?: SmartCommodityRecommendation;
+  sehat?: SmartCommodityRecommendation;
+} | null {
+  if (!recipes || recipes.length === 0) return null;
+
   const recipeText = recipes.map((r) => (r.ingredient_name || "").toLowerCase()).join(" ");
 
-  let hemat: SmartCommodityRecommendation;
-  let sehat: SmartCommodityRecommendation;
+  // Cari komoditas yang benar-benar terdaftar di Beranda
+  const findCommodity = (keywords: string[]): CommodityItem | undefined => {
+    return availableCommodities.find((c) => {
+      const lower = c.name.toLowerCase();
+      return keywords.some((k) => lower.includes(k));
+    });
+  };
 
-  if (recipeText.includes("ayam") || recipeText.includes("daging") || recipeText.includes("karkas")) {
-    hemat = {
-      commodityId: "com-04",
-      commodityName: "Daging Ayam Broiler Karkas Segar (0.9 s.d. 1.0 kg)",
-      badgeLabel: "Hemat 25%",
-      reason: "Beli langsung dari peternak kemitraan KUMPUL memotong biaya perantara dan menstabilkan HPP harian hingga 25% dibanding harga eceran pasar.",
-    };
-    sehat = {
-      commodityId: "com-02",
-      commodityName: "Kedelai Kuning Non-GMO Pilihan",
-      badgeLabel: "Sehat: Jantung & Bebas Kolesterol",
-      reason: "Kedelai varietas Grobogan non-GMO tinggi isoflavon dan asam amino alami, bebas lemak jenuh dan aman bagi kesehatan kardiovaskular konsumen.",
-    };
-  } else if (recipeText.includes("bebek")) {
-    hemat = {
-      commodityId: "com-05",
-      commodityName: "Daging Bebek Karkas Segar Pilihan (0.9 - 1.1 kg)",
-      badgeLabel: "Hemat 18%",
-      reason: "Karkas higienis siap potong mengeliminasi susut bobot pembersihan bulu dan jeroan hingga 18%, efisien untuk kalkulasi porsi tetap.",
-    };
-    sehat = {
-      commodityId: "com-03",
-      commodityName: "Bawang Merah Brebes Super Askip",
-      badgeLabel: "Sehat: Imunitas & Anti-Inflamasi",
-      reason: "Bawang merah askip kaya allicin alami untuk melancarkan metabolisme lemak hewani dan bebas semprotan pengawet kimia.",
-    };
-  } else if (recipeText.includes("cabai") || recipeText.includes("cabe") || recipeText.includes("sambal")) {
-    hemat = {
-      commodityId: "com-06",
-      commodityName: "Cabai Rawit Merah Super Segar (Grade Super)",
-      badgeLabel: "Hemat 30%",
-      reason: "Memotong 3 lapis tengkulak pasar induk, mengamankan kuota dengan diskon pooling 30% saat harga pasar sedang melonjak.",
-    };
-    sehat = {
-      commodityId: "com-06",
-      commodityName: "Cabai Rawit Merah Super Segar (Grade Super)",
-      badgeLabel: "Sehat: Sirkulasi Darah & Vitamin C Tinggi",
-      reason: "Dipanen pada tingkat kematangan optimal, kaya vitamin C alami dan capsaicin aktif untuk meningkatkan metabolisme tubuh.",
-    };
-  } else if (recipeText.includes("bawang")) {
-    hemat = {
-      commodityId: "com-03",
-      commodityName: "Bawang Merah Brebes Super Askip",
-      badgeLabel: "Hemat 20%",
-      reason: "Metode askip tradisional menjamin kadar air di bawah 12%, mencegah kebusukan simpan di dapur dan menekan biaya susut hingga 20%.",
-    };
-    sehat = {
-      commodityId: "com-03",
-      commodityName: "Bawang Merah Brebes Super Askip",
-      badgeLabel: "Sehat: Saluran Cerna & Prebiotik Alami",
-      reason: "Tinggi serat inulin yang berfungsi sebagai prebiotik untuk mikrobioma usus serta bebas dari zat kimia pemutih/pengkilap.",
-    };
-  } else if (recipeText.includes("beras") || recipeText.includes("nasi")) {
-    hemat = {
-      commodityId: "com-01",
-      commodityName: "Beras Ramos Cianjur Super (Grade A)",
-      badgeLabel: "Hemat 15%",
-      reason: "Pengadaan karung 50kg via autonomous pooling KUMPUL menekan modal beras hingga 15% dibanding belanja karung kecil eceran.",
-    };
-    sehat = {
-      commodityId: "com-01",
-      commodityName: "Beras Ramos Cianjur Super (Grade A)",
-      badgeLabel: "Sehat: Saluran Cerna (Bebas Pemutih)",
-      reason: "Hasil panen sawah binaan Cianjur diproses tanpa klorin pemutih maupun pewangi buatan, aman bagi pencernaan dan lambung sensitif.",
-    };
-  } else if (recipeText.includes("tahu") || recipeText.includes("tempe") || recipeText.includes("kedelai")) {
-    hemat = {
-      commodityId: "com-02",
-      commodityName: "Kedelai Kuning Non-GMO Pilihan",
-      badgeLabel: "Hemat 22%",
-      reason: "Pengadaan langsung dari sentra Grobogan menekan harga bahan baku per kg hingga 22% untuk industri olahan tahu/tempe/susu.",
-    };
-    sehat = {
-      commodityId: "com-02",
-      commodityName: "Kedelai Kuning Non-GMO Pilihan",
-      badgeLabel: "Sehat: Jantung & Kontrol Gula Darah (Low GI)",
-      reason: "Tinggi protein nabati, serat larut, dan isoflavon aktif untuk menjaga kesehatan kardiovaskular dan menjaga kestabilan glukosa darah.",
-    };
-  } else {
-    hemat = {
-      commodityId: "com-07",
-      commodityName: "Minyak Goreng Sawit CP8 Higienis (Jeriken 18L)",
-      badgeLabel: "Hemat 24%",
-      reason: "Pembelian kemasan bulk 18L memangkas biaya kemasan ritel hingga 24% untuk siklus produksi penggorengan harian UMKM.",
-    };
-    sehat = {
-      commodityId: "com-02",
-      commodityName: "Kedelai Kuning Non-GMO Pilihan",
-      badgeLabel: "Sehat: Jantung & Bebas Kolesterol",
-      reason: "Bahan pangan nabati murni bersertifikat mutu pangan PSAT, bebas modifikasi genetik dan bebas kolesterol untuk nilai tambah menu.",
-    };
+  let hemat: SmartCommodityRecommendation | undefined;
+  let sehat: SmartCommodityRecommendation | undefined;
+
+  // 1. Daging Bebek
+  if (recipeText.includes("bebek")) {
+    const bebekCom = findCommodity(["bebek"]);
+    const bawangCom = findCommodity(["bawang"]);
+    if (bebekCom) {
+      hemat = {
+        commodityId: bebekCom.id,
+        commodityName: bebekCom.name,
+        badgeLabel: "Hemat 18%",
+        reason: "Karkas higienis siap potong mengeliminasi susut bobot pembersihan bulu dan jeroan hingga 18%, efisien untuk kalkulasi porsi tetap.",
+      };
+    }
+    if (bawangCom) {
+      sehat = {
+        commodityId: bawangCom.id,
+        commodityName: bawangCom.name,
+        badgeLabel: "Sehat: Imunitas & Anti-Inflamasi",
+        reason: "Bawang merah askip kaya allicin alami untuk melancarkan metabolisme lemak hewani dan bebas semprotan pengawet kimia.",
+      };
+    }
+  }
+  // 2. Daging Ayam / Unggas
+  else if (recipeText.includes("ayam") || recipeText.includes("fillet") || recipeText.includes("unggas")) {
+    const ayamCom = findCommodity(["ayam"]);
+    const kedelaiCom = findCommodity(["kedelai"]);
+    if (ayamCom) {
+      hemat = {
+        commodityId: ayamCom.id,
+        commodityName: ayamCom.name,
+        badgeLabel: "Hemat 25%",
+        reason: "Beli langsung dari peternak kemitraan KUMPUL memotong biaya perantara dan menstabilkan HPP harian hingga 25% dibanding harga eceran pasar.",
+      };
+    }
+    if (kedelaiCom) {
+      sehat = {
+        commodityId: kedelaiCom.id,
+        commodityName: kedelaiCom.name,
+        badgeLabel: "Sehat: Jantung & Bebas Kolesterol",
+        reason: "Alternatif protein nabati non-GMO kaya isoflavon, bebas lemak jenuh dan aman bagi kesehatan kardiovaskular konsumen.",
+      };
+    }
+  }
+  // 3. Cabai / Cabe / Sambal
+  else if (recipeText.includes("cabai") || recipeText.includes("cabe") || recipeText.includes("rawit") || recipeText.includes("sambal")) {
+    const cabaiCom = findCommodity(["cabai", "cabe"]);
+    if (cabaiCom) {
+      hemat = {
+        commodityId: cabaiCom.id,
+        commodityName: cabaiCom.name,
+        badgeLabel: "Hemat 30%",
+        reason: "Memotong rantai tengkulak pasar induk, mengamankan kuota dengan diskon pooling 30% saat harga pasar sedang melonjak.",
+      };
+      sehat = {
+        commodityId: cabaiCom.id,
+        commodityName: cabaiCom.name,
+        badgeLabel: "Sehat: Sirkulasi Darah & Vitamin C",
+        reason: "Dipanen pada tingkat kematangan optimal, kaya vitamin C alami dan capsaicin aktif untuk meningkatkan metabolisme tubuh.",
+      };
+    }
+  }
+  // 4. Bawang Merah / Bumbu
+  else if (recipeText.includes("bawang")) {
+    const bawangCom = findCommodity(["bawang"]);
+    if (bawangCom) {
+      hemat = {
+        commodityId: bawangCom.id,
+        commodityName: bawangCom.name,
+        badgeLabel: "Hemat 20%",
+        reason: "Metode askip tradisional menjamin kadar air di bawah 12%, mencegah kebusukan simpan di dapur dan menekan biaya susut hingga 20%.",
+      };
+      sehat = {
+        commodityId: bawangCom.id,
+        commodityName: bawangCom.name,
+        badgeLabel: "Sehat: Saluran Cerna & Prebiotik",
+        reason: "Tinggi serat inulin yang berfungsi sebagai prebiotik untuk mikrobioma usus serta bebas dari zat kimia pemutih/pengkilap.",
+      };
+    }
+  }
+  // 5. Beras / Nasi
+  else if (recipeText.includes("beras") || recipeText.includes("nasi")) {
+    const berasCom = findCommodity(["beras"]);
+    if (berasCom) {
+      hemat = {
+        commodityId: berasCom.id,
+        commodityName: berasCom.name,
+        badgeLabel: "Hemat 15%",
+        reason: "Pengadaan karung 50kg via autonomous pooling KUMPUL menekan modal beras hingga 15% dibanding belanja karung kecil eceran.",
+      };
+      sehat = {
+        commodityId: berasCom.id,
+        commodityName: berasCom.name,
+        badgeLabel: "Sehat: Saluran Cerna (Bebas Pemutih)",
+        reason: "Hasil panen sawah binaan diproses tanpa klorin pemutih maupun pewangi buatan, aman bagi pencernaan dan lambung sensitif.",
+      };
+    }
+  }
+  // 6. Kedelai / Tahu / Tempe
+  else if (recipeText.includes("kedelai") || recipeText.includes("tahu") || recipeText.includes("tempe") || recipeText.includes("soya")) {
+    const kedelaiCom = findCommodity(["kedelai"]);
+    if (kedelaiCom) {
+      hemat = {
+        commodityId: kedelaiCom.id,
+        commodityName: kedelaiCom.name,
+        badgeLabel: "Hemat 22%",
+        reason: "Pengadaan langsung dari sentra binaan menekan harga bahan baku per kg hingga 22% untuk industri olahan tahu/tempe/susu.",
+      };
+      sehat = {
+        commodityId: kedelaiCom.id,
+        commodityName: kedelaiCom.name,
+        badgeLabel: "Sehat: Jantung & Kontrol Gula Darah",
+        reason: "Tinggi protein nabati, serat larut, dan isoflavon aktif untuk menjaga kesehatan kardiovaskular dan kestabilan glukosa darah.",
+      };
+    }
+  }
+  // 7. Minyak Goreng
+  else if (recipeText.includes("minyak") || recipeText.includes("goreng") || recipeText.includes("oil") || recipeText.includes("margarin")) {
+    const minyakCom = findCommodity(["minyak"]);
+    const kedelaiCom = findCommodity(["kedelai"]);
+    if (minyakCom) {
+      hemat = {
+        commodityId: minyakCom.id,
+        commodityName: minyakCom.name,
+        badgeLabel: "Hemat 24%",
+        reason: "Pembelian kemasan bulk jeriken memangkas biaya kemasan ritel hingga 24% untuk siklus produksi penggorengan harian UMKM.",
+      };
+    }
+    if (kedelaiCom) {
+      sehat = {
+        commodityId: kedelaiCom.id,
+        commodityName: kedelaiCom.name,
+        badgeLabel: "Sehat: Jantung & Bebas Kolesterol",
+        reason: "Bahan pangan nabati murni bersertifikat mutu pangan PSAT, bebas modifikasi genetik dan bebas kolesterol untuk nilai tambah menu.",
+      };
+    }
+  }
+  // 8. Kopi
+  else if (recipeText.includes("kopi") || recipeText.includes("coffee") || recipeText.includes("espresso")) {
+    const kopiCom = findCommodity(["kopi"]);
+    if (kopiCom) {
+      hemat = {
+        commodityId: kopiCom.id,
+        commodityName: kopiCom.name,
+        badgeLabel: "Hemat 20%",
+        reason: "Pengadaan biji kopi langsung dari pemasok bursa memangkas marjin perantara hingga 20%.",
+      };
+      sehat = {
+        commodityId: kopiCom.id,
+        commodityName: kopiCom.name,
+        badgeLabel: "Sehat: Antioksidan & Rendah Asam",
+        reason: "Biji kopi sangrai pilihan bersertifikasi mutu, aman untuk lambung dan kaya antioksidan alami.",
+      };
+    }
+  }
+
+  // Jika tidak ada produk/bahan di Beranda yang sesuai/pas, jangan tampilkan apa-apa (null)
+  if (!hemat && !sehat) {
+    return null;
   }
 
   return { hemat, sehat };
@@ -185,11 +272,27 @@ export function MenuDetailDialog({
   const dailyWasteKg =
     Math.round(wastePrediction.totalVolumeKg * iterationsPerDay * 10) / 10;
 
-  // AI Rekomendasi Beranda (Hemat vs Sehat)
-  const recommendations = React.useMemo(() => {
-    return getBerandaAiRecommendations(recipes);
-  }, [recipes]);
+  // Ambil komoditas bursa yang tersedia di Beranda
+  const [availableCommodities, setAvailableCommodities] = React.useState<CommodityItem[]>([]);
 
+  React.useEffect(() => {
+    let ignore = false;
+    beFetch<CommodityItem[]>("/marketplace?limit=50")
+      .then((res) => {
+        if (!ignore && res.success && res.data && res.data.length > 0) {
+          setAvailableCommodities(res.data.map((b) => ({ id: b.id, name: b.name })));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  // AI Rekomendasi Beranda (Hemat vs Sehat) - HANYA jika ada produk/bahan di Beranda yang sesuai
+  const recommendations = React.useMemo(() => {
+    return getBerandaAiRecommendations(recipes, availableCommodities);
+  }, [recipes, availableCommodities]);
 
   const getSectorBadge = (sectorName?: string) => {
     if (!sectorName) return null;
@@ -235,7 +338,7 @@ export function MenuDetailDialog({
         <div className="px-6 py-5 pr-36 sm:pr-64 border-b border-border/80 bg-surface shrink-0">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <DialogTitle className="text-lg sm:text-xl font-heading font-bold text-text-primary leading-tight">
+              <DialogTitle className="text-lg sm:text-xl font-heading font-bold text-text-primary leading-tight line-clamp-2" title={product.product_name}>
                 {product.product_name}
               </DialogTitle>
               <Badge variant="primary" className="text-[11px] uppercase font-bold tracking-wider">
@@ -344,12 +447,12 @@ export function MenuDetailDialog({
 
                           return (
                             <TableRow key={item.id} className="hover:bg-surface-subtle/50">
-                              <TableCell className="align-top">
+                              <TableCell className="align-top max-w-[240px]">
                                 <div className="space-y-1">
-                                  <span className="font-bold text-text-primary text-xs block">
+                                  <span className="font-bold text-text-primary text-xs block truncate" title={item.name}>
                                     {item.name}
                                   </span>
-                                  <span className="text-[11px] text-text-muted block leading-relaxed">
+                                  <span className="text-[11px] text-text-muted block leading-relaxed line-clamp-2" title={item.handlingNote}>
                                     {item.handlingNote}
                                   </span>
                                 </div>
@@ -527,9 +630,9 @@ export function MenuDetailDialog({
 
                           return (
                             <TableRow key={item.id} className="hover:bg-surface-subtle/50">
-                              <TableCell className="align-middle">
-                                <div className="space-y-1">
-                                  <span className="font-bold text-text-primary text-xs block">
+                              <TableCell className="align-middle max-w-[200px]">
+                                <div className="space-y-1 min-w-0">
+                                  <span className="font-bold text-text-primary text-xs block truncate" title={item.ingredient_name}>
                                     {item.ingredient_name}
                                   </span>
                                   {getSectorBadge(item.sector)}
@@ -588,89 +691,97 @@ export function MenuDetailDialog({
                 )}
               </div>
 
-              {/* Rekomendasi Alternatif Bahan Baku Cerdas AI (Database Beranda: Kiri HEMAT vs Kanan SEHAT) */}
-              <div className="p-5 rounded-2xl border border-border bg-surface shadow-xs space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-border/80">
-                  <div className="space-y-0.5">
-                    <h3 className="text-sm font-heading font-bold text-text-primary">
-                      Rekomendasi Alternatif Bahan Baku Cerdas
-                    </h3>
-                    <p className="text-xs text-text-secondary">
-                      Rekomendasi bahan langsung terhubung dengan pasokan bursa supplier di Beranda.
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-md border border-primary/20">
-                    KUMPUL AI Matcher
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {/* CARD KIRI: REKOMENDASI HEMAT */}
-                  <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface-subtle/50 flex flex-col justify-between gap-3 hover:border-border-strong transition-all">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-bold text-xs sm:text-sm text-text-primary">
-                          {recommendations.hemat.commodityName}
-                        </h4>
-                        <Badge variant="waste" className="text-[10px] font-bold">
-                          {recommendations.hemat.badgeLabel}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-text-secondary leading-relaxed">
-                        {recommendations.hemat.reason}
+              {/* Rekomendasi Alternatif Bahan Baku Cerdas AI (Hanya jika ada produk/bahan di Beranda yang sesuai) */}
+              {recommendations && (recommendations.hemat || recommendations.sehat) && (
+                <div className="p-5 rounded-2xl border border-border bg-surface shadow-xs space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/80">
+                    <div className="space-y-0.5">
+                      <h3 className="text-sm font-heading font-bold text-text-primary">
+                        Rekomendasi Alternatif Bahan Baku Cerdas
+                      </h3>
+                      <p className="text-xs text-text-secondary">
+                        Rekomendasi bahan langsung terhubung dengan pasokan bursa supplier di Beranda.
                       </p>
                     </div>
-
-                    <Button
-                      asChild
-                      variant="primary"
-                      size="sm"
-                      className="w-full rounded-xl font-bold justify-between text-xs cursor-pointer min-h-[36px]"
-                    >
-                      <Link
-                        href={`/home?search=${encodeURIComponent(recommendations.hemat.commodityName)}&commodityId=${recommendations.hemat.commodityId}`}
-                        onClick={onClose}
-                      >
-                        <span>Beli Bahan di Beranda</span>
-                        <ArrowRight className="size-3.5" />
-                      </Link>
-                    </Button>
+                    <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-md border border-primary/20">
+                      KUMPUL AI Matcher
+                    </span>
                   </div>
 
-                  {/* CARD KANAN: REKOMENDASI SEHAT */}
-                  <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface-subtle/50 flex flex-col justify-between gap-3 hover:border-border-strong transition-all">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-bold text-xs sm:text-sm text-text-primary">
-                          {recommendations.sehat.commodityName}
-                        </h4>
-                        <Badge variant="primary" className="text-[10px] font-bold">
-                          {recommendations.sehat.badgeLabel}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-text-secondary leading-relaxed">
-                        {recommendations.sehat.reason}
-                      </p>
-                    </div>
+                  <div className={cn(
+                    "grid gap-3.5",
+                    recommendations.hemat && recommendations.sehat ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+                  )}>
+                    {/* CARD KIRI: REKOMENDASI HEMAT */}
+                    {recommendations.hemat && (
+                      <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface-subtle/50 flex flex-col justify-between gap-3 hover:border-border-strong transition-all">
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2 min-w-0">
+                            <h4 className="font-bold text-xs sm:text-sm text-text-primary truncate" title={recommendations.hemat.commodityName}>
+                              {recommendations.hemat.commodityName}
+                            </h4>
+                            <Badge variant="waste" className="text-[10px] font-bold shrink-0">
+                              {recommendations.hemat.badgeLabel}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-text-secondary leading-relaxed line-clamp-3" title={recommendations.hemat.reason}>
+                            {recommendations.hemat.reason}
+                          </p>
+                        </div>
 
-                    <Button
-                      asChild
-                      variant="primary"
-                      size="sm"
-                      className="w-full rounded-xl font-bold justify-between text-xs cursor-pointer min-h-[36px]"
-                    >
-                      <Link
-                        href={`/home?search=${encodeURIComponent(recommendations.sehat.commodityName)}&commodityId=${recommendations.sehat.commodityId}`}
-                        onClick={onClose}
-                      >
-                        <span>Beli Bahan di Beranda</span>
-                        <ArrowRight className="size-3.5" />
-                      </Link>
-                    </Button>
+                        <Button
+                          asChild
+                          variant="primary"
+                          size="sm"
+                          className="w-full rounded-xl font-bold justify-between text-xs cursor-pointer min-h-[36px]"
+                        >
+                          <Link
+                            href={`/home?search=${encodeURIComponent(recommendations.hemat.commodityName)}&commodityId=${recommendations.hemat.commodityId}`}
+                            onClick={onClose}
+                          >
+                            <span>Beli Bahan di Beranda</span>
+                            <ArrowRight className="size-3.5" />
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* CARD KANAN: REKOMENDASI SEHAT */}
+                    {recommendations.sehat && (
+                      <div className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface-subtle/50 flex flex-col justify-between gap-3 hover:border-border-strong transition-all">
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2 min-w-0">
+                            <h4 className="font-bold text-xs sm:text-sm text-text-primary truncate" title={recommendations.sehat.commodityName}>
+                              {recommendations.sehat.commodityName}
+                            </h4>
+                            <Badge variant="primary" className="text-[10px] font-bold shrink-0">
+                              {recommendations.sehat.badgeLabel}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-text-secondary leading-relaxed line-clamp-3" title={recommendations.sehat.reason}>
+                            {recommendations.sehat.reason}
+                          </p>
+                        </div>
+
+                        <Button
+                          asChild
+                          variant="primary"
+                          size="sm"
+                          className="w-full rounded-xl font-bold justify-between text-xs cursor-pointer min-h-[36px]"
+                        >
+                          <Link
+                            href={`/home?search=${encodeURIComponent(recommendations.sehat.commodityName)}&commodityId=${recommendations.sehat.commodityId}`}
+                            onClick={onClose}
+                          >
+                            <span>Beli Bahan di Beranda</span>
+                            <ArrowRight className="size-3.5" />
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-              </div>
+              )}
             </div>
           )}
         </div>

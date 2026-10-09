@@ -167,14 +167,14 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
 
       {/* Filter & Pencarian */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+        <div className="flex-1 max-w-md">
           <Input
             type="text"
             placeholder="Cari bahan baku dapur..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10 text-xs bg-surface-subtle/60 rounded-xl"
+            leftElement={<Search className="size-4" />}
+            className="h-10 text-xs bg-surface-subtle/60 rounded-xl"
           />
         </div>
 
@@ -235,14 +235,14 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
                       isKritis ? "bg-red-50/20" : isMenipis ? "bg-amber-50/15" : ""
                     }`}
                   >
-                    <TableCell>
-                      <span className="font-bold text-text-primary block">
+                    <TableCell className="max-w-[200px]">
+                      <span className="font-bold text-text-primary block truncate" title={item.ingredientName}>
                         {item.ingredientName}
                       </span>
                     </TableCell>
 
-                    <TableCell>
-                      <span className="text-[11px] font-semibold text-text-secondary bg-surface-subtle px-2.5 py-0.5 rounded-full border border-border/60">
+                    <TableCell className="max-w-[140px]">
+                      <span className="text-[11px] font-semibold text-text-secondary bg-surface-subtle px-2.5 py-0.5 rounded-full border border-border/60 inline-block truncate max-w-full" title={item.sector}>
                         {item.sector}
                       </span>
                     </TableCell>
@@ -350,7 +350,7 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
               <DialogTitle className="text-base font-bold text-text-primary">
                 Penyesuaian Stok Fisik (Stok Opname)
               </DialogTitle>
-              <DialogDescription className="text-xs text-text-secondary">
+              <DialogDescription className="text-xs text-text-secondary line-clamp-2" title={`Perbarui jumlah fisik aktual ${editingItem?.ingredientName ?? ""} yang tersedia di dapur usaha Anda.`}>
                 Perbarui jumlah fisik aktual {editingItem?.ingredientName} yang tersedia di dapur usaha Anda.
               </DialogDescription>
             </DialogHeader>

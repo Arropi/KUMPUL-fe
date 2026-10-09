@@ -6,6 +6,7 @@ import { ConsolidatedPO } from "@/constants/supplier";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -136,6 +137,7 @@ export function SupplierPesananView() {
               placeholder="Cari No. PO, Komoditas, Hub..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              leftElement={<Search className="w-4 h-4" />}
               className="min-h-[44px]"
             />
           </div>
@@ -186,8 +188,8 @@ export function SupplierPesananView() {
                     </TableCell>
 
                     <TableCell className="align-top">
-                      <div className="space-y-1">
-                        <p className="font-heading font-bold text-sm text-text-primary">
+                      <div className="space-y-1 min-w-0 max-w-[200px]">
+                        <p className="font-heading font-bold text-sm text-text-primary line-clamp-1" title={po.commodityName}>
                           {po.commodityName}
                         </p>
                         <p className="text-xs text-text-secondary tabular-nums">
@@ -200,14 +202,14 @@ export function SupplierPesananView() {
                     </TableCell>
 
                     <TableCell className="align-top">
-                      <div className="space-y-1">
+                      <div className="space-y-1 min-w-0 max-w-xs">
                         <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#EBF5F0] text-primary border border-primary/20 inline-block">
                           {po.primaryDeliveryMethod === "HEMAT_HUB" ? "Opsi Hemat (Hub)" : "Antar Langsung"}
                         </span>
-                        <p className="text-xs font-semibold text-text-primary">
+                        <p className="text-xs font-semibold text-text-primary truncate" title={po.hubName || "Alamat Direct UMKM"}>
                           {po.hubName || "Alamat Direct UMKM"}
                         </p>
-                        <p className="text-[11px] text-text-muted line-clamp-1 max-w-xs">
+                        <p className="text-[11px] text-text-muted line-clamp-1 max-w-xs" title={po.hubAddress}>
                           {po.hubAddress}
                         </p>
                       </div>
@@ -261,7 +263,7 @@ export function SupplierPesananView() {
                 </div>
 
                 <div className="space-y-2">
-                  <h2 className="font-heading font-bold text-base text-text-primary leading-snug">
+                  <h2 className="font-heading font-bold text-base text-text-primary leading-snug line-clamp-1" title={po.commodityName}>
                     {po.commodityName}
                   </h2>
                   <div className="grid grid-cols-2 gap-2 text-xs">
@@ -271,9 +273,9 @@ export function SupplierPesananView() {
                         {po.totalQuantity} {po.wholesaleUnit} ({po.totalWeightKg} kg)
                       </p>
                     </div>
-                    <div className="p-3 rounded-xl bg-background border border-border">
+                    <div className="p-3 rounded-xl bg-background border border-border min-w-0">
                       <span className="text-[10px] text-text-muted font-semibold block">Tujuan Drop Point</span>
-                      <p className="font-bold text-text-primary mt-0.5 truncate">
+                      <p className="font-bold text-text-primary mt-0.5 truncate" title={po.hubName || "Direct UMKM"}>
                         {po.hubName || "Direct UMKM"}
                       </p>
                     </div>

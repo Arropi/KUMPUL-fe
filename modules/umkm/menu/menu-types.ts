@@ -63,7 +63,7 @@ export const SECTOR_OPTIONS: Array<{
   {
     value: "RITEL",
     label: "Ritel & Kemasan",
-    badgeClass: "bg-purple-100 text-purple-800 border-purple-200",
+    badgeClass: "bg-rose-100 text-rose-800 border-rose-200",
   },
   {
     value: "LOGISTIK",

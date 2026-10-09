@@ -145,7 +145,7 @@ export function PublishCommodityDialog({
             <span className="font-mono text-[11px] font-bold text-text-muted">{commodity.sku}</span>
             <Badge variant="neutral" className="text-[10px]">{commodity.sector}</Badge>
           </div>
-          <p className="font-heading font-bold text-sm text-text-primary">{commodity.name}</p>
+          <p className="font-heading font-bold text-sm text-text-primary line-clamp-1" title={commodity.name}>{commodity.name}</p>
           <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/50 text-[11px]">
             <div>
               <span className="text-text-muted block">Harga Pokok:</span>
