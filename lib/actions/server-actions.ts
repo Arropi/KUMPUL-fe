@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { beFetch } from '@/lib/api/be-client';
+import { mapBEToSupplierCommodity } from '@/modules/supplier/helpers';
 
 /**
  * Server-side beFetch that forwards cookies from the request.
@@ -36,63 +37,55 @@ async function beFetchServer<T>(
 export async function fetchHomeData() {
   // Fetch catalog and recommendations in parallel
   const [catalogRes, recsRes] = await Promise.all([
-    beFetchServer<any[]>(`/api/marketplace?limit=20&offset=0&ready_stock=true`),
-    beFetchServer<any[]>(`/api/marketplace/recommendations`),
+    beFetchServer<any[]>(`/api/marketplace?limit=50`),
+    beFetchServer<any>(`/api/marketplace/recommendations`),
   ]);
 
-  const catalog = catalogRes.success ? (catalogRes.data ?? []) : [];
-  const recommendations = recsRes.success
-    ? (recsRes.data ?? []).map((item: any) => ({
-        // Map BE response to MatchedCommodity shape expected by UI
-        commodity: {
-          id: item.commodity_id ?? item.id ?? '',
-          name: item.commodity_name ?? item.name ?? '',
-          sector: item.sector ?? '',
-          description: item.description ?? '',
-          wholesaleUnit: item.wholesale_unit ?? 'KARUNG',
-          unitWeightKg: Number(item.unit_weight_kg ?? 0),
-          baseMoq: Number(item.base_moq ?? 0),
-          availableStock: Number(item.available_stock ?? 0),
-          leadTimeDays: Number(item.lead_time_days ?? 0),
-          isActive: item.is_active ?? true,
-          priceTiers: Array.isArray(item.price_tiers) ? item.price_tiers : [],
-          batchTag:
-            item.batchTag && typeof item.batchTag === 'object'
-              ? {
-                  id: item.batchTag.id ?? '',
-                  licenseNumber: item.batchTag.licenseNumber ?? '',
-                  productionDate: item.batchTag.productionDate ?? '',
-                  expiryDate: item.batchTag.expiryDate ?? '',
-                  storageTemperature: item.batchTag.storageTemperature ?? 'AMBIENT',
-                  originLocation: item.batchTag.originLocation ?? '',
-                  hygieneStatus: item.batchTag.hygieneStatus ?? 'TERVERIFIKASI',
-                }
-              : {
-                  id: '',
-                  licenseNumber: '',
-                  productionDate: '',
-                  expiryDate: '',
-                  storageTemperature: 'AMBIENT',
-                  originLocation: '',
-                  hygieneStatus: 'TERVERIFIKASI',
-                },
-          imageUrl: item.image_url ?? null,
-          createdAt: item.created_at ?? '',
-          allowsUnderMoq: item.allows_under_moq ?? false,
-          underMoqPricePerKg: item.under_moq_price_per_kg ?? null,
-          productionDate: item.production_date ?? null,
-          expiryDate: item.expiry_date ?? null,
-          sku: item.sku ?? '',
-        },
-        recipeTag: item.recipeTag ?? '',
-        benchmarkTag: item.benchmarkTag ?? '',
-        criticalStockNotice: item.criticalStockNotice ?? undefined,
-      }))
-    : [];
+  const rawCatalog = catalogRes.success && Array.isArray(catalogRes.data) ? catalogRes.data : [];
+  const catalog = rawCatalog.map(mapBEToSupplierCommodity);
+
+  const rawRecs = recsRes.success && recsRes.data ? recsRes.data : null;
+
+  // Bangun rekomendasi MatchedCommodity untuk UMKM dari data rekomendasi jika ada
+  let recommendations: any[] = [];
+  if (rawRecs && Array.isArray(rawRecs.low_stock_recommendations)) {
+    rawRecs.low_stock_recommendations.forEach((ls: any) => {
+      if (Array.isArray(ls.matching_commodities)) {
+        ls.matching_commodities.forEach((mc: any) => {
+          const found = catalog.find((c) => c.id === mc.commodity_id);
+          if (found && !recommendations.some((r) => r.commodity.id === found.id)) {
+            recommendations.push({
+              commodity: found,
+              recipeTag: `Kebutuhan Dapur: ${ls.ingredient_name}`,
+              criticalStockNotice:
+                Number(ls.current_stock) <= 10
+                  ? {
+                      daysRemaining: Number(ls.current_stock) <= 5 ? 1 : 3,
+                      linkedMenu: ls.ingredient_name,
+                      suggestedQty: 25,
+                      unit: ls.unit,
+                    }
+                  : undefined,
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // Jika recommendations masih kosong, fallback ke 3 komoditas bursa terverifikasi pertama
+  if (recommendations.length === 0 && catalog.length > 0) {
+    recommendations = catalog.slice(0, 3).map((c) => ({
+      commodity: c,
+      recipeTag:
+        c.batchTag.hygieneStatus === "TERVERIFIKASI" ? "Rekomendasi Mutu AI" : undefined,
+    }));
+  }
 
   return {
     catalog,
     recommendations,
+    rawRecommendations: rawRecs,
     catalogError: !catalogRes.success,
     recsError: !recsRes.success,
   };

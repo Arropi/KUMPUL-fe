@@ -185,6 +185,23 @@ export interface SupplierCommodity {
   expiryDate?: string | null;
   supplierRoleId?: string;
   supplierEntityId?: string;
+  hasTieringPrice?: boolean;
+  hasOpenPools?: boolean;
+  openPoolsCount?: number;
+  sourceType?: "SUPPLIER" | "WASTE";
+  sellerCity?: string;
+  sellerName?: string;
+  distanceKm?: number | null;
+  activePools?: Array<{
+    id: string;
+    targetMoq: number;
+    accumulatedQty: number;
+    poolStatus: string;
+    progressPercentage: number;
+    lockedTierPrice?: number | null;
+    targetDeliveryDate?: string | null;
+    cutoffDate?: string | null;
+  }>;
 }
 
 export type DeliveryMethod = "HEMAT_HUB" | "ON_YOUR_DOOR" | "DIRECT_DOOR_TO_DOOR";
@@ -198,6 +215,7 @@ export type POStatus =
 
 export interface PoolParticipantInfo {
   id: string;
+  umkmRoleId?: string;
   umkmName: string;
   ownerName: string;
   phone: string;
@@ -207,6 +225,10 @@ export interface PoolParticipantInfo {
   destinationAddress: string;
   allocatedShippingFee: number;
   subtotalAmount: number;
+  storageCapacity?: number;
+  isHost?: boolean;
+  pickupCode?: string;
+  isPickedUp?: boolean;
 }
 
 export interface ConsolidatedPO {
@@ -233,6 +255,7 @@ export interface ConsolidatedPO {
   trackingNumber?: string;
   driverName?: string;
   driverPhone?: string;
+  deliveryProofUrl?: string;
 }
 
 export interface LiveDemandPool {

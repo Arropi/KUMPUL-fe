@@ -93,6 +93,21 @@ export interface BESupplierCommodity {
   price_tiers?: BEPriceTier[];
   batch_tag?: BECommodityBatchTag | null;
   batch_tags?: BECommodityBatchTag[];
+  has_tiering_price?: boolean;
+  has_open_pools?: boolean;
+  open_pools_count?: number;
+  source_type?: 'SUPPLIER' | 'WASTE';
+  seller_city?: string;
+  distance_km?: number | null;
+  active_pools?: any[];
+  supplier?: {
+    role_id?: string;
+    legal_name?: string;
+    default_address?: string;
+    latitude?: number;
+    longitude?: number;
+    sector_type?: string | null;
+  };
 }
 
 export type BEStorageTemperature = "AMBIENT" | "CHILLED" | "FROZEN";
@@ -159,3 +174,48 @@ export interface BEBusinessRole {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface BEPoolParticipant {
+  id: string;
+  pool_id: string;
+  umkm_role_id: string;
+  order_qty: string | number;
+  delivery_method?: "HEMAT_HUB" | "DIRECT_DOOR_TO_DOOR" | null;
+  required_delivery_date?: string | null;
+  is_urgent_asap?: boolean;
+  final_delivery_address: string;
+  final_delivery_lat: string | number;
+  final_delivery_lng: string | number;
+  allocated_shipping_fee: string | number;
+  pickup_code?: string | null;
+  is_picked_up?: boolean;
+  picked_up_at?: string | null;
+  created_at?: string | null;
+  umkm_name?: string | null;
+  entity_address?: string | null;
+}
+
+export interface BEProcurementPool {
+  id: string;
+  commodity_id: string;
+  host_umkm_role_id?: string | null;
+  target_moq: string | number;
+  accumulated_qty: string | number;
+  pool_status: "OPEN" | "AGGREGATING" | "LOCKED" | "COMPLETED" | "FAILED";
+  locked_tier_price?: string | number | null;
+  target_delivery_date?: string | null;
+  cutoff_date?: string | null;
+  is_asap_allowed?: boolean;
+  is_direct_order?: boolean;
+  estimated_delivery_date?: string | null;
+  expires_at: string;
+  default_hub_address?: string | null;
+  hub_latitude?: string | number | null;
+  hub_longitude?: string | number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  participants?: BEPoolParticipant[];
+  commodity_name?: string;
+  wholesale_unit?: string;
+}
+

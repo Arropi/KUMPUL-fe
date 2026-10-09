@@ -12,20 +12,65 @@ import {
   createSupplierCommodityAction,
   updateSupplierCommodityAction,
 } from "@/actions/supplier-catalog";
-import { uploadFileAction } from "@/actions/upload";
-import type { BESupplierCommodity, BEWholesaleUnit } from "@/lib/api/types";
+import { uploadFileAction, deleteFileAction } from "@/actions/upload";
+import { getBusinessProfileAction } from "@/actions/business-profile";
+import type {
+  BESupplierCommodity,
+  BEWholesaleUnit,
+  BEBusinessEntity,
+  BEBusinessRole,
+} from "@/lib/api/types";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  ShieldAlert,
+} from "lucide-react";
 
 interface TambahKomoditasFormProps {
   initialCommodity?: BESupplierCommodity;
   isEdit?: boolean;
+  initialEntity?: BEBusinessEntity | null;
+  initialRoles?: BEBusinessRole[];
 }
 
 export function TambahKomoditasForm({
   initialCommodity,
   isEdit = false,
+  initialEntity = null,
+  initialRoles = [],
 }: TambahKomoditasFormProps = {}) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [entity, setEntity] = React.useState<BEBusinessEntity | null>(initialEntity);
+  const [roles, setRoles] = React.useState<BEBusinessRole[]>(initialRoles);
+
+  // Load profil jika belum di-supply dari server
+  React.useEffect(() => {
+    if (!initialEntity) {
+      getBusinessProfileAction().then((res) => {
+        if (res.success && res.entity) {
+          setEntity(res.entity);
+          if (res.roles) setRoles(res.roles);
+        }
+      });
+    }
+  }, [initialEntity]);
+
+  // Evaluasi kelengkapan profil: Nomor Telepon, Rekening Bank, dan Kapasitas Penyimpanan Gudang
+  const bankInfo = (entity?.bank_account_info || {}) as Record<string, any>;
+  const hasPhone = Boolean(entity?.phone_number?.trim() || bankInfo.phone?.trim());
+  const hasBank = Boolean(
+    (Array.isArray(bankInfo.accounts) && bankInfo.accounts.length > 0) ||
+    bankInfo.account_number?.trim()
+  );
+  const supplierRole = roles.find((r) => r.role_type.toUpperCase() === "SUPPLIER") || roles[0];
+  const hasStorage = Boolean(
+    (supplierRole?.storage_capacity && supplierRole.storage_capacity > 0) ||
+    Number(bankInfo.storage_value) > 0
+  );
+  const isProfileComplete = hasPhone && hasBank && hasStorage;
 
   // Form State
   const [name, setName] = React.useState(initialCommodity?.name || "");
@@ -115,6 +160,13 @@ export function TambahKomoditasForm({
         if (hasInvalidTier) {
           err.priceTiers =
             "Pastikan batas bawah lebih dari 0, batas atas lebih besar dari batas bawah, dan harga lebih dari 0.";
+        } else if (Number(basePrice) > 0) {
+          const exceedsBasePrice = priceTiers.some(
+            (tier) => tier.price > Number(basePrice),
+          );
+          if (exceedsBasePrice) {
+            err.priceTiers = `Harga yang diterapkan pada setiap tingkatan tidak boleh melebihi harga utama (Rp ${Number(basePrice).toLocaleString("id-ID")}).`;
+          }
         }
       }
     }
@@ -134,12 +186,46 @@ export function TambahKomoditasForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // 1. Validasi formulir terlebih dahulu
     if (!validate()) {
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // 2. Verifikasi status kelengkapan profil secara mutakhir langsung dari backend
+      // Memastikan nomor telepon, rekening bank, dan kapasitas penyimpanan terisi lengkap
+      const profileCheck = await getBusinessProfileAction();
+      const currentEntity = profileCheck.success && profileCheck.entity ? profileCheck.entity : entity;
+      const currentRoles = profileCheck.success && profileCheck.roles ? profileCheck.roles : roles;
+
+      const bankInfoCheck = (currentEntity?.bank_account_info || {}) as Record<string, any>;
+      const phoneOk = Boolean(currentEntity?.phone_number?.trim() || bankInfoCheck.phone?.trim());
+      const bankOk = Boolean(
+        (Array.isArray(bankInfoCheck.accounts) && bankInfoCheck.accounts.length > 0) ||
+        bankInfoCheck.account_number?.trim()
+      );
+      const roleOk = currentRoles?.find((r) => r.role_type.toUpperCase() === "SUPPLIER") || currentRoles?.[0];
+      const storageOk = Boolean(
+        (roleOk?.storage_capacity && roleOk.storage_capacity > 0) ||
+        Number(bankInfoCheck.storage_value) > 0
+      );
+
+      if (!phoneOk || !bankOk || !storageOk) {
+        const missingFields: string[] = [];
+        if (!phoneOk) missingFields.push("Nomor Telepon/Kontak");
+        if (!bankOk) missingFields.push("Informasi Rekening Bank");
+        if (!storageOk) missingFields.push("Kapasitas Penyimpanan Gudang");
+
+        toast.error(
+          `Profil usaha belum lengkap (${missingFields.join(", ")}). Harap lengkapi di menu Profil terlebih dahulu. Foto dan data komoditas tidak akan diunggah agar penyimpanan Supabase tidak penuh.`,
+          "Profil Belum Lengkap"
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 3. Setelah valid bahwa profil lengkap hingga nomor telepon, proses unggah foto dan data
       const normalizedUnit: BEWholesaleUnit =
         (unit.toUpperCase() as BEWholesaleUnit) || "KARUNG";
 
@@ -152,12 +238,15 @@ export function TambahKomoditasForm({
         : [];
 
       let finalImageUrl = imagePreviewUrl;
+      let newlyUploadedPath: string | null = null;
 
-      // Jika ada file gambar lokal baru yang dipilih, unggah ke Supabase Storage
+      // Unggah foto ke Supabase Storage hanya setelah profil dan form valid
       if (imageFile) {
         const uploadFormData = new FormData();
         uploadFormData.append("file", imageFile);
         uploadFormData.append("folder", "catalog-images");
+        if (currentEntity?.id) uploadFormData.append("entity_id", currentEntity.id);
+        if (roleOk?.id) uploadFormData.append("supplier_role_id", roleOk.id);
 
         const uploadRes = await uploadFileAction(uploadFormData);
         if (!uploadRes.success || !uploadRes.url) {
@@ -166,6 +255,7 @@ export function TambahKomoditasForm({
           return;
         }
         finalImageUrl = uploadRes.url;
+        newlyUploadedPath = uploadRes.data?.path || null;
       } else if (!imagePreviewUrl) {
         finalImageUrl = null;
       }
@@ -207,6 +297,10 @@ export function TambahKomoditasForm({
             : "/katalog",
         );
       } else {
+        // Rollback: Hapus file gambar dari Supabase Storage jika simpan komoditas gagal
+        if (newlyUploadedPath) {
+          await deleteFileAction(newlyUploadedPath);
+        }
         toast.error(res.message || "Gagal menyimpan komoditas ke backend.");
       }
     } catch {
@@ -241,6 +335,86 @@ export function TambahKomoditasForm({
         </p>
       </div>
 
+      {/* Banner Peringatan Kelengkapan Profil Usaha Supplier */}
+      {!isEdit && !isProfileComplete && (
+        <div className="p-4 sm:p-5 border border-amber-300 bg-amber-50/90 rounded-2xl shadow-sm space-y-3.5">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-900 shrink-0 mt-0.5">
+              <AlertTriangle className="size-5 text-amber-700" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-heading font-bold text-sm sm:text-base text-amber-950">
+                Lengkapi Profil Usaha Sebelum Mengunggah Katalog
+              </h3>
+              <p className="text-xs text-amber-900/90 leading-relaxed">
+                Untuk menjamin kelancaran transaksi, pencairan dana escrow, dan verifikasi daya tampung gudang di bursa, Anda wajib melengkapi data profil usaha berikut:
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-amber-200/80 text-xs">
+            <div
+              className={`p-2.5 rounded-xl border flex items-center gap-2 ${
+                hasPhone
+                  ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
+                  : "bg-white border-amber-200 text-amber-900"
+              }`}
+            >
+              {hasPhone ? (
+                <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+              ) : (
+                <XCircle className="size-4 text-red-500 shrink-0" />
+              )}
+              <span className="font-semibold text-xs">Nomor Kontak / Telepon</span>
+            </div>
+
+            <div
+              className={`p-2.5 rounded-xl border flex items-center gap-2 ${
+                hasBank
+                  ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
+                  : "bg-white border-amber-200 text-amber-900"
+              }`}
+            >
+              {hasBank ? (
+                <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+              ) : (
+                <XCircle className="size-4 text-red-500 shrink-0" />
+              )}
+              <span className="font-semibold text-xs">Rekening Bank Pencairan</span>
+            </div>
+
+            <div
+              className={`p-2.5 rounded-xl border flex items-center gap-2 ${
+                hasStorage
+                  ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
+                  : "bg-white border-amber-200 text-amber-900"
+              }`}
+            >
+              {hasStorage ? (
+                <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
+              ) : (
+                <XCircle className="size-4 text-red-500 shrink-0" />
+              )}
+              <span className="font-semibold text-xs">Kapasitas Penyimpanan</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end pt-1">
+            <Link href="/profil">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                className="font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>Lengkapi Profil di Menu Profil</span>
+                <ArrowRight className="size-3.5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {/* Section 1: Informasi Komoditas & Foto */}
         <KomoditasInfoSection
@@ -262,12 +436,14 @@ export function TambahKomoditasForm({
           setImagePreviewUrl={setImagePreviewUrl}
           setImageFile={setImageFile}
           errors={errors}
+          isProfileComplete={isProfileComplete}
         />
 
         {/* Section 2: Skema Harga Bertingkat */}
         <EceranDanHargaSection
           unit={unit}
           minOrderQty={minOrderQty}
+          basePrice={basePrice}
           enablePriceTiers={enablePriceTiers}
           setEnablePriceTiers={setEnablePriceTiers}
           priceTiers={priceTiers}
@@ -287,21 +463,35 @@ export function TambahKomoditasForm({
               Batal
             </Button>
           </Link>
-          <Button
-            type="submit"
-            variant="primary"
-            size="md"
-            isLoading={isSubmitting}
-            className="font-semibold px-8 min-h-[44px]"
-          >
-            {isSubmitting
-              ? isEdit
-                ? "Menyimpan Perubahan..."
-                : "Menyimpan Komoditas..."
-              : isEdit
-              ? "Simpan Perubahan"
-              : "Simpan & Publikasikan"}
-          </Button>
+          {!isEdit && !isProfileComplete ? (
+            <Link href="/profil">
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                className="font-semibold px-6 min-h-[44px] gap-2 bg-amber-600 hover:bg-amber-700 text-white cursor-pointer"
+              >
+                <span>Lengkapi Profil Dahulu</span>
+                <ArrowRight className="size-4" />
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              isLoading={isSubmitting}
+              className="font-semibold px-8 min-h-[44px]"
+            >
+              {isSubmitting
+                ? isEdit
+                  ? "Menyimpan Perubahan..."
+                  : "Menyimpan Komoditas..."
+                : isEdit
+                ? "Simpan Perubahan"
+                : "Simpan & Publikasikan"}
+            </Button>
+          )}
         </div>
       </form>
     </div>

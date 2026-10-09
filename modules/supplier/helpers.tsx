@@ -75,53 +75,81 @@ export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommo
         },
       ];
 
-  return {
-    id: be.id,
-    sku: be.sku || "KOM-001",
-    name: be.name,
-    sector: "Pertanian",
-    description: be.description || "Komoditas pasokan pangan grosir terverifikasi sistem KUMPUL.",
-    wholesaleUnit: (be.wholesale_unit as WholesaleUnit) || "KARUNG",
-    unitWeightKg: 20,
-    baseMoq: moq,
-    availableStock: stock,
-    leadTimeDays: be.lead_time_days || 1,
-    isActive: be.is_marketplace_active ?? true,
-    priceTiers: tiers,
-    batchTag: {
-      id: (be.batch_tag?.id || (be.batch_tags && be.batch_tags[0]?.id)) || `bt-${be.id}`,
-      licenseNumber:
-        be.batch_tag?.is_verified || be.batch_tags?.[0]?.is_verified
-          ? `BATCH-${be.sku || be.id.slice(0, 8)}`
-          : "Menunggu Berkas Audit",
-      verificationNotes:
-        be.batch_tag?.verification_notes ||
-        be.batch_tags?.[0]?.verification_notes ||
-        null,
-      supportingFileUrl:
-        be.batch_tag?.supporting_file_url ||
-        be.batch_tags?.[0]?.supporting_file_url ||
-        null,
+    const parsedPools = Array.isArray(be.active_pools)
+      ? be.active_pools
+          .filter((p: any) => p.pool_status === "OPEN" || p.pool_status === "AGGREGATING")
+          .map((p: any) => ({
+            id: p.id,
+            targetMoq: Number(p.target_moq || 0),
+            accumulatedQty: Number(p.accumulated_qty || 0),
+            poolStatus: p.pool_status || "OPEN",
+            progressPercentage: Number(p.progress_percentage || 0),
+            lockedTierPrice: p.locked_tier_price ? Number(p.locked_tier_price) : null,
+            targetDeliveryDate: p.target_delivery_date || null,
+            cutoffDate: p.cutoff_date || null,
+          }))
+      : [];
+
+    const openCount =
+      typeof be.open_pools_count === "number" ? be.open_pools_count : parsedPools.length;
+    const hasOpen =
+      be.has_open_pools !== undefined ? Boolean(be.has_open_pools && openCount > 0) : openCount > 0;
+
+    return {
+      id: be.id,
+      sku: be.sku || "KOM-001",
+      name: be.name,
+      sector: "Pertanian",
+      description: be.description || "Komoditas pasokan pangan grosir terverifikasi sistem KUMPUL.",
+      wholesaleUnit: (be.wholesale_unit as WholesaleUnit) || "KARUNG",
+      unitWeightKg: 20,
+      baseMoq: moq,
+      availableStock: stock,
+      leadTimeDays: be.lead_time_days || 1,
+      isActive: be.is_marketplace_active ?? true,
+      priceTiers: tiers,
+      batchTag: {
+        id: (be.batch_tag?.id || (be.batch_tags && be.batch_tags[0]?.id)) || `bt-${be.id}`,
+        licenseNumber:
+          be.batch_tag?.is_verified || be.batch_tags?.[0]?.is_verified
+            ? `BATCH-${be.sku || be.id.slice(0, 8)}`
+            : "Menunggu Berkas Audit",
+        verificationNotes:
+          be.batch_tag?.verification_notes ||
+          be.batch_tags?.[0]?.verification_notes ||
+          null,
+        supportingFileUrl:
+          be.batch_tag?.supporting_file_url ||
+          be.batch_tags?.[0]?.supporting_file_url ||
+          null,
+        productionDate: be.production_date || "-",
+        expiryDate: be.closed_date || "-",
+        storageTemperature:
+          (be.batch_tag?.storage_temperature_type as StorageTemperature) ||
+          (be.batch_tags?.[0]?.storage_temperature_type as StorageTemperature) ||
+          "AMBIENT",
+        originLocation: "Indonesia",
+        hygieneStatus:
+          be.batch_tag?.is_verified || be.batch_tags?.[0]?.is_verified
+            ? "TERVERIFIKASI"
+            : "MENUNGGU_AUDIT",
+      },
+      imageUrl: be.image_url || undefined,
+      createdAt: be.created_at || new Date().toISOString(),
+      allowsUnderMoq: be.allows_under_moq ?? false,
+      underMoqPricePerKg: be.under_moq_price_per_kg ? Number(be.under_moq_price_per_kg) : null,
       productionDate: be.production_date || "-",
       expiryDate: be.closed_date || "-",
-      storageTemperature:
-        (be.batch_tag?.storage_temperature_type as StorageTemperature) ||
-        (be.batch_tags?.[0]?.storage_temperature_type as StorageTemperature) ||
-        "AMBIENT",
-      originLocation: "Indonesia",
-      hygieneStatus:
-        be.batch_tag?.is_verified || be.batch_tags?.[0]?.is_verified
-          ? "TERVERIFIKASI"
-          : "MENUNGGU_AUDIT",
-    },
-    imageUrl: be.image_url || undefined,
-    createdAt: be.created_at || new Date().toISOString(),
-    allowsUnderMoq: be.allows_under_moq ?? false,
-    underMoqPricePerKg: be.under_moq_price_per_kg ? Number(be.under_moq_price_per_kg) : null,
-    productionDate: be.production_date || "-",
-    expiryDate: be.closed_date || "-",
-    supplierRoleId: be.supplier_role_id,
-    supplierEntityId: be.supplier_entity_id,
-  };
-}
+      supplierRoleId: be.supplier_role_id,
+      supplierEntityId: be.supplier_entity_id,
+      hasTieringPrice: be.has_tiering_price !== undefined ? be.has_tiering_price : tiers.length > 1,
+      hasOpenPools: hasOpen,
+      openPoolsCount: openCount,
+      sourceType: be.source_type || "SUPPLIER",
+      sellerCity: be.seller_city || "Sentra Distribusi",
+      sellerName: be.supplier?.legal_name,
+      distanceKm: be.distance_km ?? null,
+      activePools: parsedPools,
+    };
+  }
 

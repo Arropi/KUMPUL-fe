@@ -57,13 +57,47 @@ export interface UMKMPurchaseHistory {
   totalWholesalePaid: number;
   marketPriceComparison: number;
   savingsAmount: number;
-  status: "TERKUNCI" | "DIPROSES_SUPPLIER" | "TIBA_DI_HUB" | "SELESAI";
-  deliveryMethod: "HEMAT_HUB" | "DIRECT_DELIVERY" | "ON_YOUR_DOOR";
+  status:
+    | "PENDING"
+    | "WAITING_PAYMENT"
+    | "PROCESSING"
+    | "READY_FOR_PICKUP"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "TERKUNCI"
+    | "DIPROSES_SUPPLIER"
+    | "TIBA_DI_HUB"
+    | "SELESAI";
+  standardStatus?: "PENDING" | "WAITING_PAYMENT" | "PROCESSING" | "READY_FOR_PICKUP" | "COMPLETED" | "CANCELLED";
+  deliveryMethod: "HEMAT_HUB" | "DIRECT_DELIVERY" | "ON_YOUR_DOOR" | "DIRECT_DOOR_TO_DOOR";
   orderDate: string;
   hubPickupCode?: string;
+  pickupCode?: string;
   orderType?: "POOLING_UNDER_MOQ" | "DIRECT_OVER_MOQ" | "CIRCULAR_WASTE";
   supplierOrSellerName?: string;
   deliveryLocation?: string;
+  rawMaterialSubtotal?: number;
+  shippingFee?: number;
+  paymentDeadline?: string;
+  snapToken?: string;
+  snapRedirectUrl?: string;
+  targetMoq?: number;
+  accumulatedQty?: number;
+  cutoffDate?: string;
+  leadTimeDays?: number;
+  targetDeliveryDate?: string;
+  poNumber?: string;
+  supplierContact?: { name: string; phone?: string };
+  hostContact?: { name: string; phone?: string; address?: string };
+  poolParticipants?: Array<{ id?: string; name: string; city: string; qty: number; isHost?: boolean }>;
+  isPickedUp?: boolean;
+  pickedUpAt?: string;
+  poStatus?: string;
+  driverName?: string;
+  trackingNumber?: string;
+  deliveryProofUrl?: string;
+  settlementTime?: string;
+  paymentMethod?: string;
 }
 
 export interface WasteBuyerOrder {

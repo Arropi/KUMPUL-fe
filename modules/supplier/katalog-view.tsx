@@ -244,6 +244,7 @@ export function SupplierKatalogView() {
               key={item.id}
               item={item}
               role="supplier"
+              pageContext="katalog"
               onToggleStatus={handleToggleStatus}
             />
           ))}

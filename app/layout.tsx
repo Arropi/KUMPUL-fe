@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
@@ -17,6 +18,11 @@ export default function RootLayout({
     <html lang="id" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans bg-background text-text-primary">
         <ToastProvider>{children}</ToastProvider>
+        <Script
+          src={process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || "https://app.sandbox.midtrans.com/snap/snap.js"}
+          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "Mid-client-C8Oep56Dwkx5eJ19"}
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

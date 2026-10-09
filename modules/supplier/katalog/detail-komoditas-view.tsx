@@ -15,27 +15,37 @@ import {
   unpublishSupplierCommodityAction,
   deleteSupplierCommodityAction,
 } from "@/actions/supplier-catalog";
-import { UmkmPurchaseCard } from "./umkm-purchase-card";
+import { CommodityRunningPools } from "./commodity-running-pools";
+import { CreatePoolDialog } from "./create-pool-dialog";
 import { PublishCommodityDialog } from "./publish-commodity-dialog";
 import { ShoppingCart, AlertCircle, Trash2 } from "lucide-react";
+import type { BEProcurementPool, BEBusinessEntity } from "@/lib/api/types";
 
 interface DetailKomoditasViewProps {
   initialCommodity: SupplierCommodity;
+  initialPools?: BEProcurementPool[];
+  userProfile?: BEBusinessEntity | null;
   role?: "umkm" | "supplier";
   isOwner?: boolean;
+  currentRoleId?: string;
 }
 
 export function DetailKomoditasView({
   initialCommodity,
+  initialPools = [],
+  userProfile,
   role = "umkm",
   isOwner = false,
+  currentRoleId,
 }: DetailKomoditasViewProps) {
   const router = useRouter();
   const [commodity, setCommodity] =
     React.useState<SupplierCommodity>(initialCommodity);
+  const [pools, setPools] = React.useState<BEProcurementPool[]>(initialPools);
   const [isPublishModalOpen, setIsPublishModalOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isCreatePoolOpen, setIsCreatePoolOpen] = React.useState(false);
 
   const purchaseSectionRef = React.useRef<HTMLDivElement>(null);
   const isBuyer = !isOwner;
@@ -172,11 +182,11 @@ export function DetailKomoditasView({
               type="button"
               variant="primary"
               size="md"
-              onClick={handleScrollToPurchase}
+              onClick={() => setIsCreatePoolOpen(true)}
               className="font-bold text-xs sm:text-sm min-h-[42px] flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <ShoppingCart className="w-4 h-4" />
-              <span>Beli / Gabung Pooling</span>
+              <span>Beli / Buat Pool</span>
             </Button>
           ) : (
             <Badge variant="neutral" className="px-3 py-2 text-xs font-semibold">
@@ -216,11 +226,18 @@ export function DetailKomoditasView({
             </div>
           </Card>
 
-          {/* Jika Pembeli (UMKM/Supplier Lain): Tampilkan Formulir Pembelian atau Informasi Belum Aktif */}
+          {/* Jika Pembeli (UMKM/Supplier Lain): Tampilkan Daftar Card Pool Berjalan */}
           {isBuyer && (
             <div ref={purchaseSectionRef}>
               {commodity.isActive ? (
-                <UmkmPurchaseCard commodity={commodity} />
+                <CommodityRunningPools
+                  commodity={commodity}
+                  initialPools={pools}
+                  userProfile={userProfile}
+                  isBuyer={isBuyer}
+                  currentRoleId={currentRoleId}
+                  onRequestCreatePool={() => setIsCreatePoolOpen(true)}
+                />
               ) : (
                 <Card className="p-5 bg-surface border-border shadow-elevation-1 rounded-3xl space-y-3">
                   <div className="flex items-center gap-2">
@@ -343,7 +360,7 @@ export function DetailKomoditasView({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="rounded-xl bg-background p-3.5 border border-border sm:col-span-2 space-y-1">
                 <span className="text-text-muted block text-[11px] font-medium">
-                  Keterangan / Hasil Audit AI:
+                  Keterangan / Hasil Audit Otomatis:
                 </span>
                 <p className="text-xs font-semibold text-text-primary leading-relaxed">
                   {commodity.batchTag.verificationNotes ||
@@ -363,7 +380,7 @@ export function DetailKomoditasView({
                 </span>
               </div>
               <div className="rounded-xl bg-background p-3 border border-border">
-                <span className="text-text-muted block text-[11px]">Tanggal Panen / Olah:</span>
+                <span className="text-text-muted block text-[11px]">Tanggal Produksi / Olah:</span>
                 <span className="font-bold text-text-primary text-xs mt-0.5 block tabular-nums">
                   {commodity.productionDate && commodity.productionDate !== "-"
                     ? commodity.productionDate
@@ -425,8 +442,28 @@ export function DetailKomoditasView({
               </div>
             </Card>
           )}
+          {/* Untuk Pemilik (Supplier): Tampilkan Pantauan Kamar Pool Komoditas */}
+          {isOwner && (
+            <CommodityRunningPools
+              commodity={commodity}
+              initialPools={pools}
+              userProfile={userProfile}
+              isBuyer={false}
+            />
+          )}
         </div>
       </div>
+
+      {/* Dialog Pemesanan Langsung / Buat Pool Baru untuk UMKM */}
+      <CreatePoolDialog
+        isOpen={isCreatePoolOpen}
+        onClose={() => setIsCreatePoolOpen(false)}
+        commodity={commodity}
+        userProfile={userProfile}
+        onSuccess={() => {
+          router.refresh();
+        }}
+      />
 
       {/* Dialog Konfirmasi Publikasi ke Bursa untuk Supplier */}
       <PublishCommodityDialog
