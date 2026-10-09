@@ -242,14 +242,14 @@ export function BankSampahMapSection() {
 
         {/* Search Bar Sederhana & Tombol Recenter */}
         <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="size-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="flex-1 sm:w-64">
             <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari nama / kelurahan..."
-              className="pl-8.5 h-10 text-xs rounded-xl"
+              leftElement={<Search className="size-3.5" />}
+              className="h-10 text-xs rounded-xl"
             />
           </div>
 

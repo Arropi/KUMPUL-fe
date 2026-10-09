@@ -799,14 +799,14 @@ export function UmkmPesananView() {
               />
             </div>
 
-            <div className="relative w-full md:w-72 shrink-0">
-              <Search className="size-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="w-full md:w-72 shrink-0">
               <Input
                 type="text"
                 value={purchaseSearch}
                 onChange={(e) => setPurchaseSearch(e.target.value)}
                 placeholder="Cari pesanan atau komoditas..."
-                className="w-full h-9 pl-9 text-xs rounded-xl bg-surface"
+                leftElement={<Search className="size-3.5" />}
+                className="w-full h-9 text-xs rounded-xl bg-surface min-h-[36px]"
               />
             </div>
           </div>
@@ -898,14 +898,14 @@ export function UmkmPesananView() {
               />
             </div>
 
-            <div className="relative w-full md:w-72 shrink-0">
-              <Search className="size-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="w-full md:w-72 shrink-0">
               <Input
                 type="text"
                 value={saleSearch}
                 onChange={(e) => setSaleSearch(e.target.value)}
                 placeholder="Cari pembeli atau limbah..."
-                className="w-full h-9 pl-9 text-xs rounded-xl bg-surface"
+                leftElement={<Search className="size-3.5" />}
+                className="w-full h-9 text-xs rounded-xl bg-surface min-h-[36px]"
               />
             </div>
           </div>

@@ -19,7 +19,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/utils";
-
+import { Search } from "lucide-react";
 const CATEGORIES = [
   "Semua Kategori",
   "Beras & Biji-bijian",
@@ -88,13 +88,14 @@ export function UmkmKatalogView() {
       {/* Bar Pencarian & Filter Tabs Watermelon UI */}
       <Card className="p-4 sm:p-5 shadow-elevation-1">
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-          <div className="relative flex-1">
+          <div className="flex-1">
             <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari beras, minyak curah, bawang merah, supplier, atau SKU..."
-              className="w-full h-11 pl-4 text-xs sm:text-sm"
+              leftElement={<Search className="w-4 h-4" />}
+              className="w-full h-11 text-xs sm:text-sm"
             />
           </div>
 

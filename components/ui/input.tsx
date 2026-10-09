@@ -6,10 +6,11 @@ export interface InputProps extends React.ComponentProps<"input"> {
   error?: string;
   helperText?: string;
   rightElement?: React.ReactNode;
+  leftElement?: React.ReactNode;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, id, rightElement, type, ...props }, ref) => {
+  ({ className, label, error, helperText, id, leftElement, rightElement, type, ...props }, ref) => {
     const generatedId = React.useId();
     const inputId = id || generatedId;
     const errorId = `${inputId}-error`;
@@ -28,6 +29,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         <div className="relative flex items-center">
+          {leftElement && (
+            <div className="absolute left-3.5 flex items-center justify-center pointer-events-none z-10 text-text-muted">
+              {leftElement}
+            </div>
+          )}
           <input
             id={inputId}
             ref={ref}
@@ -41,6 +47,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               error
                 ? "border-error focus-visible:ring-error/20 focus-visible:border-error bg-red-50/20"
                 : "border-border hover:border-border-strong",
+              leftElement ? "pl-10" : "",
               rightElement ? "pr-11" : "",
               className
             )}

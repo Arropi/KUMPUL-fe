@@ -6,6 +6,7 @@ import { ConsolidatedPO } from "@/constants/supplier";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -136,6 +137,7 @@ export function SupplierPesananView() {
               placeholder="Cari No. PO, Komoditas, Hub..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              leftElement={<Search className="w-4 h-4" />}
               className="min-h-[44px]"
             />
           </div>
