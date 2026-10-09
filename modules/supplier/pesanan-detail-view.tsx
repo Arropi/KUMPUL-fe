@@ -290,12 +290,12 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
 
       {/* Header Info */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface p-6 rounded-3xl border border-border shadow-elevation-1">
-        <div className="space-y-1">
+        <div className="space-y-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="font-heading font-extrabold text-xl sm:text-2xl text-text-primary">
+            <h1 className="font-heading font-extrabold text-xl sm:text-2xl text-text-primary truncate" title={po.poNumber}>
               {po.poNumber}
             </h1>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-primary border border-primary/20">
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-primary border border-primary/20 shrink-0">
               Grosir Agregasi Pooling
             </span>
           </div>
@@ -355,7 +355,7 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
             <Badge variant="neutral">{po.wholesaleUnit}</Badge>
           </div>
           <div>
-            <h3 className="font-heading font-bold text-lg text-text-primary">
+            <h3 className="font-heading font-bold text-lg text-text-primary line-clamp-2" title={po.commodityName}>
               {po.commodityName}
             </h3>
             <p className="text-2xl font-extrabold text-primary mt-1 tabular-nums">
@@ -418,12 +418,12 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              <h3 className="font-heading font-bold text-sm text-text-primary truncate">
+              <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+              <h3 className="font-heading font-bold text-sm text-text-primary truncate" title={po.hubName || hostParticipant?.umkmName || "Host Hub Konsolidasi"}>
                 {po.hubName || hostParticipant?.umkmName || "Host Hub Konsolidasi"}
               </h3>
             </div>
-            <p className="text-xs text-text-secondary mt-1 line-clamp-2 leading-relaxed">
+            <p className="text-xs text-text-secondary mt-1 line-clamp-2 leading-relaxed" title={po.hubAddress || hostParticipant?.destinationAddress || "Alamat kumpul terpadu"}>
               {po.hubAddress || hostParticipant?.destinationAddress || "Alamat kumpul terpadu"}
             </p>
           </div>
@@ -461,7 +461,7 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
               <span className="text-[10px] text-text-muted font-semibold block uppercase">
                 Nama Pengemudi / Kurir
               </span>
-              <p className="font-bold text-sm text-text-primary mt-1">
+              <p className="font-bold text-sm text-text-primary mt-1 truncate" title={po.driverName || "-"}>
                 {po.driverName || "-"}
               </p>
             </div>
@@ -469,7 +469,7 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
               <span className="text-[10px] text-text-muted font-semibold block uppercase">
                 No. Resi / Plat Armada
               </span>
-              <p className="font-mono font-bold text-sm text-text-primary mt-1 tabular-nums">
+              <p className="font-mono font-bold text-sm text-text-primary mt-1 tabular-nums truncate" title={po.trackingNumber || "-"}>
                 {po.trackingNumber || "-"}
               </p>
             </div>
@@ -552,25 +552,25 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
                   <TableCell className="text-center font-medium text-text-muted">
                     {idx + 1}
                   </TableCell>
-                  <TableCell>
-                    <div className="space-y-0.5">
+                  <TableCell className="max-w-[220px]">
+                    <div className="space-y-0.5 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <strong className="text-xs font-bold text-text-primary">
+                        <strong className="text-xs font-bold text-text-primary truncate" title={p.umkmName}>
                           {p.umkmName}
                         </strong>
                         {p.isHost && (
-                          <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
                             Titik Host Hub
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-text-secondary">
+                      <p className="text-[11px] text-text-secondary truncate" title={`${p.ownerName} • ${p.phone}`}>
                         {p.ownerName} • {p.phone}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell className="max-w-xs">
-                    <p className="text-xs text-text-secondary line-clamp-2">
+                    <p className="text-xs text-text-secondary line-clamp-2" title={p.destinationAddress}>
                       {p.destinationAddress}
                     </p>
                   </TableCell>
@@ -619,21 +619,21 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
               className="p-4 rounded-2xl bg-background border border-border space-y-3 text-xs"
             >
               <div className="flex items-start justify-between gap-2">
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-text-primary">{p.umkmName}</span>
+                    <span className="font-bold text-text-primary truncate" title={p.umkmName}>{p.umkmName}</span>
                     {p.isHost && (
-                      <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20">
+                      <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
                         Host Hub
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] text-text-muted block mt-0.5">
+                  <span className="text-[11px] text-text-muted block mt-0.5 truncate" title={`${p.ownerName} • ${p.phone}`}>
                     {p.ownerName} • {p.phone}
                   </span>
                 </div>
                 <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                     p.deliveryMethod === "HEMAT_HUB"
                       ? "bg-[#EBF5F0] text-primary"
                       : "bg-neutral-100 text-neutral-700"
@@ -643,7 +643,7 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
                 </span>
               </div>
 
-              <p className="text-text-secondary text-[11px] line-clamp-2">
+              <p className="text-text-secondary text-[11px] line-clamp-2" title={p.destinationAddress}>
                 📍 {p.destinationAddress}
               </p>
 
@@ -727,21 +727,21 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <strong className="text-xs font-bold text-text-primary">
+                        <strong className="text-xs font-bold text-text-primary truncate" title={candidate.umkmName}>
                           {candidate.umkmName}
                         </strong>
                         {isCurrentHost && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
                             Host Saat Ini
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-text-secondary leading-snug">
+                      <p className="text-[11px] text-text-secondary leading-snug line-clamp-2" title={candidate.destinationAddress}>
                         {candidate.destinationAddress}
                       </p>
-                      <p className="text-[10px] text-text-muted">
+                      <p className="text-[10px] text-text-muted truncate" title={`Kontak: ${candidate.ownerName} (${candidate.phone})`}>
                         Kontak: {candidate.ownerName} ({candidate.phone})
                       </p>
                     </div>

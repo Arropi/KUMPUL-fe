@@ -51,7 +51,7 @@ export function OrderConfirmDialog({
 
         <div className="space-y-3 pt-2 text-xs">
           <div className="p-3.5 rounded-xl bg-surface-subtle border border-border space-y-2">
-            <p className="font-bold text-sm text-text-primary">{commodity.name}</p>
+            <p className="font-bold text-sm text-text-primary line-clamp-1" title={commodity.name}>{commodity.name}</p>
             <div className="space-y-1 text-text-secondary text-[11px]">
               <p>
                 Volume:{" "}
@@ -68,7 +68,7 @@ export function OrderConfirmDialog({
                     : "On Your Door (Antar ke Rumah)"}
                 </span>
               </p>
-              <p className="line-clamp-2">
+              <p className="line-clamp-2" title={deliveryDetails.address}>
                 Alamat Tujuan:{" "}
                 <span className="font-medium text-text-primary">
                   {deliveryDetails.address}

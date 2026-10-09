@@ -194,7 +194,7 @@ export function UmkmPasporMutuView() {
                       <span className="text-xs font-mono font-bold text-text-muted">
                         #{index + 1}
                       </span>
-                      <h3 className="font-heading text-sm font-bold text-text-primary">
+                      <h3 className="font-heading text-sm font-bold text-text-primary line-clamp-1" title={item.title}>
                         {item.title}
                       </h3>
                     </div>
@@ -239,7 +239,7 @@ export function UmkmPasporMutuView() {
               className="p-5 rounded-2xl border-border bg-surface shadow-elevation-1 space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold text-primary">
+                <span className="font-mono text-xs font-bold text-primary truncate max-w-[200px]" title={audit.certificateId}>
                   {audit.certificateId}
                 </span>
                 <Badge variant="success" className="font-bold text-xs">
@@ -252,9 +252,9 @@ export function UmkmPasporMutuView() {
                   <span className="text-text-muted">Tanggal Audit:</span>
                   <span className="font-semibold text-text-primary">{audit.date}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Inspektur Penanggung Jawab:</span>
-                  <span className="font-semibold text-text-primary">{audit.inspectorName}</span>
+                <div className="flex justify-between gap-2">
+                  <span className="text-text-muted shrink-0">Inspektur Penanggung Jawab:</span>
+                  <span className="font-semibold text-text-primary truncate max-w-[200px]" title={audit.inspectorName}>{audit.inspectorName}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-muted">Skor Higienitas:</span>

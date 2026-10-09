@@ -128,7 +128,7 @@ export function DetailKomoditasView({
               <Badge variant="warning">Menunggu Verifikasi Kesehatan</Badge>
             )}
           </div>
-          <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary mt-2">
+          <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary mt-2 line-clamp-2" title={commodity.name}>
             {commodity.name}
           </h1>
         </div>
@@ -220,7 +220,7 @@ export function DetailKomoditasView({
               <span className="text-[11px] font-semibold text-text-muted block">
                 Lokasi Asal Panen / Gudang
               </span>
-              <p className="text-xs font-bold text-text-primary">
+              <p className="text-xs font-bold text-text-primary line-clamp-2" title={commodity.batchTag.originLocation}>
                 {commodity.batchTag.originLocation}
               </p>
             </div>
@@ -297,7 +297,7 @@ export function DetailKomoditasView({
               <h2 className="text-xs font-bold text-text-primary mb-1">
                 Deskripsi &amp; Spesifikasi Produk
               </h2>
-              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed break-words">
                 {commodity.description}
               </p>
             </div>

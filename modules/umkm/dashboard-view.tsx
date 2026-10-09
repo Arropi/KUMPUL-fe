@@ -378,10 +378,10 @@ export function UmkmDashboardView() {
                         <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-md border border-primary/20">
                           {pool.category}
                         </span>
-                        <h3 className="font-heading font-bold text-base text-text-primary leading-snug line-clamp-1">
+                        <h3 className="font-heading font-bold text-base text-text-primary leading-snug line-clamp-1" title={pool.commodityName}>
                           {pool.commodityName}
                         </h3>
-                        <p className="text-xs text-text-muted">
+                        <p className="text-xs text-text-muted truncate" title={pool.supplierName}>
                           {pool.supplierName}
                         </p>
                       </div>
@@ -504,7 +504,7 @@ export function UmkmDashboardView() {
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-bold text-sm text-text-primary line-clamp-1">
+                      <h4 className="font-bold text-sm text-text-primary line-clamp-1" title={alert.ingredient_name}>
                         {alert.ingredient_name}
                       </h4>
                       {alert.is_urgent ? (
@@ -592,14 +592,14 @@ export function UmkmDashboardView() {
               <div className="divide-y divide-border/80">
                 {dashboardData.recent_orders.map((o) => (
                   <div key={o.order_id} className="py-3 flex items-center justify-between gap-3 text-xs">
-                    <div className="space-y-0.5">
-                      <h5 className="font-bold text-text-primary">{o.commodity_name}</h5>
-                      <span className="text-[11px] text-text-muted block">
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                      <h5 className="font-bold text-text-primary truncate" title={o.commodity_name}>{o.commodity_name}</h5>
+                      <span className="text-[11px] text-text-muted block truncate">
                         Volume: {o.order_qty} kg &bull; Delivery: {o.delivery_method || "Hub"}
                       </span>
                     </div>
 
-                    <div className="text-right space-y-1">
+                    <div className="text-right space-y-1 shrink-0">
                       <span className="font-bold text-text-primary block tabular-nums">
                         {formatCurrency(o.grand_total)}
                       </span>
@@ -640,15 +640,15 @@ export function UmkmDashboardView() {
                   key={w.listing_id}
                   className="p-3 rounded-xl border border-border bg-surface-subtle/50 space-y-1 text-xs"
                 >
-                  <div className="flex items-center justify-between">
-                    <h5 className="font-bold text-text-primary truncate">{w.listing_title}</h5>
-                    <Badge variant="waste" className="text-[10px]">
+                  <div className="flex items-center justify-between gap-2">
+                    <h5 className="font-bold text-text-primary truncate" title={w.listing_title}>{w.listing_title}</h5>
+                    <Badge variant="waste" className="text-[10px] shrink-0">
                       {w.listing_status}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between text-text-secondary text-[11px]">
-                    <span>Kategori: {w.waste_category}</span>
-                    <span className="font-bold text-circular-waste tabular-nums">{w.available_weight} kg</span>
+                    <span className="truncate">Kategori: {w.waste_category}</span>
+                    <span className="font-bold text-circular-waste tabular-nums shrink-0">{w.available_weight} kg</span>
                   </div>
                 </div>
               ))
@@ -673,15 +673,15 @@ export function UmkmDashboardView() {
           aria-modal="true"
         >
           <div className="w-full max-w-lg bg-surface rounded-3xl border border-border p-6 sm:p-7 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
-            <div className="flex items-start justify-between border-b border-border/80 pb-3.5">
-              <div className="space-y-1">
+            <div className="flex items-start justify-between border-b border-border/80 pb-3.5 gap-2">
+              <div className="space-y-1 min-w-0">
                 <span className="text-[10px] font-bold text-primary bg-primary-light px-2.5 py-0.5 rounded-md border border-primary/20">
                   {activeJoinPool.category}
                 </span>
-                <h3 className="font-heading text-lg font-bold text-text-primary leading-tight">
+                <h3 className="font-heading text-lg font-bold text-text-primary leading-tight line-clamp-2" title={`Gabung Kuota: ${activeJoinPool.commodityName}`}>
                   Gabung Kuota: {activeJoinPool.commodityName}
                 </h3>
-                <p className="text-xs text-text-muted">
+                <p className="text-xs text-text-muted truncate" title={activeJoinPool.supplierName}>
                   {activeJoinPool.supplierName}
                 </p>
               </div>

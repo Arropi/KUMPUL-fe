@@ -294,7 +294,7 @@ export function CreatePoolDialog({
                 Batas MOQ: {baseMoq} {commodity.wholesaleUnit}
               </span>
             </div>
-            <DialogTitle className="text-base sm:text-lg font-heading font-bold text-text-primary">
+            <DialogTitle className="text-base sm:text-lg font-heading font-bold text-text-primary line-clamp-2" title={commodity.name}>
               {commodity.name}
             </DialogTitle>
             <DialogDescription className="text-xs text-text-secondary">
@@ -530,7 +530,7 @@ export function CreatePoolDialog({
                   <span className="text-[10px] text-text-muted font-medium block">
                     Alamat Terpilih dari Peta:
                   </span>
-                  <p className="font-semibold text-text-primary text-xs leading-relaxed break-words">
+                  <p className="font-semibold text-text-primary text-xs leading-relaxed line-clamp-2" title={address || "Geser pin pada peta untuk menentukan alamat pengantaran"}>
                     {address || "Geser pin pada peta untuk menentukan alamat pengantaran"}
                   </p>
                   <span className="text-[10px] text-text-muted font-mono block">

@@ -235,14 +235,14 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
                       isKritis ? "bg-red-50/20" : isMenipis ? "bg-amber-50/15" : ""
                     }`}
                   >
-                    <TableCell>
-                      <span className="font-bold text-text-primary block">
+                    <TableCell className="max-w-[200px]">
+                      <span className="font-bold text-text-primary block truncate" title={item.ingredientName}>
                         {item.ingredientName}
                       </span>
                     </TableCell>
 
-                    <TableCell>
-                      <span className="text-[11px] font-semibold text-text-secondary bg-surface-subtle px-2.5 py-0.5 rounded-full border border-border/60">
+                    <TableCell className="max-w-[140px]">
+                      <span className="text-[11px] font-semibold text-text-secondary bg-surface-subtle px-2.5 py-0.5 rounded-full border border-border/60 inline-block truncate max-w-full" title={item.sector}>
                         {item.sector}
                       </span>
                     </TableCell>
@@ -350,7 +350,7 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
               <DialogTitle className="text-base font-bold text-text-primary">
                 Penyesuaian Stok Fisik (Stok Opname)
               </DialogTitle>
-              <DialogDescription className="text-xs text-text-secondary">
+              <DialogDescription className="text-xs text-text-secondary line-clamp-2" title={`Perbarui jumlah fisik aktual ${editingItem?.ingredientName ?? ""} yang tersedia di dapur usaha Anda.`}>
                 Perbarui jumlah fisik aktual {editingItem?.ingredientName} yang tersedia di dapur usaha Anda.
               </DialogDescription>
             </DialogHeader>

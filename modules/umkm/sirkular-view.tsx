@@ -735,11 +735,11 @@ export function UmkmSirkularView() {
                   {/* Inner Card Section (Card-12 Pattern) */}
                   <Card className="rounded-t-none border-none shadow-none bg-transparent !py-0 !gap-3 flex-1 flex flex-col justify-between">
                     <CardHeader className="space-y-1 p-4 pb-0">
-                      <CardTitle className="text-sm sm:text-base font-heading font-bold text-text-primary line-clamp-1 leading-snug">
+                      <CardTitle className="text-sm sm:text-base font-heading font-bold text-text-primary line-clamp-1 leading-snug" title={item.title}>
                         {item.title}
                       </CardTitle>
                       {item.description ? (
-                        <CardDescription className="text-xs text-text-secondary line-clamp-2 leading-relaxed min-h-[2rem]">
+                        <CardDescription className="text-xs text-text-secondary line-clamp-2 leading-relaxed min-h-[2rem]" title={item.description}>
                           {item.description}
                         </CardDescription>
                       ) : (
