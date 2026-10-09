@@ -21,7 +21,7 @@ import { KitchenInventorySection } from "./menu/kitchen-inventory-section";
 import { Pagination15 } from "@/components/ui/pagination";
 import { getUmkmProductsAction } from "@/actions/products";
 import type { BEProduct } from "@/lib/api/types";
-import { DEFAULT_SEED_PRODUCTS, calculateCircularMargin } from "@/lib/menu-intelligence";
+import { calculateCircularMargin } from "@/lib/menu-intelligence";
 
 export type MenuSortOption =
   | "MARGIN_DESC"
@@ -99,10 +99,10 @@ export function UmkmMenuView() {
   const loadProducts = React.useCallback(async () => {
     try {
       const res = await getUmkmProductsAction();
-      if (res.success && res.data && res.data.length > 0) {
+      if (res.success && res.data) {
         setProducts(res.data);
       } else {
-        setProducts(DEFAULT_SEED_PRODUCTS);
+        setProducts([]);
       }
     } catch {
       toast.error("Gagal terhubung ke backend");

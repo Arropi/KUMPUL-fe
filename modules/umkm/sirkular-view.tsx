@@ -8,7 +8,6 @@ import {
 } from "@/constants/umkm";
 import { getWasteListingsAction, createWasteListingAction } from "@/actions/waste";
 import type { BEWasteListing, BEWasteCategory, BEProduct } from "@/lib/api/types";
-import { DEFAULT_SEED_PRODUCTS } from "@/lib/menu-intelligence";
 import { getUmkmProductsAction } from "@/actions/products";
 import { BankSampahMapSection } from "@/modules/umkm/bank-sampah-map-section";
 import { Button } from "@/components/ui/button";
@@ -430,26 +429,14 @@ export function UmkmSirkularView() {
     async function loadProducts() {
       try {
         const res = await getUmkmProductsAction();
-        if (res.success && res.data && res.data.length > 0) {
+        if (res.success && res.data) {
           setProducts(res.data);
           return;
         }
       } catch {
-        // Fallback to local storage or default seed
+        // Safe fail
       }
-      if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("kumpul_mock_products");
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setProducts(parsed);
-              return;
-            }
-          } catch { }
-        }
-      }
-      setProducts(DEFAULT_SEED_PRODUCTS);
+      setProducts([]);
     }
     loadProducts();
   }, []);
