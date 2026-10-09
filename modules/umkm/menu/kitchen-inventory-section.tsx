@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Pagination15 } from "@/components/ui/pagination";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,9 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
   const [editingItem, setEditingItem] = React.useState<KitchenStockItem | null>(null);
   const [newStockValue, setNewStockValue] = React.useState<string>("");
 
+  // Pagination state untuk mengantisipasi bahan dapur yang banyak
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [pageSize, setPageSize] = React.useState<number>(6);
   // Muat stok fisik dari localStorage
   React.useEffect(() => {
     try {
@@ -106,11 +110,22 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
     });
   }, [inventoryItems, searchQuery, statusFilter]);
 
+  // Reset halaman saat filter pencarian atau status berganti
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  const paginatedItems = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, currentPage, pageSize]);
+
   const criticalCount = inventoryItems.filter((i) => i.status === "KRITIS").length;
   const warningCount = inventoryItems.filter((i) => i.status === "MENIPIS").length;
 
   return (
-    <Card className="rounded-2xl border border-border bg-surface shadow-elevation-1 p-5 sm:p-6 space-y-5">
+    <Card id="kitchen-inventory" className="rounded-2xl border border-border bg-surface shadow-elevation-1 p-5 sm:p-6 space-y-5 scroll-mt-8">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
@@ -209,7 +224,7 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredItems.map((item) => {
+              {paginatedItems.map((item) => {
                 const isKritis = item.status === "KRITIS";
                 const isMenipis = item.status === "MENIPIS";
 
@@ -308,6 +323,22 @@ export function KitchenInventorySection({ products }: KitchenInventorySectionPro
               })}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Pagination untuk mengantisipasi jumlah bahan baku yang banyak */}
+      {filteredItems.length > 0 && (
+        <div className="pt-2 border-t border-border/60">
+          <Pagination15
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={filteredItems.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[6, 10, 15, 25]}
+            itemLabel="bahan"
+          />
         </div>
       )}
 
