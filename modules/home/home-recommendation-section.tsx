@@ -516,7 +516,7 @@ export function HomeRecommendationSection({
                 if (matched) {
                   return (
                     <div key={`near-${near.commodity_id}`} className="relative">
-                      <div className="absolute -inset-0.5 rounded-2xl blur-[2px] opacity-75 pointer-events-none bg-gradient-to-r from-blue-500/25 to-indigo-500/25" />
+                      <div className="absolute -inset-0.5 rounded-2xl blur-[2px] opacity-75 pointer-events-none bg-gradient-to-r from-primary/20 to-emerald-500/20" />
                       <div className="relative">
                         <CommodityCatalogCard
                           item={matched}

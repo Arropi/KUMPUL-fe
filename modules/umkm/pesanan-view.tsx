@@ -96,7 +96,7 @@ function getStatusBadge(status: string) {
     case "TERKUNCI":
       return {
         label: "Diproses Supplier",
-        className: "bg-purple-50 text-purple-800 border-purple-200",
+        className: "bg-blue-50 text-blue-800 border-blue-200",
         icon: Clock,
       };
     case "READY_FOR_PICKUP":
@@ -1175,14 +1175,14 @@ export function UmkmPesananView() {
                 selectedOrder.status === "DIPROSES_SUPPLIER" ||
                 selectedOrder.status === "TERKUNCI") && (
                 <div className="space-y-4">
-                  <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-2 text-center">
-                    <div className="size-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto text-purple-700">
+                  <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-2 text-center">
+                    <div className="size-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto text-blue-700">
                       <Truck className="size-6 animate-pulse" />
                     </div>
-                    <h4 className="font-heading font-bold text-sm text-purple-950">
+                    <h4 className="font-heading font-bold text-sm text-blue-950">
                       Pesanan Sedang Disiapkan Supplier
                     </h4>
-                    <p className="text-xs text-purple-800 leading-relaxed">
+                    <p className="text-xs text-blue-800 leading-relaxed">
                       {selectedOrder.orderType === "DIRECT_OVER_MOQ"
                         ? `Pesanan dikirim langsung ke alamat dapur Anda. Estimasi jadwal kirim: ${selectedOrder.targetDeliveryDate || "1-2 hari kerja"}.`
                         : `Supplier sedang menyiapkan stok komoditas. Estimasi tiba di hub konsolidasi dalam ${selectedOrder.leadTimeDays || 1} hari kerja.`}

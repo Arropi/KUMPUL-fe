@@ -222,14 +222,14 @@ export function CommodityCatalogCard({
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             {/* Penanda Tiering Price: HANYA jika > 1 tier */}
             {hasTieringPrice && (
-              <span className="inline-flex items-center rounded-md bg-purple-500/10 border border-purple-500/25 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+              <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-[10px] font-bold text-blue-800">
                 <span>Diskon Bertingkat ({item.priceTiers.length} Tier)</span>
               </span>
             )}
 
             {/* Penanda Terbuka Pool: HANYA jika sudah terdapat pool terbuka */}
             {hasOpenPools && (
-              <span className="inline-flex items-center rounded-md bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+              <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
                 <span>
                   Pool Terbuka {openPoolsCount > 1 ? `(${openPoolsCount} Pool)` : ""}
                 </span>
