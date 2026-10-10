@@ -55,12 +55,6 @@ async function resolveUmkmRoleId(providedRoleId?: string): Promise<string | null
     }
   }
 
-  // Fallback dev mode: ambil role UMKM pertama yang aktif di sistem
-  const allRolesRes = await beFetch<BEBusinessRole[]>("/business/roles?role_type=UMKM");
-  if (allRolesRes.success && allRolesRes.data && allRolesRes.data.length > 0) {
-    return allRolesRes.data[0].id;
-  }
-
   return null;
 }
 
@@ -79,21 +73,28 @@ export async function getUmkmProductsAction(umkmRoleId?: string): Promise<{
     } catch {
       // outside request context
     }
-    let endpoint = "/products";
+    let endpoint = "";
 
     if (session?.entityId) {
       endpoint = `/products/entity-id/${session.entityId}`;
     } else if (umkmRoleId) {
       endpoint = `/products?umkm_role_id=${umkmRoleId}`;
+    } else if (session?.roleId) {
+      endpoint = `/products?umkm_role_id=${session.roleId}`;
+    } else {
+      // Akun belum memiliki entity atau role UMKM terdaftar
+      return {
+        success: true,
+        data: [],
+      };
     }
+
     const res = await beFetch<BEProduct[]>(endpoint);
     if (!res.success) {
-      // Fallback ambil seluruh produk umum
-      const fallbackRes = await beFetch<BEProduct[]>("/products");
       return {
-        success: fallbackRes.success,
-        data: fallbackRes.data || [],
-        message: fallbackRes.message,
+        success: false,
+        data: [],
+        message: res.message,
       };
     }
 

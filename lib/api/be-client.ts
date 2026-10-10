@@ -48,11 +48,24 @@ export async function beFetch<T>(
             ...((options.headers as Record<string, string>) || {}),
           };
 
-      // Auto-attach authorization token if running on browser client
-      if (!headers["Authorization"] && typeof document !== "undefined") {
-        const match = document.cookie.match(/(?:^|;\s*)kumpul_token=([^;]+)/);
-        if (match) {
-          headers["Authorization"] = `Bearer ${decodeURIComponent(match[1])}`;
+      // Auto-attach authorization token if running on browser client or server
+      if (!headers["Authorization"]) {
+        if (typeof document !== "undefined") {
+          const match = document.cookie.match(/(?:^|;\s*)kumpul_token=([^;]+)/);
+          if (match) {
+            headers["Authorization"] = `Bearer ${decodeURIComponent(match[1])}`;
+          }
+        } else {
+          try {
+            const { cookies } = await import("next/headers");
+            const cookieStore = await cookies();
+            const token = cookieStore.get("kumpul_token")?.value;
+            if (token) {
+              headers["Authorization"] = `Bearer ${token}`;
+            }
+          } catch {
+            // Diluar request context Next.js atau static prerender
+          }
         }
       }
       const res = await fetch(url, {
