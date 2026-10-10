@@ -32,6 +32,7 @@ import {
 import { toast } from "@/components/ui/toast";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import { beFetch } from "@/lib/api/be-client";
+import { Pagination15 } from "@/components/ui/pagination";
 import {
   getUmkmDashboardDataAction,
   type UmkmDashboardData,
@@ -134,6 +135,20 @@ export function UmkmDashboardView() {
     return mappedPools.filter((p) => p.category.toLowerCase().includes(selectedCategory.toLowerCase()));
   }, [mappedPools, selectedCategory]);
 
+  // Pagination state untuk Radar Pooling Aktif (maksimal 4 card)
+  const [poolCurrentPage, setPoolCurrentPage] = React.useState<number>(1);
+  const [poolPageSize, setPoolPageSize] = React.useState<number>(4);
+
+  // Reset halaman pagination saat kategori filter berubah
+  React.useEffect(() => {
+    setPoolCurrentPage(1);
+  }, [selectedCategory]);
+
+  const totalPoolPages = Math.max(1, Math.ceil(filteredPools.length / poolPageSize));
+  const paginatedPools = React.useMemo(() => {
+    const start = (poolCurrentPage - 1) * poolPageSize;
+    return filteredPools.slice(start, start + poolPageSize);
+  }, [filteredPools, poolCurrentPage, poolPageSize]);
   const handleJoinPoolSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeJoinPool) return;
@@ -355,44 +370,44 @@ export function UmkmDashboardView() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {filteredPools.map((pool) => {
-              const percentage = Math.min(
-                100,
-                Math.round((pool.accumulatedKg / Math.max(1, pool.targetMoqKg)) * 100)
-              );
-              const savingsPerKg = Math.max(0, pool.pricePerKgRetailMarket - pool.pricePerKgWholesale);
-              const isLocked = pool.status === "LOCKED";
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {paginatedPools.map((pool) => {
+                const percentage = Math.min(
+                  100,
+                  Math.round((pool.accumulatedKg / Math.max(1, pool.targetMoqKg)) * 100)
+                );
+                const savingsPerKg = Math.max(0, pool.pricePerKgRetailMarket - pool.pricePerKgWholesale);
+                const isLocked = pool.status === "LOCKED";
 
-              return (
-                <Card
-                  key={pool.id}
-                  className="flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2"
-                >
-                  <div className="p-5 sm:p-6 space-y-4">
-                    {/* Header Komoditas & Status */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-md border border-primary/20">
-                          {pool.category}
-                        </span>
-                        <h3 className="font-heading font-bold text-base text-text-primary leading-snug line-clamp-1" title={pool.commodityName}>
-                          {pool.commodityName}
-                        </h3>
-                        <p className="text-xs text-text-muted truncate" title={pool.supplierName}>
-                          {pool.supplierName}
-                        </p>
+                return (
+                  <Card
+                    key={pool.id}
+                    className="flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2"
+                  >
+                    <div className="p-5 sm:p-6 space-y-4">
+                      {/* Header Komoditas & Status */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-primary bg-primary-light px-2.5 py-0.5 rounded-md border border-primary/20">
+                            {pool.category}
+                          </span>
+                          <h3 className="font-heading font-bold text-base text-text-primary leading-snug line-clamp-1" title={pool.commodityName}>
+                            {pool.commodityName}
+                          </h3>
+                          <p className="text-xs text-text-muted truncate" title={pool.supplierName}>
+                            {pool.supplierName}
+                          </p>
+                        </div>
+
+                        {isLocked ? (
+                          <Badge variant="success">Kuota Terkunci</Badge>
+                        ) : (
+                          <Badge variant="primary" className="font-bold">
+                            <span>{percentage}% Tercapai</span>
+                          </Badge>
+                        )}
                       </div>
-
-                      {isLocked ? (
-                        <Badge variant="success">Kuota Terkunci</Badge>
-                      ) : (
-                        <Badge variant="primary" className="gap-1.5 font-bold">
-                          <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-                          <span>{percentage}% Tercapai</span>
-                        </Badge>
-                      )}
-                    </div>
 
                     {/* Progress Bar Kuota MOQ */}
                     <div className="space-y-1.5">
@@ -456,6 +471,21 @@ export function UmkmDashboardView() {
                 </Card>
               );
             })}
+            </div>
+
+            {/* Watermelon UI Pagination-15 Component */}
+            {filteredPools.length > 0 && (
+              <Pagination15
+                currentPage={poolCurrentPage}
+                totalPages={totalPoolPages}
+                pageSize={poolPageSize}
+                totalItems={filteredPools.length}
+                onPageChange={setPoolCurrentPage}
+                onPageSizeChange={setPoolPageSize}
+                pageSizeOptions={[4, 8, 12]}
+                itemLabel="pool"
+              />
+            )}
           </div>
         )}
       </section>
