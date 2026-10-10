@@ -102,6 +102,11 @@ export interface RawRecommendationsData {
     your_base_price: number;
     market_average_price: number;
     price_competitiveness: "COMPETITIVE" | "AVERAGE" | "EXPENSIVE";
+    image_url?: string | null;
+    sku?: string | null;
+    wholesale_unit?: string | null;
+    base_moq?: number | null;
+    stock?: number | null;
   }>;
   high_demand_ingredients?: Array<{
     ingredient_name: string;
@@ -364,22 +369,42 @@ function getCommodityForBenchmark(
   commodities: SupplierCommodity[]
 ): SupplierCommodity {
   const found = commodities.find((c) => c.id === b.commodity_id);
-  if (found) return found;
+  if (found) {
+    return {
+      ...found,
+      imageUrl: b.image_url || found.imageUrl,
+      priceTiers: [
+        {
+          id: `tier-${b.commodity_id}`,
+          minQty: b.base_moq || found.baseMoq || 10,
+          maxQty: null,
+          pricePerUnit: b.your_base_price,
+          label: "Harga Anda",
+        },
+      ],
+    };
+  }
 
   return {
     id: b.commodity_id,
-    sku: `BENCH-${b.commodity_id.slice(0, 4).toUpperCase()}`,
+    sku: b.sku || `BENCH-${b.commodity_id.slice(0, 4).toUpperCase()}`,
     name: b.commodity_name,
     sector: "Pertanian",
-    description: `Komparasi harga komoditas grosir di pasar Yogyakarta.`,
-    wholesaleUnit: "KG",
+    description: `Komparasi daya saing harga komoditas grosir di pasar Yogyakarta.`,
+    wholesaleUnit: (b.wholesale_unit as WholesaleUnit) || "KG",
     unitWeightKg: 1,
-    baseMoq: 10,
-    availableStock: 500,
+    baseMoq: b.base_moq || 10,
+    availableStock: b.stock || 500,
     leadTimeDays: 1,
     isActive: true,
     priceTiers: [
-      { id: `tier-${b.commodity_id}`, minQty: 10, maxQty: null, pricePerUnit: b.your_base_price, label: "Harga Anda" },
+      {
+        id: `tier-${b.commodity_id}`,
+        minQty: b.base_moq || 10,
+        maxQty: null,
+        pricePerUnit: b.your_base_price,
+        label: "Harga Anda",
+      },
     ],
     batchTag: {
       id: `batch-${b.commodity_id}`,
@@ -390,6 +415,7 @@ function getCommodityForBenchmark(
       originLocation: "D.I. Yogyakarta",
       hygieneStatus: "TERVERIFIKASI",
     },
+    imageUrl: b.image_url || undefined,
     createdAt: new Date().toISOString(),
     sourceType: "SUPPLIER",
     hasTieringPrice: false,
@@ -453,11 +479,14 @@ export function HomeRecommendationSection({
     (r) => !isOwnCommodity(r.commodity.sellerName, r.commodity.supplierRoleId, r.commodity.supplierEntityId)
   );
 
-  const hasContent =
-    filteredRecommendations.length > 0 ||
-    healthyAlternatives.length > 0 ||
-    nearestSuppliers.length > 0 ||
-    costSavingPools.length > 0;
+  const benchmarks = rawRecommendations?.price_benchmarks || [];
+
+  const hasContent = isUmkm
+    ? filteredRecommendations.length > 0 ||
+      healthyAlternatives.length > 0 ||
+      nearestSuppliers.length > 0 ||
+      costSavingPools.length > 0
+    : benchmarks.length > 0;
 
   if (recsError && !hasContent) {
     return (
@@ -465,6 +494,92 @@ export function HomeRecommendationSection({
         <p className="text-xs font-medium text-text-muted">
           Saat ini tidak ada yang tepat untuk direkomendasikan pada Anda.
         </p>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // TAMPILAN KHUSUS SUPPLIER
+  // -------------------------------------------------------------
+  if (!isUmkm) {
+    return (
+      <div className="space-y-4 pt-2">
+        {/* Header Rekomendasi Supplier */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-border/70">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-700">
+                <BarChart2 className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
+                Mesin Rekomendasi Cerdas
+              </span>
+            </div>
+            <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
+              Mesin Rekomendasi Cerdas
+            </h2>
+            <p className="text-xs text-text-secondary max-w-2xl">
+              Pantau daya saing harga komoditas Anda dibanding rata-rata bursa pasar grosir Yogyakarta untuk memaksimalkan margin dan volume penjualan.
+            </p>
+          </div>
+        </div>
+
+        {/* Konten Rekomendasi Supplier: Daya Saing Harga */}
+        <div className="space-y-3">
+          {benchmarks.length === 0 ? (
+            <Card className="p-8 text-center bg-surface border-border rounded-2xl">
+              <p className="text-xs font-semibold text-text-secondary">
+                Belum ada komoditas aktif untuk dibandingkan. Tambahkan katalog komoditas Anda untuk melihat analisis perbandingan harga pasar.
+              </p>
+              <Link href="/katalog/tambah" className="mt-3 inline-block">
+                <Button variant="primary" size="sm" className="font-semibold text-xs cursor-pointer">
+                  + Tambah Komoditas Sekarang
+                </Button>
+              </Link>
+            </Card>
+          ) : (
+            <HorizontalScrollContainer>
+              {benchmarks.map((b) => {
+                const item = getCommodityForBenchmark(b, commodities);
+                const isCompetitive = b.price_competitiveness === "COMPETITIVE";
+                const isExpensive = b.price_competitiveness === "EXPENSIVE";
+                const diffPrice = b.your_base_price - b.market_average_price;
+                const diffPct =
+                  b.market_average_price > 0
+                    ? Math.round((Math.abs(diffPrice) / b.market_average_price) * 100)
+                    : 0;
+
+                // Sesuai requirement: Badge sesuai rata-rata pasar ditiadakan
+                const benchmarkTag = isCompetitive
+                  ? "Harga Kompetitif Pasar"
+                  : isExpensive
+                  ? "Di Atas Rata-rata Pasar"
+                  : undefined;
+
+                const reason = isCompetitive
+                  ? `Harga komoditas Anda (${formatCurrency(b.your_base_price)}) lebih hemat ${diffPct}% dibanding rata-rata pasar (${formatCurrency(b.market_average_price)}). Pertahankan posisi harga ini untuk menarik kuota pesanan lebih besar dari UMKM.`
+                  : isExpensive
+                  ? `Harga komoditas Anda (${formatCurrency(b.your_base_price)}) ${diffPct}% lebih tinggi dibanding rata-rata pasar (${formatCurrency(b.market_average_price)}). Pertimbangkan penyesuaian harga atau sediakan diskon volume bertingkat agar lebih kompetitif.`
+                  : `Harga komoditas Anda (${formatCurrency(b.your_base_price)}) seimbang dengan rata-rata harga bursa pasar grosir Yogyakarta saat ini (${formatCurrency(b.market_average_price)}).`;
+
+                return (
+                  <div
+                    key={`bench-${b.commodity_id}`}
+                    className="w-[280px] sm:w-[310px] md:w-[325px] shrink-0 snap-start flex flex-col"
+                  >
+                    <CommodityCatalogCard
+                      item={item}
+                      role={role}
+                      pageContext="home"
+                      benchmarkTag={benchmarkTag}
+                      recommendationReason={reason}
+                    />
+                  </div>
+                );
+              })}
+            </HorizontalScrollContainer>
+          )}
+        </div>
       </div>
     );
   }
