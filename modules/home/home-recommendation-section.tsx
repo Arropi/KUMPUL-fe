@@ -502,6 +502,10 @@ export function HomeRecommendationSection({
   // TAMPILAN KHUSUS SUPPLIER
   // -------------------------------------------------------------
   if (!isUmkm) {
+    if (benchmarks.length === 0) {
+      return null;
+    }
+
     return (
       <div className="space-y-4 pt-2">
         {/* Header Rekomendasi Supplier */}
@@ -526,19 +530,7 @@ export function HomeRecommendationSection({
 
         {/* Konten Rekomendasi Supplier: Daya Saing Harga */}
         <div className="space-y-3">
-          {benchmarks.length === 0 ? (
-            <Card className="p-8 text-center bg-surface border-border rounded-2xl">
-              <p className="text-xs font-semibold text-text-secondary">
-                Belum ada komoditas aktif untuk dibandingkan. Tambahkan katalog komoditas Anda untuk melihat analisis perbandingan harga pasar.
-              </p>
-              <Link href="/katalog/tambah" className="mt-3 inline-block">
-                <Button variant="primary" size="sm" className="font-semibold text-xs cursor-pointer">
-                  + Tambah Komoditas Sekarang
-                </Button>
-              </Link>
-            </Card>
-          ) : (
-            <HorizontalScrollContainer>
+          <HorizontalScrollContainer>
               {benchmarks.map((b) => {
                 const item = getCommodityForBenchmark(b, commodities);
                 const isCompetitive = b.price_competitiveness === "COMPETITIVE";
@@ -578,7 +570,6 @@ export function HomeRecommendationSection({
                 );
               })}
             </HorizontalScrollContainer>
-          )}
         </div>
       </div>
     );
