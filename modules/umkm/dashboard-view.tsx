@@ -190,9 +190,8 @@ export function UmkmDashboardView() {
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/70">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary" />
             <span className="text-xs font-semibold text-text-secondary">
-              {businessName} &bull; Sektor Kuliner &amp; Pengolahan
+              {businessName} | Sektor Kuliner &amp; Pengolahan
             </span>
           </div>
           <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-primary tracking-tight mt-0.5">

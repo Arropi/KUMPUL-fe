@@ -11,6 +11,7 @@ import {
   createWasteListingAction,
   updateWasteListingAction,
   deleteWasteListingAction,
+  depositWasteToBankSampahAction,
 } from "@/actions/waste";
 import type { BEWasteListing, BEWasteCategory, BEProduct } from "@/lib/api/types";
 import { getUmkmProductsAction } from "@/actions/products";
@@ -55,7 +56,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
-import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatNumber, formatDate } from "@/lib/utils";
 
 interface WasteBenchmark {
   id: string;
@@ -292,16 +293,50 @@ export const WASTE_CATEGORY_OPTIONS: Array<{
   },
 ];
 
+function getWasteImage(title: string, category: string): string | undefined {
+  const t = title.toLowerCase();
+  if (t.includes("minyak") || t.includes("jelantah") || t.includes("uco")) {
+    return "https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&w=600&q=80";
+  }
+  if (t.includes("kopi") || t.includes("coffee")) {
+    return "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80";
+  }
+  if (t.includes("tahu") || t.includes("kedelai") || t.includes("ampas")) {
+    return "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80";
+  }
+  if (t.includes("telur") || t.includes("cangkang")) {
+    return "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=600&q=80";
+  }
+  if (t.includes("tulang") || t.includes("daging") || t.includes("ayam")) {
+    return "https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=600&q=80";
+  }
+  if (t.includes("sayur") || t.includes("cabai") || t.includes("buah") || t.includes("kulit")) {
+    return "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80";
+  }
+  if (t.includes("kayu") || t.includes("serbuk") || category === "ORGANIK_KERING") {
+    return "https://images.unsplash.com/photo-1533090161767-e6ffed986b88?auto=format&fit=crop&w=600&q=80";
+  }
+  return undefined;
+}
+
 function mapBEWasteToUI(be: BEWasteListing): WasteListing {
   const weight = Number(be.available_weight) || 0;
   const price = Number(be.price_per_kg) || 0;
+
+  const revenueMatch = be.notes?.match(/Hasil:\s*Rp\s*([\d.]+)/i);
+  const realizedRevenue = revenueMatch ? Number(revenueMatch[1].replace(/\./g, "")) : 0;
+
+  const weightMatch = be.notes?.match(/Setor\s*([\d.]+)\s*kg/i);
+  const parsedOriginalWeight = weightMatch ? Number(weightMatch[1]) : 0;
+  const totalVolume = weight > 0 ? weight : (parsedOriginalWeight || 25);
+
   return {
     id: be.id,
     title: be.listing_title,
     category: be.waste_category,
-    imageUrl: undefined,
+    imageUrl: getWasteImage(be.listing_title, be.waste_category),
     description: be.notes || undefined,
-    totalVolume: weight,
+    totalVolume,
     volumeKg: weight,
     unit: "Kg",
     pricePerKg: price,
@@ -309,8 +344,8 @@ function mapBEWasteToUI(be: BEWasteListing): WasteListing {
     expiryDate: be.expired_at ? be.expired_at.split("T")[0] : "",
     status: be.listing_status === "SOLD_OUT" ? "HABIS_TERJUAL" : "TERSEDIA",
     potentialRevenue: weight * price,
-    realizedRevenue: 0,
-    suitableOfftaker: "Sesama UMKM & Mitra Terdaftar",
+    realizedRevenue,
+    suitableOfftaker: "Sesama UMKM & Mitra Bank Sampah",
     buyerOrders: [],
   };
 }
@@ -353,7 +388,76 @@ export function UmkmSirkularView() {
   const [deletingListing, setDeletingListing] = React.useState<WasteListing | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
-  // AI 1-Click Price Recommendation State
+
+  // State Modal Setor ke Bank Sampah
+  const [bankSampahItem, setBankSampahItem] = React.useState<WasteListing | null>(null);
+  const [isBankSampahOpen, setIsBankSampahOpen] = React.useState(false);
+  const [bankSampahName, setBankSampahName] = React.useState("");
+  const [bankSampahRevenue, setBankSampahRevenue] = React.useState<number>(0);
+  const [bankSampahNotes, setBankSampahNotes] = React.useState("");
+  const [isSubmittingBankSampah, setIsSubmittingBankSampah] = React.useState(false);
+
+  const handleOpenBankSampah = (item: WasteListing) => {
+    setBankSampahItem(item);
+    setBankSampahName("Bank Sampah Induk Surabaya (BSIS)");
+    setBankSampahRevenue(Math.round(item.volumeKg * item.pricePerKg));
+    setBankSampahNotes(`Setor ${item.volumeKg} ${item.unit || "kg"} ${item.title}`);
+    setIsBankSampahOpen(true);
+  };
+
+  const handleBankSampahSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bankSampahItem) return;
+    if (!bankSampahName.trim()) {
+      toast.error("Nama Bank Sampah penerima wajib diisi.");
+      return;
+    }
+    if (bankSampahRevenue < 0 || isNaN(bankSampahRevenue)) {
+      toast.error("Nominal penghasilan tidak boleh bernilai negatif.");
+      return;
+    }
+
+    setIsSubmittingBankSampah(true);
+    try {
+      const res = await depositWasteToBankSampahAction({
+        listingId: bankSampahItem.id,
+        bankSampahName: bankSampahName.trim(),
+        revenueAmount: bankSampahRevenue,
+        weightKg: bankSampahItem.volumeKg,
+        notes: bankSampahNotes.trim(),
+      });
+
+      if (res.success) {
+        toast.success(
+          `Berhasil! Penyetoran ke ${bankSampahName.trim()} dan kas Rp ${bankSampahRevenue.toLocaleString("id-ID")} berhasil dicatat.`
+        );
+
+        setWasteListings((prev) =>
+          prev.map((item) =>
+            item.id === bankSampahItem.id
+              ? {
+                  ...item,
+                  status: "HABIS_TERJUAL",
+                  volumeKg: 0,
+                  realizedRevenue: (item.realizedRevenue || 0) + bankSampahRevenue,
+                  description: item.description
+                    ? `${item.description}\n[Disetor ke ${bankSampahName.trim()} • Hasil: Rp ${bankSampahRevenue.toLocaleString("id-ID")}]`
+                    : `Disetor ke ${bankSampahName.trim()} • Hasil: Rp ${bankSampahRevenue.toLocaleString("id-ID")}`,
+                }
+              : item
+          )
+        );
+        setIsBankSampahOpen(false);
+        setBankSampahItem(null);
+      } else {
+        toast.error(res.message || "Gagal mencatat penyetoran ke Bank Sampah.");
+      }
+    } catch {
+      toast.error("Terjadi kendala saat menghubungi server.");
+    } finally {
+      setIsSubmittingBankSampah(false);
+    }
+  };
   const [aiPriceInsight, setAiPriceInsight] = React.useState<{
     suggestedPrice: number;
     priceRange: string;
@@ -1068,26 +1172,6 @@ export function UmkmSirkularView() {
                       </div>
 
                       <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleOpenEdit(item)}
-                          className="font-bold text-xs gap-1 rounded-xl cursor-pointer h-8 px-2.5"
-                          title="Edit Listing Limbah"
-                        >
-                          <Pencil className="size-3.5" />
-                          <span>Edit</span>
-                        </Button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDelete(item)}
-                          className="size-8 rounded-xl flex items-center justify-center text-red-600 bg-red-50 border border-red-200/90 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-all shadow-xs cursor-pointer shrink-0"
-                          title="Hapus Listing Limbah"
-                          aria-label={`Hapus listing ${item.title}`}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
                         {getOrders(item).length > 0 ? (
                           <Button
                             asChild
@@ -1099,18 +1183,16 @@ export function UmkmSirkularView() {
                               <span>Rincian ({getOrders(item).length}) &rarr;</span>
                             </Link>
                           </Button>
+                        ) : isSoldOut ? (
+                          <span className="text-xs font-semibold text-text-muted px-2.5 py-1 rounded-xl bg-surface-subtle border border-border select-none">
+                            Tersalurkan
+                          </span>
                         ) : (
                           <Button
                             type="button"
                             variant={isPastDue ? "destructive" : "primary"}
                             size="sm"
-                            onClick={() => {
-                              const elem = document.getElementById("bank-sampah-map-section");
-                              elem?.scrollIntoView({ behavior: "smooth" });
-                              if (isPastDue) {
-                                toast.info("Residu telah lewat tempo. Silakan drop ke titik Bank Sampah terdekat.", "Bursa Limbah");
-                              }
-                            }}
+                            onClick={() => handleOpenBankSampah(item)}
                             className="font-bold cursor-pointer gap-1.5"
                           >
                             <Recycle className="size-3.5" />
@@ -1688,7 +1770,165 @@ export function UmkmSirkularView() {
         isLoading={isDeleting}
         onConfirm={handleConfirmDelete}
       />
+      {/* 8. Modal Setor Limbah ke Bank Sampah */}
+      <Dialog
+        open={isBankSampahOpen}
+        onOpenChange={(open) => {
+          setIsBankSampahOpen(open);
+          if (!open) setBankSampahItem(null);
+        }}
+      >
+        <DialogContent className="max-w-lg w-full !p-0 !overflow-hidden flex flex-col max-h-[90vh] rounded-3xl bg-surface border border-border shadow-2xl">
+          <div className="px-6 py-4.5 pr-16 border-b border-border/80 bg-surface shrink-0">
+            <DialogTitle className="font-heading text-base sm:text-lg font-bold text-text-primary leading-tight">
+              Setor &amp; Jual Limbah ke Bank Sampah
+            </DialogTitle>
+            <DialogDescription className="text-xs text-text-secondary mt-0.5 truncate sm:text-wrap">
+              Catat lokasi Bank Sampah penerima dan nominal kas hasil penjualan residu dapur.
+            </DialogDescription>
+          </div>
 
+          {bankSampahItem && (
+            <form onSubmit={handleBankSampahSubmit} className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 custom-scrollbar text-xs">
+                {/* Ringkasan Limbah yang Disetor */}
+                <div className="p-3.5 rounded-2xl bg-surface-subtle/80 border border-border space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted block">
+                        Residu Dapur
+                      </span>
+                      <h4 className="font-heading font-bold text-sm text-text-primary truncate mt-0.5" title={bankSampahItem.title}>
+                        {bankSampahItem.title}
+                      </h4>
+                    </div>
+                    <Badge variant="waste" className="text-[10px] shrink-0 font-bold">
+                      {bankSampahItem.volumeKg} {bankSampahItem.unit || "kg"}
+                    </Badge>
+                  </div>
+                  <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-text-secondary">
+                    <span>Estimasi Nilai Acuan:</span>
+                    <span className="font-bold text-circular-waste tabular-nums">
+                      {formatCurrency(bankSampahItem.volumeKg * bankSampahItem.pricePerKg)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Form Input 1: Nama Bank Sampah */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-primary block">
+                    Nama Bank Sampah / Lokasi Penerima *
+                  </label>
+                  <Input
+                    type="text"
+                    required
+                    value={bankSampahName}
+                    onChange={(e) => setBankSampahName(e.target.value)}
+                    placeholder="Contoh: Bank Sampah Induk Surabaya (BSIS)"
+                    className="h-10 text-xs sm:text-sm bg-surface rounded-xl"
+                  />
+                  {/* Saran Cepat Titik Bank Sampah */}
+                  <div className="pt-1 space-y-1">
+                    <span className="text-[10px] font-semibold text-text-muted block">
+                      Pilihan Titik Terdekat:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        "Bank Sampah Induk Surabaya (BSIS)",
+                        "Bank Sampah Bintang Mangrove",
+                        "TPS3R Sutorejo Jambangan",
+                        "Bank Sampah Eka Mandiri Wonokromo",
+                      ].map((name) => (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => setBankSampahName(name)}
+                          className={cn(
+                            "text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer",
+                            bankSampahName === name
+                              ? "bg-primary text-white border-primary shadow-xs font-bold"
+                              : "bg-surface text-text-secondary border-border hover:bg-surface-subtle hover:text-text-primary"
+                          )}
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Input 2: Nominal Penghasilan yang Didapatkan */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-text-primary block">
+                      Penghasilan yang Didapatkan (Rp) *
+                    </label>
+                    <span className="font-bold text-circular-waste text-xs tabular-nums">
+                      {formatCurrency(bankSampahRevenue || 0)}
+                    </span>
+                  </div>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={500}
+                    required
+                    value={bankSampahRevenue || ""}
+                    onChange={(e) => setBankSampahRevenue(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                    placeholder="0"
+                    className="h-10 text-xs sm:text-sm bg-surface rounded-xl font-bold tabular-nums"
+                  />
+                  <p className="text-[11px] text-text-muted">
+                    Nominal kas riil yang diterima dari Bank Sampah untuk pencatatan buku kas sirkular usaha Anda.
+                  </p>
+                </div>
+
+                {/* Form Input 3: Catatan Penyetoran */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-text-primary block">
+                    Catatan Penyetoran (Opsional)
+                  </label>
+                  <Input
+                    type="text"
+                    value={bankSampahNotes}
+                    onChange={(e) => setBankSampahNotes(e.target.value)}
+                    placeholder="Contoh: Disetor dalam wadah jeriken tertutup, kondisi bersih"
+                    className="h-10 text-xs sm:text-sm bg-surface rounded-xl"
+                  />
+                </div>
+              </div>
+
+              {/* Footer Modal */}
+              <div className="px-6 py-3.5 border-t border-border/80 bg-surface-subtle/40 shrink-0 flex items-center justify-end gap-2.5">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="default"
+                  disabled={isSubmittingBankSampah}
+                  onClick={() => {
+                    setIsBankSampahOpen(false);
+                    setBankSampahItem(null);
+                  }}
+                  className="rounded-xl text-xs font-semibold cursor-pointer min-h-[42px]"
+                >
+                  Batal
+                </Button>
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="default"
+                  disabled={isSubmittingBankSampah}
+                  isLoading={isSubmittingBankSampah}
+                  className="font-bold min-h-[42px] cursor-pointer shadow-xs gap-1.5 text-xs rounded-xl"
+                >
+                  <Recycle className="size-3.5" />
+                  <span>{isSubmittingBankSampah ? "Menyimpan..." : "Konfirmasi & Catat Penjualan"}</span>
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

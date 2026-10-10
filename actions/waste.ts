@@ -57,12 +57,13 @@ export async function getWasteListingsAction(params?: {
     const searchParams = new URLSearchParams();
     if (params?.search) searchParams.set("search", params.search);
     if (params?.status) searchParams.set("status", params.status);
+    else searchParams.set("status", "ALL");
     if (params?.page) searchParams.set("page", String(params.page));
     if (params?.limit) searchParams.set("limit", String(params.limit));
+    else searchParams.set("limit", "50");
 
     const qs = searchParams.toString();
     const endpoint = `/waste-listings${qs ? `?${qs}` : ""}`;
-
     const res = await beFetch<BEWasteListing[]>(endpoint);
     return {
       success: res.success,
@@ -325,6 +326,62 @@ export async function referWasteToOfftakerAction(
   }
 }
 
+export interface DepositWasteToBankSampahInput {
+  listingId: string;
+  bankSampahName: string;
+  revenueAmount: number;
+  weightKg?: number;
+  notes?: string;
+}
+
+/**
+ * Server Action: Mencatat penyetoran limbah ke Bank Sampah beserta pendapatan hasil penjualan
+ */
+export async function depositWasteToBankSampahAction(
+  payload: DepositWasteToBankSampahInput
+): Promise<{
+  success: boolean;
+  data?: unknown;
+  message?: string;
+}> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const res = await beFetch(`/waste-listings/${payload.listingId}/bank-sampah`, {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({
+        bank_sampah_name: payload.bankSampahName.trim(),
+        revenue_amount: Number(payload.revenueAmount),
+        weight_kg: payload.weightKg ? Number(payload.weightKg) : undefined,
+        notes: payload.notes?.trim(),
+      }),
+    });
+
+    if (res.success) {
+      try {
+        revalidatePath("/limbah");
+        revalidatePath("/dashboard");
+      } catch {
+        // Safe revalidation ignore
+      }
+      return {
+        success: true,
+        data: res.data,
+        message: res.message || "Limbah berhasil disetor ke Bank Sampah dan pendapatan tercatat!",
+      };
+    }
+
+    return {
+      success: false,
+      message: res.message || "Gagal mencatat penyetoran ke Bank Sampah",
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Terjadi kendala saat menyetor ke Bank Sampah",
+    };
+  }
+}
 /**
  * Server Action: Mengambil transaksi penjualan limbah dapur UMKM (seller)
  */
