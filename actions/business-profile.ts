@@ -39,10 +39,12 @@ export async function getBusinessProfileAction(): Promise<{
     let entityId = session?.entityId;
     console.log(entityId, session);
 
+    const authHeaders: Record<string, string> = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
+
     // Jika entityId tidak ada pada sesi, cari entitas pertama yang tersedia
     if (!entityId) {
       // Use /profile endpoint to get list of profiles
-      const listRes = await beFetch<any[]>("/profile");
+      const listRes = await beFetch<any[]>("/profile", { headers: authHeaders });
       if (listRes.success && listRes.data && listRes.data.length > 0) {
         entityId = listRes.data[0].id;
       }
@@ -56,7 +58,7 @@ export async function getBusinessProfileAction(): Promise<{
     }
 
     // Fetch single profile data
-    const profileRes = await beFetch<any>(`/profile/${entityId}`);
+    const profileRes = await beFetch<any>(`/profile/${entityId}`, { headers: authHeaders });
 
     if (!profileRes.success || !profileRes.data) {
       return {

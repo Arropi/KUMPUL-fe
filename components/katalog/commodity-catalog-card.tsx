@@ -15,6 +15,8 @@ import {
   MapPin,
   Store,
   Recycle,
+  Info,
+  Sparkles,
 } from "lucide-react";
 
 export interface CriticalStockNotice {
@@ -32,6 +34,7 @@ interface CommodityCatalogCardProps {
   recipeTag?: string;
   benchmarkTag?: string;
   criticalStockNotice?: CriticalStockNotice;
+  recommendationReason?: string;
   onPurchase?: (item: SupplierCommodity) => void;
 }
 
@@ -43,9 +46,11 @@ export function CommodityCatalogCard({
   recipeTag,
   benchmarkTag,
   criticalStockNotice,
+  recommendationReason,
   onPurchase,
 }: CommodityCatalogCardProps) {
   const [imgError, setImgError] = React.useState(false);
+  const [showTooltip, setShowTooltip] = React.useState(false);
 
   // Konteks halaman: katalog supplier menampilkan status Published/Nonaktif (Draft), sedangkan home menampilkan asal komoditas (Pasokan Supplier / Hasil Limbah)
   const isKatalogContext =
@@ -74,6 +79,12 @@ export function CommodityCatalogCard({
   // 3. Asal Komoditas (Supplier vs Limbah)
   const isWaste = item.sourceType === "WASTE";
 
+  const detailHref = isWaste
+    ? "/limbah"
+    : pageContext === "home"
+    ? `/katalog/${item.id}?from=home`
+    : `/katalog/${item.id}?from=katalog`;
+
   // 4. Lokasi Seller
   const locationDisplay =
     item.sellerCity || item.batchTag.originLocation || "Sentra Hub KUMPUL";
@@ -81,30 +92,32 @@ export function CommodityCatalogCard({
   return (
     <Card className="group flex flex-col rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong p-3.5 sm:p-4">
       {/* Gambar Komoditas & Overlay Badges */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-50 border border-border/50">
-        {item.imageUrl && !imgError ? (
-          <Image
-            src={item.imageUrl}
-            alt={item.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center p-6 bg-gradient-to-br from-neutral-50 via-white to-neutral-100 text-text-muted select-none">
+      <div className="relative aspect-[4/3] w-full rounded-xl bg-neutral-50 border border-border/50">
+        <div className="absolute inset-0 overflow-hidden rounded-xl">
+          {item.imageUrl && !imgError ? (
             <Image
-              src="/logo/without-bg.svg"
-              alt="Logo KUMPUL"
-              width={110}
-              height={36}
-              className="h-8 w-auto object-contain opacity-75 transition-transform duration-300 group-hover:scale-105"
+              src={item.imageUrl}
+              alt={item.name}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+              onError={() => setImgError(true)}
             />
-            <span className="text-[11px] font-medium text-text-muted mt-2 tracking-wide">
-              {isWaste ? "Katalog Residu Sirkular" : "Komoditas Pemasok KUMPUL"}
-            </span>
-          </div>
-        )}
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center p-6 bg-gradient-to-br from-neutral-50 via-white to-neutral-100 text-text-muted select-none">
+              <Image
+                src="/logo/without-bg.svg"
+                alt="Logo KUMPUL"
+                width={110}
+                height={36}
+                className="h-8 w-auto object-contain opacity-75 transition-transform duration-300 group-hover:scale-105"
+              />
+              <span className="text-[11px] font-medium text-text-muted mt-2 tracking-wide">
+                {isWaste ? "Katalog Residu Sirkular" : "Komoditas Pemasok KUMPUL"}
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* Floating Badges */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none">
@@ -150,6 +163,55 @@ export function CommodityCatalogCard({
             </div>
           )}
         </div>
+
+        {/* Icon (i) di Kanan Bawah Gambar dengan Tooltip Alasan Rekomendasi */}
+        {recommendationReason && (
+          <div
+            className="absolute bottom-2.5 right-2.5 z-20 pointer-events-auto"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <div
+              className="relative group/rec-tooltip"
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setShowTooltip((prev) => !prev);
+                }}
+                className="flex items-center justify-center size-7 rounded-full bg-white/95 text-primary hover:text-white hover:bg-primary shadow-elevation-2 border border-primary/20 backdrop-blur-md transition-all cursor-pointer hover:scale-110 active:scale-95"
+                title="Alasan Direkomendasikan"
+                aria-label="Alasan Direkomendasikan"
+              >
+                <Info className="size-4 shrink-0" />
+              </button>
+
+              {/* Tooltip Popover */}
+              <div
+                className={`absolute bottom-full right-0 mb-2 w-64 sm:w-72 rounded-2xl bg-slate-900/95 text-white p-3 text-xs shadow-elevation-3 backdrop-blur-md border border-white/10 transition-all duration-200 z-50 pointer-events-none ${
+                  showTooltip
+                    ? "opacity-100 visible translate-y-0"
+                    : "opacity-0 invisible translate-y-1 group-hover/rec-tooltip:opacity-100 group-hover/rec-tooltip:visible group-hover/rec-tooltip:translate-y-0"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold text-[11px] text-emerald-400 mb-1">
+                  <Sparkles className="size-3.5 shrink-0 text-emerald-400" />
+                  <span>Alasan Rekomendasi</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-slate-200 font-normal">
+                  {recommendationReason}
+                </p>
+                {/* Segitiga Panah Tooltip */}
+                <div className="absolute top-full right-3 -mt-1 border-4 border-transparent border-t-slate-900/95" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Konten Card */}
@@ -305,7 +367,7 @@ export function CommodityCatalogCard({
                 >
                   {item.isActive ? "Tarik dari Bursa" : "Publikasikan"}
                 </Button>
-                <Link href={isWaste ? "/limbah" : `/katalog/${item.id}`} className="flex-1">
+                <Link href={detailHref} className="flex-1">
                   <Button
                     type="button"
                     variant="secondary"
@@ -317,7 +379,7 @@ export function CommodityCatalogCard({
                 </Link>
               </div>
             ) : (
-              <Link href={isWaste ? "/limbah" : `/katalog/${item.id}`} className="block w-full">
+              <Link href={detailHref} className="block w-full">
                 <Button
                   type="button"
                   variant="outline"
@@ -350,7 +412,7 @@ export function CommodityCatalogCard({
                       : item.isActive ? "Beli / Buat Pool" : "Belum Aktif"}
                   </span>
                 </Button>
-                <Link href={isWaste ? "/limbah" : `/katalog/${item.id}`} className="shrink-0">
+                <Link href={detailHref} className="shrink-0">
                   <Button
                     type="button"
                     variant="outline"
@@ -362,7 +424,7 @@ export function CommodityCatalogCard({
                 </Link>
               </div>
             ) : (
-              <Link href={isWaste ? "/limbah" : `/katalog/${item.id}`} className="block w-full">
+              <Link href={detailHref} className="block w-full">
                 <Button
                   type="button"
                   variant={item.isActive ? "primary" : "outline"}

@@ -107,7 +107,37 @@ export function HomeView({
   const selectedSectorLabel =
     SECTOR_OPTIONS.find((s) => s.value === selectedSector)?.label || "Semua Sektor";
 
+  const isOwnCommodity = React.useCallback(
+    (item: SupplierCommodity) => {
+      const profileName = userProfile?.legal_name?.toLowerCase().trim();
+      const sessionName = initialSession?.name?.toLowerCase().trim();
+      const seller = item.sellerName?.toLowerCase().trim();
+
+      if (seller && (seller === profileName || seller === sessionName)) {
+        return true;
+      }
+
+      if (item.supplierEntityId) {
+        if (userProfile?.id && item.supplierEntityId === userProfile.id) {
+          return true;
+        }
+        if (initialSession?.entityId && item.supplierEntityId === initialSession.entityId) {
+          return true;
+        }
+      }
+
+      if (item.supplierRoleId && initialSession?.roleId && item.supplierRoleId === initialSession.roleId) {
+        return true;
+      }
+
+      return false;
+    },
+    [userProfile, initialSession]
+  );
+
   const filteredCommodities = commodities.filter((item) => {
+    if (isOwnCommodity(item)) return false;
+
     const matchSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -141,21 +171,11 @@ export function HomeView({
     return filteredCommodities.slice(start, start + pageSize);
   }, [filteredCommodities, currentPage, pageSize]);
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-2 pb-10">
       {/* 1. Header Marketplace */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="p-1 rounded-lg bg-primary-light text-primary">
-              <Sparkles className="w-4 h-4" />
-            </span>
-            <span className="text-xs font-bold text-primary font-heading uppercase tracking-wider">
-              {isSupplier ? "Portal Pemasok & Bursa Pasokan" : "Bursa Pengadaan Bahan Baku UMKM"}
-            </span>
-          </div>
-          <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary">
-            {isSupplier ? "Bursa Pasokan Komoditas Pangan" : "Marketplace Pasokan Bahan Baku"}
-          </h1>
+          <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary">Marketplace Pasokan Bahan Baku</h1>
           <p className="font-body text-xs sm:text-sm text-text-secondary mt-1">
             {isSupplier
               ? "Katalog pasokan komoditas bersertifikasi mutu dan fasilitas pooling untuk distribusi agregasi UMKM."
@@ -165,12 +185,8 @@ export function HomeView({
 
         <div className="flex items-center gap-2.5">
           {isSupplier ? (
-            <Link href="/katalog/tambah" className="shrink-0">
-              <Button variant="primary" size="md" className="font-semibold min-h-[42px] cursor-pointer">
-                <Plus className="w-4 h-4 mr-1.5" />
-                <span>+ Tambah Pasokan Komoditas</span>
-              </Button>
-            </Link>
+            <>
+            </>
           ) : (
             <Link href="/produk" className="shrink-0">
               <Button variant="secondary" size="md" className="font-semibold min-h-[42px] cursor-pointer">
@@ -185,10 +201,12 @@ export function HomeView({
       {/* 2. Section Rekomendasi Khusus */}
       <HomeRecommendationSection
         role={role}
+        initialSession={initialSession}
         commodities={commodities}
         recommendations={recommendations}
         rawRecommendations={rawRecommendations}
         recsError={recsError}
+        userProfile={userProfile}
         onPurchase={isUmkm ? setPurchasingCommodity : undefined}
       />
 

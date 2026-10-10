@@ -16,10 +16,13 @@ export const metadata: Metadata = {
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ from?: string }>;
 }
 
-export default async function DetailKomoditasPage({ params }: PageProps) {
+export default async function DetailKomoditasPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const fromHome = resolvedSearchParams?.from === "home";
   const session = await getAuthSession();
 
   const [res, poolsRes, profileRes] = await Promise.all([
@@ -74,6 +77,7 @@ export default async function DetailKomoditasPage({ params }: PageProps) {
       role={role}
       isOwner={Boolean(isOwner)}
       currentRoleId={session?.roleId}
+      fromHome={Boolean(fromHome)}
     />
   );
 }
