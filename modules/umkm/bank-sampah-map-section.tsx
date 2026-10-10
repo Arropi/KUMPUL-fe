@@ -36,6 +36,8 @@ export function BankSampahMapSection({ onLoadedPoints }: BankSampahMapSectionPro
     lat: -7.797068,
     lng: 110.370529,
   });
+  const onLoadedPointsRef = React.useRef(onLoadedPoints);
+  onLoadedPointsRef.current = onLoadedPoints;
 
   React.useEffect(() => {
     async function loadData() {
@@ -91,19 +93,19 @@ export function BankSampahMapSection({ onLoadedPoints }: BankSampahMapSectionPro
             },
           }));
           setBankSampahList(mapped);
-          onLoadedPoints?.(mapped);
+          onLoadedPointsRef.current?.(mapped);
           if (mapped[0]) setSelectedPointId(mapped[0].id);
         } else {
           setBankSampahList([]);
-          onLoadedPoints?.([]);
+          onLoadedPointsRef.current?.([]);
         }
       } catch {
         setBankSampahList([]);
-        onLoadedPoints?.([]);
+        onLoadedPointsRef.current?.([]);
       }
     }
     loadData();
-  }, [onLoadedPoints]);
+  }, []);
 
   // Leaflet map refs
   const mapContainerRef = React.useRef<HTMLDivElement>(null);

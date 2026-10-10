@@ -37,8 +37,6 @@ export async function getBusinessProfileAction(): Promise<{
   try {
     const session = await getAuthSession();
     let entityId = session?.entityId;
-    console.log(entityId, session);
-
     const authHeaders: Record<string, string> = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
 
     // Jika entityId tidak ada pada sesi, cari entitas pertama yang tersedia

@@ -48,6 +48,7 @@ export async function getWasteListingsAction(params?: {
   status?: string;
   page?: number;
   limit?: number;
+  myListingsOnly?: boolean;
 }): Promise<{
   success: boolean;
   data: BEWasteListing[];
@@ -61,6 +62,7 @@ export async function getWasteListingsAction(params?: {
     if (params?.page) searchParams.set("page", String(params.page));
     if (params?.limit) searchParams.set("limit", String(params.limit));
     else searchParams.set("limit", "50");
+    if (params?.myListingsOnly) searchParams.set("my_listings_only", "true");
 
     const qs = searchParams.toString();
     const endpoint = `/waste-listings${qs ? `?${qs}` : ""}`;
