@@ -51,7 +51,6 @@ interface CommodityItem {
   name: string;
 }
 
-const INITIAL_BERANDA_COMMODITIES: CommodityItem[] = [];
 
 /**
  * Heuristik AI Alternatif Bahan Baku Cerdas:
@@ -272,14 +271,14 @@ export function MenuDetailDialog({
   const dailyWasteKg =
     Math.round(wastePrediction.totalVolumeKg * iterationsPerDay * 10) / 10;
 
-  // Ambil komoditas bursa yang tersedia di Beranda
+  // Ambil komoditas bursa yang tersedia di Beranda dari database
   const [availableCommodities, setAvailableCommodities] = React.useState<CommodityItem[]>([]);
 
   React.useEffect(() => {
     let ignore = false;
     beFetch<CommodityItem[]>("/marketplace?limit=50")
       .then((res) => {
-        if (!ignore && res.success && res.data && res.data.length > 0) {
+        if (!ignore && res.success && res.data) {
           setAvailableCommodities(res.data.map((b) => ({ id: b.id, name: b.name })));
         }
       })

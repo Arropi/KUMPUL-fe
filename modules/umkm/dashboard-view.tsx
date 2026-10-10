@@ -104,7 +104,7 @@ export function UmkmDashboardView() {
 
     return dashboardData.pools.map((p) => {
       const name = p.commodity_name || "Komoditas Pertanian Pilihan";
-      const category = "Pertanian";
+      const category = (p as any).sector || "Pertanian";
       const targetMoq = Number(p.target_moq) || 50;
       const acc = Number(p.accumulated_qty) || 0;
       const price = Number(p.locked_tier_price) || 35000;

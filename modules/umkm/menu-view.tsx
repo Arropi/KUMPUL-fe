@@ -105,6 +105,7 @@ export function UmkmMenuView() {
         setProducts([]);
       }
     } catch {
+      setProducts([]);
       toast.error("Gagal terhubung ke backend");
     } finally {
       setIsLoading(false);

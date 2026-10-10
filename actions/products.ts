@@ -111,46 +111,7 @@ export async function getUmkmProductsAction(umkmRoleId?: string): Promise<{
   }
 }
 
-function generateMockProduct(payload: CreateProductWithRecipesInput): BEProduct {
-  const totalHpp = payload.ingredients.reduce(
-    (sum, item) => sum + (Number(item.estimatedCost) || 0),
-    0
-  );
-  const sellingPrice = Number(payload.targetSellingPricePerUnit) || 0;
-  const marginPct =
-    sellingPrice > 0 ? Math.max(0, ((sellingPrice - totalHpp) / sellingPrice) * 100) : 0;
-  const mockProductId = `mock-prod-${Date.now()}`;
-  const batchMultiplier = Math.max(1, Number(payload.expectedBatchUnits) || 1);
 
-  const mockRecipes: BERecipe[] = payload.ingredients.map((ing, idx) => {
-    const reqQty = Number(ing.amountPerPortion) || 0;
-    return {
-      id: `mock-rcp-${Date.now()}-${idx}`,
-      umkm_product_id: mockProductId,
-      ingredient_name: ing.name.trim(),
-      required_qty_per_unit: reqQty,
-      unit: ing.unit.toUpperCase(),
-      total_batch_required_qty: reqQty * batchMultiplier,
-      estimated_cost_per_unit: Number(ing.estimatedCost) || 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-  });
-
-  return {
-    id: mockProductId,
-    umkm_role_id: payload.umkmRoleId || "mock-umkm-role",
-    product_name: payload.productName.trim(),
-    unit: payload.unit?.toUpperCase() || "PORSI",
-    target_selling_price_per_unit: sellingPrice,
-    expected_batch_units: batchMultiplier,
-    calculated_hpp_per_unit: totalHpp,
-    projected_margin_percentage: marginPct,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    recipes: mockRecipes,
-  };
-}
 
 /**
  * Server Action: Menambahkan menu produk UMKM baru beserta detail resep bahan (Bill of Materials)
@@ -165,12 +126,9 @@ export async function createProductWithRecipesAction(
   try {
     const roleId = await resolveUmkmRoleId(payload.umkmRoleId);
     if (!roleId) {
-      // Fallback mock saat role / backend belum terhubung (testing FE)
-      const mockProduct = generateMockProduct(payload);
       return {
-        success: true,
-        data: mockProduct,
-        message: `Produk "${payload.productName}" berhasil ditambahkan (Mode Testing FE)!`,
+        success: false,
+        message: "Peran UMKM tidak ditemukan. Silakan lengkapi profil usaha atau login ulang.",
       };
     }
 
@@ -187,12 +145,9 @@ export async function createProductWithRecipesAction(
     });
 
     if (!createProductRes.success || !createProductRes.data) {
-      // Fallback dummy jika backend offline / endpoint belum siap
-      const mockProduct = generateMockProduct(payload);
       return {
-        success: true,
-        data: mockProduct,
-        message: `Produk "${payload.productName}" berhasil ditambahkan (Mode Testing FE)!`,
+        success: false,
+        message: createProductRes.message || "Gagal membuat produk di backend",
       };
     }
 
@@ -227,13 +182,10 @@ export async function createProductWithRecipesAction(
       data: updatedDetailRes.data || createdProduct,
       message: `Produk "${payload.productName}" dan resep bahan berhasil disimpan!`,
     };
-  } catch {
-    // Fallback dummy saat network error / backend offline
-    const mockProduct = generateMockProduct(payload);
+  } catch (err: unknown) {
     return {
-      success: true,
-      data: mockProduct,
-      message: `Produk "${payload.productName}" berhasil ditambahkan (Mode Testing FE)!`,
+      success: false,
+      message: err instanceof Error ? err.message : "Terjadi kesalahan saat menambahkan produk",
     };
   }
 }
@@ -307,13 +259,6 @@ export async function deleteProductAction(productId: string): Promise<{
   success: boolean;
   message?: string;
 }> {
-  if (productId.startsWith("mock-")) {
-    return {
-      success: true,
-      message: "Produk berhasil dihapus (Mode Testing FE)",
-    };
-  }
-
   try {
     const res = await beFetch(`/products/${productId}`, {
       method: "DELETE",
@@ -327,10 +272,10 @@ export async function deleteProductAction(productId: string): Promise<{
       success: res.success,
       message: res.message || (res.success ? "Produk berhasil dihapus" : "Gagal menghapus produk"),
     };
-  } catch {
+  } catch (err: unknown) {
     return {
-      success: true,
-      message: "Produk berhasil dihapus (Mode Testing FE)",
+      success: false,
+      message: err instanceof Error ? err.message : "Gagal menghapus produk",
     };
   }
 }
@@ -346,24 +291,6 @@ export async function addRecipeItemAction(
   data?: BERecipe;
   message?: string;
 }> {
-  if (productId.startsWith("mock-")) {
-    const mockRecipe: BERecipe = {
-      id: `mock-rcp-${Date.now()}`,
-      umkm_product_id: productId,
-      ingredient_name: payload.name.trim(),
-      required_qty_per_unit: Number(payload.amountPerPortion),
-      unit: payload.unit.toUpperCase(),
-      estimated_cost_per_unit: Number(payload.estimatedCost) || 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    return {
-      success: true,
-      data: mockRecipe,
-      message: "Bahan resep berhasil ditambahkan (Mode Testing FE)",
-    };
-  }
-
   try {
     const res = await beFetch<BERecipe>(`/products/${productId}/recipes`, {
       method: "POST",
@@ -375,8 +302,10 @@ export async function addRecipeItemAction(
       }),
     });
 
-    revalidatePath("/produk");
-    revalidatePath("/menu");
+    try {
+      revalidatePath("/produk");
+      revalidatePath("/menu");
+    } catch {}
     return {
       success: res.success,
       data: res.data,
@@ -397,28 +326,23 @@ export async function deleteRecipeItemAction(recipeId: string): Promise<{
   success: boolean;
   message?: string;
 }> {
-  if (recipeId.startsWith("mock-")) {
-    return {
-      success: true,
-      message: "Bahan resep berhasil dihapus (Mode Testing FE)",
-    };
-  }
-
   try {
     const res = await beFetch(`/recipe-details/${recipeId}`, {
       method: "DELETE",
     });
 
-    revalidatePath("/produk");
-    revalidatePath("/menu");
+    try {
+      revalidatePath("/produk");
+      revalidatePath("/menu");
+    } catch {}
     return {
       success: res.success,
       message: res.message,
     };
-  } catch {
+  } catch (err: unknown) {
     return {
-      success: true,
-      message: "Bahan resep berhasil dihapus (Mode Testing FE)",
+      success: false,
+      message: err instanceof Error ? err.message : "Gagal menghapus bahan resep",
     };
   }
 }
@@ -431,14 +355,6 @@ export async function getProductByIdAction(productId: string): Promise<{
   data?: BEProduct | null;
   message?: string;
 }> {
-  if (productId.startsWith("mock-")) {
-    return {
-      success: true,
-      data: null, // Akan di-resolve via localStorage di client-side
-      message: "Mock product (client-side resolution)",
-    };
-  }
-
   try {
     const res = await beFetch<BEProduct>(`/products/${productId}`);
     if (res.success && res.data) {
@@ -493,44 +409,8 @@ export async function updateProductAction(payload: UpdateProductInput): Promise<
   const marginPct =
     sellingPrice > 0 ? Math.max(0, ((sellingPrice - totalHpp) / sellingPrice) * 100) : 0;
 
-  const mockRecipes: BERecipe[] = payload.ingredients.map((ing, idx) => {
-    const reqQty = Number(ing.amountPerPortion) || 0;
-    return {
-      id: ing.id || `rcp-${Date.now()}-${idx}`,
-      umkm_product_id: payload.productId,
-      ingredient_name: ing.name.trim(),
-      required_qty_per_unit: reqQty,
-      unit: ing.unit.toUpperCase(),
-      total_batch_required_qty: reqQty * batchMultiplier,
-      estimated_cost_per_unit: Number(ing.estimatedCost) || 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-  });
-
-  const updatedProduct: BEProduct = {
-    id: payload.productId,
-    umkm_role_id: "umkm-role",
-    product_name: payload.productName.trim(),
-    unit: payload.unit?.toUpperCase() || "PORSI",
-    target_selling_price_per_unit: sellingPrice,
-    expected_batch_units: batchMultiplier,
-    calculated_hpp_per_unit: totalHpp,
-    projected_margin_percentage: marginPct,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    recipes: mockRecipes,
-  };
-
-  if (payload.productId.startsWith("mock-")) {
-    return {
-      success: true,
-      data: updatedProduct,
-      message: `Spesifikasi produk "${payload.productName}" berhasil diperbarui!`,
-    };
-  }
   try {
-    // 1. Update master data produk di backend jika endpoint tersedia
+    // 1. Update master data produk di backend
     const updateRes = await beFetch<BEProduct>(`/products/${payload.productId}`, {
       method: "PUT",
       body: JSON.stringify({
@@ -540,6 +420,13 @@ export async function updateProductAction(payload: UpdateProductInput): Promise<
         expected_batch_units: batchMultiplier,
       }),
     });
+
+    if (!updateRes.success) {
+      return {
+        success: false,
+        message: updateRes.message || "Gagal memperbarui data produk di backend",
+      };
+    }
 
     // 2. Sinkronkan resep bahan (tambah baru atau perbarui yang ada)
     if (payload.ingredients && payload.ingredients.length > 0) {
@@ -579,14 +466,13 @@ export async function updateProductAction(payload: UpdateProductInput): Promise<
     } catch {}
     return {
       success: true,
-      data: detailRes.data || updateRes.data || updatedProduct,
+      data: detailRes.data || updateRes.data,
       message: `Spesifikasi produk "${payload.productName}" berhasil disimpan!`,
     };
-  } catch {
+  } catch (err: unknown) {
     return {
-      success: true,
-      data: updatedProduct,
-      message: `Spesifikasi produk "${payload.productName}" berhasil diperbarui!`,
+      success: false,
+      message: err instanceof Error ? err.message : "Terjadi kesalahan saat memperbarui produk",
     };
   }
 }

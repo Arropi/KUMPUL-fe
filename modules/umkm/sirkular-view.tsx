@@ -552,19 +552,19 @@ export function UmkmSirkularView() {
     loadListings();
   }, [loadListings]);
 
-  // Load produk UMKM untuk integrasi asal limbah
+  // Load produk UMKM untuk integrasi asal limbah (Database Langsung)
   React.useEffect(() => {
     async function loadProducts() {
       try {
         const res = await getUmkmProductsAction();
         if (res.success && res.data) {
           setProducts(res.data);
-          return;
+        } else {
+          setProducts([]);
         }
       } catch {
-        // Safe fail
+        setProducts([]);
       }
-      setProducts([]);
     }
     loadProducts();
   }, []);

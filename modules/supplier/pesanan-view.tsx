@@ -171,10 +171,15 @@ export function SupplierPesananView() {
   };
 
   const filteredOrders = orders.filter((po) => {
+    const poNum = po.poNumber || "";
+    const comName = po.commodityName || "";
+    const hubName = po.hubName || "";
+    const q = searchQuery.toLowerCase();
+
     const matchSearch =
-      po.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      po.commodityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (po.hubName && po.hubName.toLowerCase().includes(searchQuery.toLowerCase()));
+      poNum.toLowerCase().includes(q) ||
+      comName.toLowerCase().includes(q) ||
+      hubName.toLowerCase().includes(q);
 
     const matchTab =
       activeTab === "ALL" ||
