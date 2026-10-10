@@ -13,6 +13,8 @@ import {
   ArrowRight,
   AlertTriangle,
   MapPin,
+  Store,
+  Recycle,
 } from "lucide-react";
 
 export interface CriticalStockNotice {
@@ -79,7 +81,7 @@ export function CommodityCatalogCard({
   return (
     <Card className="group flex flex-col rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong p-3.5 sm:p-4">
       {/* Gambar Komoditas & Overlay Badges */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-100 border border-border/40">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-50 border border-border/50">
         {item.imageUrl && !imgError ? (
           <Image
             src={item.imageUrl}
@@ -90,28 +92,23 @@ export function CommodityCatalogCard({
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-neutral-100 to-neutral-200 text-text-muted">
-            <svg
-              className="size-10 stroke-1"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-              />
-            </svg>
-            <span className="text-xs font-medium">Foto Komoditas</span>
+          <div className="flex h-full w-full flex-col items-center justify-center p-6 bg-gradient-to-br from-neutral-50 via-white to-neutral-100 text-text-muted select-none">
+            <Image
+              src="/logo/without-bg.svg"
+              alt="Logo KUMPUL"
+              width={110}
+              height={36}
+              className="h-8 w-auto object-contain opacity-75 transition-transform duration-300 group-hover:scale-105"
+            />
+            <span className="text-[11px] font-medium text-text-muted mt-2 tracking-wide">
+              {isWaste ? "Katalog Residu Sirkular" : "Komoditas Pemasok KUMPUL"}
+            </span>
           </div>
         )}
 
         {/* Floating Badges */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 pointer-events-none">
-          {/* Badge Kiri: Status Published/Nonaktif di Katalog vs Asal Pasokan di Home */}
+          {/* Badge Kiri: Penanda Jelas Supplier vs Limbah */}
           <div className="pointer-events-auto">
             {isKatalogContext ? (
               item.isActive ? (
@@ -126,28 +123,32 @@ export function CommodityCatalogCard({
                 </span>
               )
             ) : isWaste ? (
-              <span className="inline-flex items-center rounded-full bg-amber-700/95 text-white backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold shadow-xs">
-                <span>Hasil Limbah</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-800 text-white backdrop-blur-md px-3 py-1 text-xs font-bold shadow-sm border border-emerald-400/40">
+                <Recycle className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                <span>Limbah Sirkular</span>
               </span>
             ) : (
-              <span className="inline-flex items-center rounded-full bg-primary-dark/95 text-white backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold shadow-xs">
-                <span>Pasokan Supplier</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/90 backdrop-blur-md px-3 py-1 text-xs font-bold shadow-xs border border-border/80 text-text-primary">
+                <Store className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span>Komoditas Pemasok</span>
               </span>
             )}
           </div>
 
-          {/* Badge Penanda Label Terverifikasi Mutu Gemini AI */}
-          <div className="pointer-events-auto">
-            {isHygienePassed ? (
-              <span className="inline-flex items-center rounded-full bg-emerald-600/95 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                Terverifikasi Mutu AI
-              </span>
-            ) : (
-              <span className="inline-flex items-center rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                Audit Higienis
-              </span>
-            )}
-          </div>
+          {/* Badge Kanan: Penanda Verifikasi Mutu (Hanya untuk Komoditas Pemasok, Limbah tidak ada badge sebelah) */}
+          {!isWaste && (
+            <div className="pointer-events-auto">
+              {isHygienePassed ? (
+                <span className="inline-flex items-center rounded-full bg-emerald-600/95 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+                  Terverifikasi
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+                  Audit Higienis
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -217,8 +218,15 @@ export function CommodityCatalogCard({
           </h2>
         </div>
 
-        {/* Badges Kondisional: Tiering Price & Pool Terbuka */}
-        {(hasTieringPrice || hasOpenPools) && (
+        {/* Badges Kondisional: Tiering Price & Pool Terbuka (atau Residu Sirkular untuk Limbah) */}
+        {isWaste ? (
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/90 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+              <Recycle className="w-3 h-3 text-emerald-600" />
+              <span>Sisa Produksi &bull; Transaksi Langsung P2P</span>
+            </span>
+          </div>
+        ) : (hasTieringPrice || hasOpenPools) ? (
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             {/* Penanda Tiering Price: HANYA jika > 1 tier */}
             {hasTieringPrice && (
@@ -236,12 +244,12 @@ export function CommodityCatalogCard({
               </span>
             )}
           </div>
-        )}
+        ) : null}
 
         {/* Harga Patokan Utama per Satuan */}
         <div className="rounded-xl bg-background p-3 border border-border/80">
           <span className="text-[11px] font-medium text-text-secondary block">
-            Harga Patokan Utama
+            {isWaste ? "Harga Residu Sirkular (Beli per Kg)" : "Harga Patokan Utama"}
           </span>
           <div className="flex items-baseline gap-1.5 mt-0.5">
             <span className="font-heading font-extrabold text-lg sm:text-xl text-primary tabular-nums">
@@ -251,23 +259,31 @@ export function CommodityCatalogCard({
               / {item.wholesaleUnit}
             </span>
           </div>
-          {item.unitWeightKg > 0 && (
+          {isWaste ? (
+            <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5">
+              Simbiosis Sirkular P2P &bull; Tanpa Batas MOQ
+            </span>
+          ) : item.unitWeightKg > 0 ? (
             <span className="text-[11px] text-text-muted tabular-nums block mt-0.5">
               Setara Rp {formatNumber(Math.round(primaryPrice / item.unitWeightKg))} / kg
             </span>
-          )}
+          ) : null}
         </div>
 
         {/* Metadata Wajib: Batas Minimum (MOQ) & Stok Tersedia */}
         <div className="grid grid-cols-2 gap-2 text-xs pt-0.5">
           <div className="rounded-lg bg-surface-subtle p-2 border border-border/50">
-            <span className="text-[10px] text-text-muted block font-medium">Batas Minimum (MOQ)</span>
-            <span className="font-bold text-text-primary tabular-nums">
-              {item.baseMoq} {item.wholesaleUnit}
+            <span className="text-[10px] text-text-muted block font-medium">
+              {isWaste ? "Skema Pengadaan" : "Batas Minimum (MOQ)"}
+            </span>
+            <span className={`font-bold tabular-nums truncate ${isWaste ? "text-emerald-800" : "text-text-primary"}`}>
+              {isWaste ? "Tanpa Batas MOQ" : `${item.baseMoq} ${item.wholesaleUnit}`}
             </span>
           </div>
           <div className="rounded-lg bg-surface-subtle p-2 border border-border/50">
-            <span className="text-[10px] text-text-muted block font-medium">Stok Tersedia</span>
+            <span className="text-[10px] text-text-muted block font-medium">
+              {isWaste ? "Bobot Tersedia" : "Stok Tersedia"}
+            </span>
             <span className="font-bold text-text-primary tabular-nums">
               {item.availableStock} {item.wholesaleUnit}
             </span>
@@ -289,26 +305,26 @@ export function CommodityCatalogCard({
                 >
                   {item.isActive ? "Tarik dari Bursa" : "Publikasikan"}
                 </Button>
-                <Link href={`/katalog/${item.id}`} className="flex-1">
+                <Link href={isWaste ? "/limbah" : `/katalog/${item.id}`} className="flex-1">
                   <Button
                     type="button"
                     variant="secondary"
                     size="sm"
                     className="w-full font-semibold text-xs min-h-[42px]"
                   >
-                    Detail Pasar
+                    {isWaste ? "Bursa Limbah" : "Detail Pasar"}
                   </Button>
                 </Link>
               </div>
             ) : (
-              <Link href={`/katalog/${item.id}`} className="block w-full">
+              <Link href={isWaste ? "/limbah" : `/katalog/${item.id}`} className="block w-full">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="w-full font-bold text-xs min-h-[42px] flex items-center justify-center gap-2 shadow-xs cursor-pointer hover:bg-surface-subtle"
                 >
-                  <span>Lihat Detail Pasar &amp; Kuota</span>
+                  <span>{isWaste ? "Bursa Residu Limbah" : "Lihat Detail Pasar & Kuota"}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
@@ -323,24 +339,30 @@ export function CommodityCatalogCard({
                   size="sm"
                   disabled={!item.isActive}
                   onClick={() => item.isActive && onPurchase(item)}
-                  className="flex-1 font-bold text-xs min-h-[42px] flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`flex-1 font-bold text-xs min-h-[42px] flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isWaste ? "bg-emerald-700 hover:bg-emerald-800 text-white" : ""
+                  }`}
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
-                  <span>{item.isActive ? "Beli / Buat Pool" : "Belum Aktif"}</span>
+                  <span>
+                    {isWaste
+                      ? item.isActive ? "Beli Residu Langsung" : "Habis Terjual"
+                      : item.isActive ? "Beli / Buat Pool" : "Belum Aktif"}
+                  </span>
                 </Button>
-                <Link href={`/katalog/${item.id}`} className="shrink-0">
+                <Link href={isWaste ? "/limbah" : `/katalog/${item.id}`} className="shrink-0">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="font-semibold text-xs min-h-[42px] px-3.5 cursor-pointer"
                   >
-                    Detail &amp; Pool
+                    {isWaste ? "Bursa Limbah" : "Detail & Pool"}
                   </Button>
                 </Link>
               </div>
             ) : (
-              <Link href={`/katalog/${item.id}`} className="block w-full">
+              <Link href={isWaste ? "/limbah" : `/katalog/${item.id}`} className="block w-full">
                 <Button
                   type="button"
                   variant={item.isActive ? "primary" : "outline"}
@@ -348,7 +370,11 @@ export function CommodityCatalogCard({
                   className="w-full font-bold text-xs min-h-[42px] flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
-                  <span>{item.isActive ? "Detail Komoditas & Gabung Pool" : "Detail Komoditas (Draft)"}</span>
+                  <span>
+                    {isWaste
+                      ? "Beli Residu di Bursa Limbah"
+                      : item.isActive ? "Detail Komoditas & Gabung Pool" : "Detail Komoditas (Draft)"}
+                  </span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>

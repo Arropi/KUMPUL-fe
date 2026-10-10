@@ -371,9 +371,17 @@ export async function initiateGoogleAuthAction(payload?: {
   try {
     const supabase = await createClient();
     const headerList = await headers();
-    const host = headerList.get("host") || "localhost:3000";
-    const proto = headerList.get("x-forwarded-proto") || "http";
-    const appOrigin = payload?.origin || `${proto}://${host}`;
+    const forwardedHost = headerList.get("x-forwarded-host");
+    const host = forwardedHost || headerList.get("host") || "localhost:3000";
+    const proto =
+      headerList.get("x-forwarded-proto") ||
+      (host.includes("localhost") ? "http" : "https");
+
+    // Jika APP_URL didefinisikan untuk domain publik (bukan localhost), utamakan itu
+    let appOrigin =
+      process.env.APP_URL && !process.env.APP_URL.includes("localhost")
+        ? process.env.APP_URL.replace(/\/$/, "")
+        : payload?.origin || `${proto}://${host}`;
     const redirectTo = payload?.role
       ? `${appOrigin}/api/auth/callback?role=${payload.role}`
       : `${appOrigin}/api/auth/callback`;

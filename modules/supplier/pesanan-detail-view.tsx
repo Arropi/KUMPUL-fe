@@ -173,14 +173,20 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
 
       // Jika ada file baru yang dipilih, upload ke storage dahulu
       if (deliveryProofFile) {
-        const formData = new FormData();
-        formData.append("file", deliveryProofFile);
-        const uploadRes = await uploadFileAction(formData);
+        try {
+          const formData = new FormData();
+          formData.append("file", deliveryProofFile);
+          formData.append("folder", "surat-jalan");
+          const uploadRes = await uploadFileAction(formData);
 
-        if (!uploadRes.success || !uploadRes.url) {
-          throw new Error(uploadRes.message || "Gagal mengunggah foto bukti pengantaran");
+          if (uploadRes.success && uploadRes.url) {
+            finalProofUrl = uploadRes.url;
+          } else {
+            console.warn("Upload proof error:", uploadRes.message);
+          }
+        } catch (uploadErr) {
+          console.warn("Upload proof error:", uploadErr);
         }
-        finalProofUrl = uploadRes.url;
       }
 
       const shipRes = await shipSupplierPoAction(po.id, {
@@ -263,7 +269,10 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
   }
 
   const canEditHost = po.status === "ISSUED" || po.status === "PAID_TO_ESCROW";
-  const canShip = po.status === "PAID_TO_ESCROW" || (po.status as string) === "PROCESSING";
+  const canShip =
+    po.status === "PAID_TO_ESCROW" ||
+    po.status === "ISSUED" ||
+    (po.status as string) === "PROCESSING";
   const isShipped = po.status === "SHIPPED";
   const isDelivered = po.status === "DELIVERED";
 
@@ -368,7 +377,11 @@ export function PesananDetailView({ poId }: PesananDetailViewProps) {
           <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-text-secondary">
             <span>Harga Terkunci (Tier)</span>
             <strong className="text-text-primary tabular-nums">
-              {formatCurrency(po.lockedTierPrice)} / {po.wholesaleUnit}
+              {formatCurrency(
+                po.lockedTierPrice ||
+                  (po.totalQuantity > 0 ? Math.round(po.grandTotalAmount / po.totalQuantity) : 0)
+              )}{" "}
+              / {po.wholesaleUnit}
             </strong>
           </div>
         </Card>

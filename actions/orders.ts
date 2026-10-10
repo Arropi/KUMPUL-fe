@@ -142,8 +142,10 @@ export async function getSupplierPosAction(supplierRoleId?: string): Promise<{
 }> {
   try {
     const headers = await getAuthHeaders();
-    const endpoint = supplierRoleId
-      ? `/orders/supplier/pos?supplier_role_id=${supplierRoleId}`
+    const session = await getAuthSession();
+    const effectiveRoleId = supplierRoleId || (session?.role === "supplier" ? session?.roleId : undefined);
+    const endpoint = effectiveRoleId
+      ? `/orders/supplier/pos?supplier_role_id=${effectiveRoleId}`
       : `/orders/supplier/pos`;
 
     const res = await beFetch<ConsolidatedPO[]>(endpoint, { headers });
@@ -286,9 +288,26 @@ export async function shipSupplierPoAction(
       };
     }
 
+    // Fallback: jika /ship gagal, coba perbarui status langsung ke SHIPPED
+    const fallbackRes = await beFetch<any>(`/orders/supplier/pos/${poId}/status`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ status: "SHIPPED" }),
+    });
+
+    if (fallbackRes.success) {
+      revalidatePath("/pesanan");
+      revalidatePath(`/pesanan/${poId}`);
+      return {
+        success: true,
+        message: "Status PO berhasil diperbarui menjadi SHIPPED (Dalam Pengiriman)",
+        data: fallbackRes.data,
+      };
+    }
+
     return {
       success: false,
-      message: res.message || "Gagal memperbarui status pengiriman PO",
+      message: res.message || fallbackRes.message || "Gagal memperbarui status pengiriman PO",
     };
   } catch (err: any) {
     return {

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
+import { getRequestOrigin } from "@/lib/url-helper";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const origin = new URL(request.url).origin;
-  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || origin;
+  const appUrl = getRequestOrigin(request);
 
   // Penanganan alur simulasi pengujian lokal saat belum ada kredensial resmi
   if (searchParams.get("simulated") === "true") {

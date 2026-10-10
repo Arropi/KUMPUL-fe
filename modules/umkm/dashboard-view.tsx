@@ -268,7 +268,7 @@ export function UmkmDashboardView() {
           <div>
             <div className="flex items-baseline gap-1">
               <p className="font-heading text-xl sm:text-2xl font-bold text-text-primary tabular-nums">
-                {dashboardData?.active_participations_count || mappedPools.length}
+                {dashboardData?.active_participations_count ?? 0}
               </p>
               <span className="text-xs font-semibold text-text-muted">Pool</span>
             </div>

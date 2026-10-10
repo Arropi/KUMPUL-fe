@@ -6,7 +6,16 @@ import { ConsolidatedPO } from "@/constants/supplier";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { toast } from "@/components/ui/toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Search, Truck, CheckCircle2 } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -17,7 +26,12 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getOrderStatusBadge } from "./helpers";
-import { getSupplierPosAction } from "@/actions/orders";
+import {
+  getSupplierPosAction,
+  shipSupplierPoAction,
+  updateSupplierPoStatusAction,
+} from "@/actions/orders";
+import { uploadFileAction } from "@/actions/upload";
 
 export function SupplierPesananView() {
   const [orders, setOrders] = React.useState<ConsolidatedPO[]>([]);
@@ -26,28 +40,135 @@ export function SupplierPesananView() {
   const [activeTab, setActiveTab] = React.useState<string>("ALL");
   const [searchQuery, setSearchQuery] = React.useState("");
 
-  React.useEffect(() => {
-    async function loadOrders() {
-      setLoadingOrders(true);
-      setErrorOrders(null);
-      try {
-        const res = await getSupplierPosAction();
-        if (res.success) {
-          setOrders(res.data ?? []);
-        } else {
-          setOrders([]);
-          setErrorOrders(res.message ?? "Gagal memuat daftar pesanan");
-        }
-      } catch (err) {
-        console.error(err);
+  // Modal Kirim Pesanan
+  const [shippingPo, setShippingPo] = React.useState<ConsolidatedPO | null>(null);
+  const [driverNameInput, setDriverNameInput] = React.useState("");
+  const [trackingNumberInput, setTrackingNumberInput] = React.useState("");
+  const [deliveryProofFile, setDeliveryProofFile] = React.useState<File | null>(null);
+  const [deliveryProofPreview, setDeliveryProofPreview] = React.useState<string | null>(null);
+  const [isSubmittingShip, setIsSubmittingShip] = React.useState(false);
+  const [updatingPoId, setUpdatingPoId] = React.useState<string | null>(null);
+
+  const loadOrders = React.useCallback(async () => {
+    setLoadingOrders(true);
+    setErrorOrders(null);
+    try {
+      const res = await getSupplierPosAction();
+      if (res.success) {
+        const safeOrders = (res.data ?? []).map((o) => ({
+          ...o,
+          participants: Array.isArray(o.participants) ? o.participants : [],
+          lockedTierPrice:
+            o.lockedTierPrice ??
+            (o.totalQuantity > 0 ? Math.round(o.grandTotalAmount / o.totalQuantity) : 0),
+        }));
+        setOrders(safeOrders);
+      } else {
         setOrders([]);
-        setErrorOrders("Gagal memuat daftar pesanan");
-      } finally {
-        setLoadingOrders(false);
+        setErrorOrders(res.message ?? "Gagal memuat daftar pesanan");
       }
+    } catch (err) {
+      console.error(err);
+      setOrders([]);
+      setErrorOrders("Gagal memuat daftar pesanan");
+    } finally {
+      setLoadingOrders(false);
     }
-    loadOrders();
   }, []);
+
+  React.useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  const handleOpenShipModal = (po: ConsolidatedPO) => {
+    setShippingPo(po);
+    setDriverNameInput(po.driverName || "");
+    setTrackingNumberInput(po.trackingNumber || "");
+    setDeliveryProofFile(null);
+    setDeliveryProofPreview(po.deliveryProofUrl || null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDeliveryProofFile(file);
+      const url = URL.createObjectURL(file);
+      setDeliveryProofPreview(url);
+    }
+  };
+
+  const handleSubmitShipment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shippingPo) return;
+
+    if (!driverNameInput.trim()) {
+      toast.error("Nama pengemudi / armada wajib diisi", "Validasi Gagal");
+      return;
+    }
+    if (!trackingNumberInput.trim()) {
+      toast.error("Nomor resi / plat nomor armada wajib diisi", "Validasi Gagal");
+      return;
+    }
+
+    setIsSubmittingShip(true);
+    try {
+      let finalProofUrl = shippingPo.deliveryProofUrl || null;
+
+      if (deliveryProofFile) {
+        try {
+          const formData = new FormData();
+          formData.append("file", deliveryProofFile);
+          formData.append("folder", "surat-jalan");
+          const uploadRes = await uploadFileAction(formData);
+          if (uploadRes.success && uploadRes.url) {
+            finalProofUrl = uploadRes.url;
+          } else {
+            console.warn("Upload proof error:", uploadRes.message);
+          }
+        } catch (uploadErr) {
+          console.warn("Upload proof error:", uploadErr);
+        }
+      }
+
+      const shipRes = await shipSupplierPoAction(shippingPo.id, {
+        driver_name: driverNameInput.trim(),
+        tracking_number: trackingNumberInput.trim(),
+        delivery_proof_url: finalProofUrl,
+      });
+
+      if (shipRes.success) {
+        toast.success(
+          "Pesanan berhasil dikirim dan armada sedang dalam perjalanan",
+          "Pengiriman Dimulai"
+        );
+        setShippingPo(null);
+        await loadOrders();
+      } else {
+        toast.error(shipRes.message || "Gagal memperbarui status pengiriman", "Gagal");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Terjadi kesalahan saat memproses pengiriman", "Gagal");
+    } finally {
+      setIsSubmittingShip(false);
+    }
+  };
+
+  const handleMarkDelivered = async (poId: string) => {
+    setUpdatingPoId(poId);
+    try {
+      const res = await updateSupplierPoStatusAction(poId, "DELIVERED");
+      if (res.success) {
+        toast.success("Pesanan telah ditandai tiba di titik tujuan", "Pengiriman Tuntas");
+        await loadOrders();
+      } else {
+        toast.error(res.message || "Gagal mengubah status pesanan", "Gagal");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Terjadi kesalahan saat memperbarui status", "Gagal");
+    } finally {
+      setUpdatingPoId(null);
+    }
+  };
 
   const filteredOrders = orders.filter((po) => {
     const matchSearch =
@@ -58,7 +179,7 @@ export function SupplierPesananView() {
     const matchTab =
       activeTab === "ALL" ||
       (activeTab === "ACTION_NEEDED" &&
-        (po.status === "PAID_TO_ESCROW" || po.status === "PROCESSING")) ||
+        (po.status === "PAID_TO_ESCROW" || po.status === "ISSUED" || (po.status as string) === "PROCESSING")) ||
       (activeTab === "IN_TRANSIT" && po.status === "SHIPPED") ||
       (activeTab === "DELIVERED" && po.status === "DELIVERED");
 
@@ -196,7 +317,9 @@ export function SupplierPesananView() {
                           <strong className="text-text-primary">{po.totalQuantity} {po.wholesaleUnit}</strong> ({po.totalWeightKg} kg)
                         </p>
                         <p className="text-[11px] text-accent font-semibold">
-                          {po.participants.length} UMKM Anggota Tergabung
+                          {Array.isArray(po.participants) && po.participants.length > 0
+                            ? `${po.participants.length} UMKM Anggota Tergabung`
+                            : "Konsolidasi Pooling UMKM"}
                         </p>
                       </div>
                     </TableCell>
@@ -217,7 +340,10 @@ export function SupplierPesananView() {
 
                     <TableCell className="text-right align-top">
                       <p className="text-xs font-bold text-text-primary tabular-nums">
-                        {formatCurrency(po.lockedTierPrice)}
+                        {formatCurrency(
+                          po.lockedTierPrice ||
+                            (po.totalQuantity > 0 ? Math.round(po.grandTotalAmount / po.totalQuantity) : 0)
+                        )}
                       </p>
                       <p className="text-[10px] text-text-muted">
                         per {po.wholesaleUnit}
@@ -234,11 +360,38 @@ export function SupplierPesananView() {
                     </TableCell>
 
                     <TableCell className="text-right align-top">
-                      <Link href={`/pesanan/${po.id}`}>
-                        <Button variant="primary" size="sm" className="font-semibold text-xs min-h-[40px]">
-                          Buka Rincian
-                        </Button>
-                      </Link>
+                      <div className="flex flex-col items-end gap-1.5">
+                        {(po.status === "PAID_TO_ESCROW" || po.status === "ISSUED" || (po.status as string) === "PROCESSING") && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleOpenShipModal(po)}
+                            className="font-bold text-xs min-h-[38px] w-full max-w-[130px] cursor-pointer"
+                          >
+                            <Truck className="w-3.5 h-3.5 mr-1" />
+                            <span>Kirim Barang</span>
+                          </Button>
+                        )}
+
+                        {po.status === "SHIPPED" && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleMarkDelivered(po.id)}
+                            disabled={updatingPoId === po.id}
+                            className="font-bold text-xs min-h-[38px] w-full max-w-[130px] bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                            <span>{updatingPoId === po.id ? "Memproses..." : "Tiba di Tujuan"}</span>
+                          </Button>
+                        )}
+
+                        <Link href={`/pesanan/${po.id}`} className="w-full max-w-[130px]">
+                          <Button variant="outline" size="sm" className="font-semibold text-xs min-h-[36px] w-full cursor-pointer">
+                            Buka Rincian
+                          </Button>
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -282,24 +435,134 @@ export function SupplierPesananView() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-border">
+                <div className="flex items-center justify-between pt-2 border-t border-border gap-2 flex-wrap">
                   <div>
                     <span className="text-[10px] text-text-muted font-semibold block">Total Escrow</span>
                     <p className="text-base font-extrabold text-primary tabular-nums">
                       {formatCurrency(po.grandTotalAmount)}
                     </p>
                   </div>
-                  <Link href={`/pesanan/${po.id}`}>
-                    <Button variant="primary" size="sm" className="font-semibold text-xs min-h-[44px]">
-                      Buka Rincian &amp; Manifest
-                    </Button>
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    {(po.status === "PAID_TO_ESCROW" || po.status === "ISSUED" || (po.status as string) === "PROCESSING") && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleOpenShipModal(po)}
+                        className="font-bold text-xs min-h-[42px] cursor-pointer"
+                      >
+                        <Truck className="w-3.5 h-3.5 mr-1" />
+                        <span>Kirim</span>
+                      </Button>
+                    )}
+
+                    {po.status === "SHIPPED" && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleMarkDelivered(po.id)}
+                        disabled={updatingPoId === po.id}
+                        className="font-bold text-xs min-h-[42px] bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                        <span>{updatingPoId === po.id ? "..." : "Tiba"}</span>
+                      </Button>
+                    )}
+
+                    <Link href={`/pesanan/${po.id}`}>
+                      <Button variant="outline" size="sm" className="font-semibold text-xs min-h-[42px] cursor-pointer">
+                        Rincian
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </Card>
             ))}
           </div>
         </>
       )}
+
+      {/* Modal Kirim Barang Langsung dari Halaman Pesanan */}
+      <Dialog open={!!shippingPo} onOpenChange={(open) => !open && setShippingPo(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Kirim Barang &amp; Input Bukti Pengantaran</DialogTitle>
+            <DialogDescription>
+              Lengkapi data pengemudi, nomor plat atau resi pelacakan untuk Purchase Order:{" "}
+              <strong>{shippingPo?.poNumber}</strong> ({shippingPo?.commodityName}).
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitShipment} className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-text-primary block">
+                Nama Pengemudi / Kurir Armada <span className="text-destructive">*</span>
+              </label>
+              <Input
+                placeholder="Contoh: Budi Santoso"
+                value={driverNameInput}
+                onChange={(e) => setDriverNameInput(e.target.value)}
+                required
+                className="min-h-[44px]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-text-primary block">
+                Nomor Resi / Plat Nomor Armada <span className="text-destructive">*</span>
+              </label>
+              <Input
+                placeholder="Contoh: AB 9123 KP / KMPL-LOG-88"
+                value={trackingNumberInput}
+                onChange={(e) => setTrackingNumberInput(e.target.value)}
+                required
+                className="min-h-[44px]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-text-primary block">
+                Unggah Bukti Pengantaran (Foto / Surat Jalan)
+              </label>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileChange}
+                className="block w-full text-xs text-text-secondary file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border file:border-border file:text-xs file:font-semibold file:bg-surface hover:file:bg-surface-subtle file:cursor-pointer cursor-pointer"
+              />
+              {deliveryProofPreview && (
+                <div className="mt-2 relative w-full h-36 rounded-xl border border-border overflow-hidden bg-background">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={deliveryProofPreview}
+                    alt="Preview Bukti Pengantaran"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={() => setShippingPo(null)}
+                disabled={isSubmittingShip}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                disabled={isSubmittingShip || !driverNameInput.trim() || !trackingNumberInput.trim()}
+              >
+                {isSubmittingShip ? "Memproses Pengiriman..." : "Konfirmasi Kirim Pesanan"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

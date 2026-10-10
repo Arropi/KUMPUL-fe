@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { beFetch } from '@/lib/api/be-client';
-import { mapBEToSupplierCommodity } from '@/modules/supplier/helpers';
+import { mapBEToSupplierCommodity, mapBEWasteToSupplierCommodity } from '@/modules/supplier/helpers';
 
 /**
  * Server-side beFetch that forwards cookies from the request.
@@ -35,14 +35,23 @@ async function beFetchServer<T>(
  * Fetch data for the home page: catalog and recommendations.
  */
 export async function fetchHomeData() {
-  // Fetch catalog and recommendations in parallel
-  const [catalogRes, recsRes] = await Promise.all([
+  // Fetch catalog, recommendations, and circular waste in parallel
+  const [catalogRes, recsRes, wasteRes] = await Promise.all([
     beFetchServer<any[]>(`/api/marketplace?limit=50`),
     beFetchServer<any>(`/api/marketplace/recommendations`),
+    beFetchServer<any[]>(`/waste-listings?limit=50`),
   ]);
 
   const rawCatalog = catalogRes.success && Array.isArray(catalogRes.data) ? catalogRes.data : [];
-  const catalog = rawCatalog.map(mapBEToSupplierCommodity);
+  const supplierCommodities = rawCatalog.map(mapBEToSupplierCommodity);
+
+  const rawWaste = wasteRes.success && Array.isArray(wasteRes.data) ? wasteRes.data : [];
+  const wasteCommodities = rawWaste
+    .filter((w: any) => w.listing_status === "AVAILABLE")
+    .map(mapBEWasteToSupplierCommodity);
+
+  // Satukan komoditas pemasok dan bursa limbah sirkular UMKM
+  const catalog = [...supplierCommodities, ...wasteCommodities];
 
   const rawRecs = recsRes.success && recsRes.data ? recsRes.data : null;
 
