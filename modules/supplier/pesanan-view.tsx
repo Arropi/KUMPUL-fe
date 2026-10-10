@@ -50,10 +50,15 @@ export function SupplierPesananView() {
   }, []);
 
   const filteredOrders = orders.filter((po) => {
+    const poNum = po.poNumber || "";
+    const comName = po.commodityName || "";
+    const hubName = po.hubName || "";
+    const q = searchQuery.toLowerCase();
+
     const matchSearch =
-      po.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      po.commodityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (po.hubName && po.hubName.toLowerCase().includes(searchQuery.toLowerCase()));
+      poNum.toLowerCase().includes(q) ||
+      comName.toLowerCase().includes(q) ||
+      hubName.toLowerCase().includes(q);
 
     const matchTab =
       activeTab === "ALL" ||
@@ -196,7 +201,7 @@ export function SupplierPesananView() {
                           <strong className="text-text-primary">{po.totalQuantity} {po.wholesaleUnit}</strong> ({po.totalWeightKg} kg)
                         </p>
                         <p className="text-[11px] text-accent font-semibold">
-                          {po.participants.length} UMKM Anggota Tergabung
+                          {(po.participants?.length || 0)} UMKM Anggota Tergabung
                         </p>
                       </div>
                     </TableCell>

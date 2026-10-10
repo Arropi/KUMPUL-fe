@@ -91,21 +91,6 @@ export function ProdukEditView({ productId, initialProduct }: ProdukEditViewProp
     let ignore = false;
 
     const resolveProduct = async () => {
-      // 1. Cek localStorage terlebih dahulu (mock testing FE)
-      try {
-        const saved = localStorage.getItem("kumpul_mock_products");
-        if (saved) {
-          const mocks: BEProduct[] = JSON.parse(saved);
-          const found = mocks.find((m) => m.id === productId);
-          if (found && !ignore) {
-            populateForm(found);
-            setIsLoading(false);
-            return;
-          }
-        }
-      } catch {}
-
-      // 2. Fetch dari backend via server action
       try {
         const res = await getProductByIdAction(productId);
         if (!ignore) {
@@ -242,21 +227,6 @@ export function ProdukEditView({ productId, initialProduct }: ProdukEditViewProp
       const res = await updateProductAction(payload);
 
       if (res.success && res.data) {
-        // Update mock localStorage jika ada
-        try {
-          const saved = localStorage.getItem("kumpul_mock_products");
-          if (saved) {
-            const mocks: BEProduct[] = JSON.parse(saved);
-            const idx = mocks.findIndex((m) => m.id === productId);
-            if (idx >= 0) {
-              mocks[idx] = res.data;
-            } else {
-              mocks.unshift(res.data);
-            }
-            localStorage.setItem("kumpul_mock_products", JSON.stringify(mocks));
-          }
-        } catch {}
-
         toast.success(res.message || "Spesifikasi produk berhasil disimpan!");
         router.push("/produk");
       } else {

@@ -142,8 +142,27 @@ export async function getSupplierPosAction(supplierRoleId?: string): Promise<{
 }> {
   try {
     const headers = await getAuthHeaders();
-    const endpoint = supplierRoleId
-      ? `/orders/supplier/pos?supplier_role_id=${supplierRoleId}`
+    let effectiveRoleId = supplierRoleId;
+
+    if (!effectiveRoleId) {
+      const session = await getAuthSession();
+      if (session?.roleId && session.role === "supplier") {
+        effectiveRoleId = session.roleId;
+      } else if (session?.entityId) {
+        try {
+          const rolesRes = await beFetch<any[]>(
+            `/business/roles?entity_id=${session.entityId}&role_type=SUPPLIER`,
+            { headers }
+          );
+          if (rolesRes.success && rolesRes.data && rolesRes.data.length > 0) {
+            effectiveRoleId = rolesRes.data[0].id;
+          }
+        } catch {}
+      }
+    }
+
+    const endpoint = effectiveRoleId
+      ? `/orders/supplier/pos?supplier_role_id=${effectiveRoleId}`
       : `/orders/supplier/pos`;
 
     const res = await beFetch<ConsolidatedPO[]>(endpoint, { headers });

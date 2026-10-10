@@ -29,7 +29,6 @@ import type { BEProduct, BERecipe } from "@/lib/api/types";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { calculateCircularMargin } from "@/lib/menu-intelligence";
 import { getProductWastePrediction } from "@/lib/ai-waste-prediction";
-import { MOCK_SUPPLIER_COMMODITIES } from "@/constants/supplier";
 import { beFetch } from "@/lib/api/be-client";
 import { cn } from "@/lib/utils";
 import { SECTOR_OPTIONS } from "./menu-types";
@@ -51,11 +50,6 @@ interface CommodityItem {
   id: string;
   name: string;
 }
-
-const INITIAL_BERANDA_COMMODITIES: CommodityItem[] = [
-  ...MOCK_SUPPLIER_COMMODITIES.map((c) => ({ id: c.id, name: c.name })),
-  { id: "a0d05e35-1153-402a-8102-993f29df993c", name: "Kopi Bos" },
-];
 
 /**
  * Heuristik AI Alternatif Bahan Baku Cerdas:
@@ -276,22 +270,15 @@ export function MenuDetailDialog({
   const dailyWasteKg =
     Math.round(wastePrediction.totalVolumeKg * iterationsPerDay * 10) / 10;
 
-  // Ambil komoditas bursa yang tersedia di Beranda
-  const [availableCommodities, setAvailableCommodities] = React.useState<CommodityItem[]>(
-    INITIAL_BERANDA_COMMODITIES
-  );
+  // Ambil komoditas bursa yang tersedia di Beranda dari database
+  const [availableCommodities, setAvailableCommodities] = React.useState<CommodityItem[]>([]);
 
   React.useEffect(() => {
     let ignore = false;
     beFetch<CommodityItem[]>("/marketplace?limit=50")
       .then((res) => {
-        if (!ignore && res.success && res.data && res.data.length > 0) {
-          const backendIds = new Set(res.data.map((b) => b.id));
-          const merged = [
-            ...res.data.map((b) => ({ id: b.id, name: b.name })),
-            ...INITIAL_BERANDA_COMMODITIES.filter((m) => !backendIds.has(m.id)),
-          ];
-          setAvailableCommodities(merged);
+        if (!ignore && res.success && res.data) {
+          setAvailableCommodities(res.data.map((b) => ({ id: b.id, name: b.name })));
         }
       })
       .catch(() => {});
