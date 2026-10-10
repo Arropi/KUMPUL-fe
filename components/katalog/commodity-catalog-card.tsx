@@ -11,12 +11,10 @@ import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
   ShoppingCart,
   ArrowRight,
-  AlertTriangle,
   MapPin,
   Store,
   Recycle,
   Info,
-  Sparkles,
 } from "lucide-react";
 
 export interface CriticalStockNotice {
@@ -199,9 +197,8 @@ export function CommodityCatalogCard({
                     : "opacity-0 invisible translate-y-1 group-hover/rec-tooltip:opacity-100 group-hover/rec-tooltip:visible group-hover/rec-tooltip:translate-y-0"
                 }`}
               >
-                <div className="flex items-center gap-1.5 font-bold text-[11px] text-emerald-400 mb-1">
-                  <Sparkles className="size-3.5 shrink-0 text-emerald-400" />
-                  <span>Alasan Rekomendasi</span>
+                <div className="font-bold text-[11px] text-emerald-400 mb-1">
+                  Alasan Rekomendasi
                 </div>
                 <p className="text-[11px] leading-relaxed text-slate-200 font-normal">
                   {recommendationReason}
@@ -217,33 +214,9 @@ export function CommodityCatalogCard({
       {/* Konten Card */}
       <div className="flex flex-1 flex-col pt-3.5 space-y-3">
         <div>
-          {/* Critical Kitchen Stock Notice (brief.md Seksi 4.2) */}
-          {criticalStockNotice ? (
-            <div className="mb-2 space-y-1">
-              <div
-                className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg border shadow-xs max-w-full ${
-                  criticalStockNotice.daysRemaining <= 1.0
-                    ? "text-red-700 bg-red-50 border-red-200"
-                    : "text-amber-800 bg-amber-50 border-amber-200"
-                }`}
-              >
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-600 animate-pulse" />
-                <span className="truncate">
-                  Stok Kritis Dapur (Sisa {criticalStockNotice.daysRemaining} Hari) &bull; Kebutuhan {criticalStockNotice.linkedMenu}
-                </span>
-              </div>
-              {criticalStockNotice.suggestedQty ? (
-                <div className="flex items-center justify-between text-[10px] text-text-secondary px-0.5 font-medium">
-                  <span>Saran Pengadaan 7 Hari:</span>
-                  <span className="font-bold text-text-primary">
-                    {criticalStockNotice.suggestedQty} {criticalStockNotice.unit || item.wholesaleUnit}
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          ) : recipeTag ? (
+          {recipeTag ? (
             <div className="mb-2">
-              <span className="inline-flex items-center text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg shadow-xs">
+              <span className="inline-flex items-center text-[11px] font-semibold text-text-secondary bg-surface-subtle/80 border border-border/80 px-2.5 py-0.5 rounded-lg">
                 <span className="truncate">{recipeTag}</span>
               </span>
             </div>
@@ -258,15 +231,9 @@ export function CommodityCatalogCard({
             </div>
           )}
 
-          {/* Sektor, SKU, dan Lokasi */}
-          <div className="flex items-center justify-between text-[11px] text-text-muted mb-1 gap-2">
-            <div className="flex items-center gap-1.5 truncate min-w-0" title={`${item.sku} • ${item.sector}`}>
-              <span className="font-mono font-semibold uppercase shrink-0">{item.sku}</span>
-              <span>&bull;</span>
-              <span className="truncate">{item.sector}</span>
-            </div>
-            {/* Metadata Lokasi Wajib */}
-            <div className="inline-flex items-center gap-1 text-[11px] text-text-secondary shrink-0 max-w-[45%]" title={locationDisplay}>
+          {/* Metadata Lokasi */}
+          <div className="flex items-center justify-end text-[11px] text-text-muted mb-1 gap-2">
+            <div className="inline-flex items-center gap-1 text-[11px] text-text-secondary shrink-0 max-w-full" title={locationDisplay}>
               <MapPin className="size-3 text-primary shrink-0" />
               <span className="truncate font-medium">{locationDisplay}</span>
               {item.distanceKm != null && (

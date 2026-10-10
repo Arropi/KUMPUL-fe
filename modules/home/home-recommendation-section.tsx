@@ -3,19 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Utensils,
-  BarChart2,
-  ArrowRight,
   AlertTriangle,
-  Sparkles,
-  MapPin,
-  TrendingDown,
-  TrendingUp,
-  Flame,
-  Recycle,
-  ShieldCheck,
-  CheckCircle2,
-  Plus,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -510,21 +498,10 @@ export function HomeRecommendationSection({
       <div className="space-y-4 pt-2">
         {/* Header Rekomendasi Supplier */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-border/70">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-700">
-                <BarChart2 className="w-4 h-4" />
-              </span>
-              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
-                Mesin Rekomendasi Cerdas
-              </span>
-            </div>
+          <div>
             <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
               Mesin Rekomendasi Cerdas
             </h2>
-            <p className="text-xs text-text-secondary max-w-2xl">
-              Pantau daya saing harga komoditas Anda dibanding rata-rata bursa pasar grosir Yogyakarta untuk memaksimalkan margin dan volume penjualan.
-            </p>
           </div>
         </div>
 
@@ -580,36 +557,25 @@ export function HomeRecommendationSection({
   return (
     <div className="space-y-4 pt-2">
       {/* Header Rekomendasi UMKM */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-border/70">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded-lg bg-emerald-500/10 text-emerald-700">
-              <Utensils className="w-4 h-4" />
-            </span>
-            <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
-              Mesin Rekomendasi Cerdas
-            </span>
-            {criticalCount > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-red-100 text-red-700 px-2 py-0.5 text-[10px] font-bold">
-                <AlertTriangle className="w-3 h-3 text-red-600 animate-pulse" />
-                <span>{criticalCount} Bahan Kritis</span>
-              </span>
-            )}
-          </div>
+      <div className="flex flex-col items-start gap-3 pb-3 border-b border-border/70">
+        <div className="flex items-center gap-2.5">
           <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
             Mesin Rekomendasi Cerdas
           </h2>
-          <p className="text-xs text-text-secondary max-w-2xl">
-            Kurasi bahan baku terpadu otomatis: analisis stok kritis inventaris resep, alternatif bahan pengganti terverifikasi sehat (Halal, BPOM, COA), rekomendasi penyedia terdekat di D.I. Yogyakarta, dan peluang hemat kolam patungan aktif.
-          </p>
+          {criticalCount > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-red-100 text-red-700 px-2 py-0.5 text-[10px] font-bold">
+              <AlertTriangle className="w-3 h-3 text-red-600 animate-pulse" />
+              <span>{criticalCount} Bahan Kritis</span>
+            </span>
+          )}
         </div>
 
-        {/* Tab Sub-kategori UMKM */}
-        <div className="flex items-center gap-1 p-1 bg-surface-subtle border border-border rounded-xl overflow-x-auto max-w-full">
+        {/* Tab Sub-kategori UMKM - Posisi di bawah text judul, tidak scroll */}
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-surface-subtle border border-border rounded-xl">
           <button
             type="button"
             onClick={() => setUmkmTab("LOW_STOCK")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               umkmTab === "LOW_STOCK"
                 ? "bg-primary text-white shadow-xs"
                 : "text-text-secondary hover:text-text-primary"
@@ -620,7 +586,7 @@ export function HomeRecommendationSection({
           <button
             type="button"
             onClick={() => setUmkmTab("HEALTHY")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               umkmTab === "HEALTHY"
                 ? "bg-primary text-white shadow-xs"
                 : "text-text-secondary hover:text-text-primary"
@@ -631,7 +597,7 @@ export function HomeRecommendationSection({
           <button
             type="button"
             onClick={() => setUmkmTab("NEAREST")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               umkmTab === "NEAREST"
                 ? "bg-primary text-white shadow-xs"
                 : "text-text-secondary hover:text-text-primary"
@@ -642,7 +608,7 @@ export function HomeRecommendationSection({
           <button
             type="button"
             onClick={() => setUmkmTab("SAVINGS")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               umkmTab === "SAVINGS"
                 ? "bg-primary text-white shadow-xs"
                 : "text-text-secondary hover:text-text-primary"

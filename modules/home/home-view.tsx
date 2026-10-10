@@ -20,7 +20,7 @@ import {
 import { Pagination15 } from "@/components/ui/pagination";
 import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
 import { UserRole, UserSession } from "@/constants/auth";
-import { Search, ChevronDown, Sparkles, ShoppingBag, Plus } from "lucide-react";
+import { Search, ChevronDown, ShoppingBag } from "lucide-react";
 import { getAllMarketplaceCatalogsAction } from "@/actions/supplier-catalog";
 import { mapBEToSupplierCommodity } from "@/modules/supplier/helpers";
 import { HomeRecommendationSection } from "./home-recommendation-section";

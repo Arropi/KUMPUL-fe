@@ -12,6 +12,7 @@ import {
   updateWasteListingAction,
   deleteWasteListingAction,
   depositWasteToBankSampahAction,
+  getNearestOfftakersAction,
 } from "@/actions/waste";
 import type { BEWasteListing, BEWasteCategory, BEProduct } from "@/lib/api/types";
 import { getUmkmProductsAction } from "@/actions/products";
@@ -396,10 +397,11 @@ export function UmkmSirkularView() {
   const [bankSampahRevenue, setBankSampahRevenue] = React.useState<number>(0);
   const [bankSampahNotes, setBankSampahNotes] = React.useState("");
   const [isSubmittingBankSampah, setIsSubmittingBankSampah] = React.useState(false);
+  const [nearestOfftakers, setNearestOfftakers] = React.useState<Array<{ id: string; name: string }>>([]);
 
   const handleOpenBankSampah = (item: WasteListing) => {
     setBankSampahItem(item);
-    setBankSampahName("Bank Sampah Induk Surabaya (BSIS)");
+    setBankSampahName(nearestOfftakers[0]?.name || "");
     setBankSampahRevenue(Math.round(item.volumeKg * item.pricePerKg));
     setBankSampahNotes(`Setor ${item.volumeKg} ${item.unit || "kg"} ${item.title}`);
     setIsBankSampahOpen(true);
@@ -567,6 +569,17 @@ export function UmkmSirkularView() {
       }
     }
     loadProducts();
+  }, []);
+
+  // Load rekomendasi Bank Sampah terdekat dari database
+  React.useEffect(() => {
+    getNearestOfftakersAction({ latitude: -7.3248, longitude: 112.7758, limit: 6 })
+      .then((res) => {
+        if (res.success && res.data && res.data.length > 0) {
+          setNearestOfftakers(res.data.map((o) => ({ id: o.id, name: o.org_name })));
+        }
+      })
+      .catch(() => {});
   }, []);
   // Helper kalkulasi sisa hari kadaluarsa
   const getExpiryDiffDays = (dateStr?: string): number => {
@@ -1827,34 +1840,31 @@ export function UmkmSirkularView() {
                     placeholder="Contoh: Bank Sampah Induk Surabaya (BSIS)"
                     className="h-10 text-xs sm:text-sm bg-surface rounded-xl"
                   />
-                  {/* Saran Cepat Titik Bank Sampah */}
-                  <div className="pt-1 space-y-1">
-                    <span className="text-[10px] font-semibold text-text-muted block">
-                      Pilihan Titik Terdekat:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        "Bank Sampah Induk Surabaya (BSIS)",
-                        "Bank Sampah Bintang Mangrove",
-                        "TPS3R Sutorejo Jambangan",
-                        "Bank Sampah Eka Mandiri Wonokromo",
-                      ].map((name) => (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() => setBankSampahName(name)}
-                          className={cn(
-                            "text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer",
-                            bankSampahName === name
-                              ? "bg-primary text-white border-primary shadow-xs font-bold"
-                              : "bg-surface text-text-secondary border-border hover:bg-surface-subtle hover:text-text-primary"
-                          )}
-                        >
-                          {name}
-                        </button>
-                      ))}
+                  {/* Pilihan Titik Terdekat: Hanya jika ada rekomendasi lokasi bank sampah terdekat */}
+                  {nearestOfftakers.length > 0 && (
+                    <div className="pt-1 space-y-1">
+                      <span className="text-[10px] font-semibold text-text-muted block">
+                        Pilihan Titik Terdekat:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {nearestOfftakers.map((offtaker) => (
+                          <button
+                            key={offtaker.id}
+                            type="button"
+                            onClick={() => setBankSampahName(offtaker.name)}
+                            className={cn(
+                              "text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer",
+                              bankSampahName === offtaker.name
+                                ? "bg-primary text-white border-primary shadow-xs font-bold"
+                                : "bg-surface text-text-secondary border-border hover:bg-surface-subtle hover:text-text-primary"
+                            )}
+                          >
+                            {offtaker.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Form Input 2: Nominal Penghasilan yang Didapatkan */}
