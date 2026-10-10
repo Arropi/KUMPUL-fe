@@ -139,6 +139,111 @@ export async function createWasteListingAction(
   }
 }
 
+export interface UpdateWasteListingInput {
+  title?: string;
+  category?: BEWasteCategory;
+  availableWeight?: number;
+  pricePerKg?: number;
+  expiredAt?: string;
+  notes?: string;
+  isMarketplaceVisible?: boolean;
+}
+
+/**
+ * Server Action: Memperbarui data listing limbah di Backend Express
+ */
+export async function updateWasteListingAction(
+  listingId: string,
+  payload: UpdateWasteListingInput
+): Promise<{
+  success: boolean;
+  data?: BEWasteListing;
+  message?: string;
+}> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const bodyPayload: Record<string, unknown> = {};
+    if (payload.title !== undefined) bodyPayload.listing_title = payload.title.trim();
+    if (payload.category !== undefined) bodyPayload.waste_category = payload.category;
+    if (payload.availableWeight !== undefined) bodyPayload.available_weight = Number(payload.availableWeight);
+    if (payload.pricePerKg !== undefined) bodyPayload.price_per_kg = Number(payload.pricePerKg);
+    if (payload.expiredAt !== undefined) bodyPayload.expired_at = new Date(payload.expiredAt).toISOString();
+    if (payload.notes !== undefined) bodyPayload.notes = payload.notes.trim();
+    if (payload.isMarketplaceVisible !== undefined) bodyPayload.is_marketplace_visible = payload.isMarketplaceVisible;
+
+    const res = await beFetch<BEWasteListing>(`/waste-listings/${listingId}`, {
+      method: "PUT",
+      headers: authHeaders,
+      body: JSON.stringify(bodyPayload),
+    });
+
+    if (res.success && res.data) {
+      try {
+        revalidatePath("/limbah");
+        revalidatePath("/dashboard");
+      } catch {
+        // Safe revalidation ignore
+      }
+      return {
+        success: true,
+        data: res.data,
+        message: res.message || "Listing limbah berhasil diperbarui!",
+      };
+    }
+
+    return {
+      success: false,
+      message: res.message || "Gagal memperbarui listing limbah",
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Terjadi kendala saat menghubungi server",
+    };
+  }
+}
+
+/**
+ * Server Action: Menghapus listing limbah dari Backend Express
+ */
+export async function deleteWasteListingAction(
+  listingId: string
+): Promise<{
+  success: boolean;
+  message?: string;
+}> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const res = await beFetch(`/waste-listings/${listingId}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
+
+    if (res.success) {
+      try {
+        revalidatePath("/limbah");
+        revalidatePath("/dashboard");
+      } catch {
+        // Safe revalidation ignore
+      }
+      return {
+        success: true,
+        message: res.message || "Listing limbah berhasil dihapus!",
+      };
+    }
+
+    return {
+      success: false,
+      message: res.message || "Gagal menghapus listing limbah",
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Terjadi kendala saat menghapus listing",
+    };
+  }
+}
+
 /**
  * Server Action: Mengambil 5 Bank Sampah / TPS3R terdekat via Backend Express (Haversine Formula)
  */
