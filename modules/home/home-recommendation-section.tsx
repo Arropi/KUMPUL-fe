@@ -124,8 +124,10 @@ export function HomeRecommendationSection({
 
   if (recsError) {
     return (
-      <div className="text-center py-6 border border-dashed border-border rounded-2xl bg-surface-subtle">
-        <p className="text-xs text-text-muted">Gagal memuat rekomendasi cerdas dari bursa.</p>
+      <div className="text-center py-8 border border-dashed border-border rounded-2xl bg-surface-subtle">
+        <p className="text-xs font-medium text-text-muted">
+          Saat ini tidak ada yang tepat untuk direkomendasikan pada Anda.
+        </p>
       </div>
     );
   }
@@ -147,14 +149,14 @@ export function HomeRecommendationSection({
                 <BarChart2 className="w-4 h-4" />
               </span>
               <span className="text-xs font-bold text-primary uppercase tracking-wider">
-                Intelijen Pasar Pemasok
+                Komparasi Bahan Baku Serupa
               </span>
             </div>
             <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
-              Pemantauan Harga Pasar &amp; Kebutuhan UMKM
+              Komparasi Harga Bahan Baku Serupa &amp; Kebutuhan UMKM
             </h2>
             <p className="text-xs text-text-secondary max-w-2xl">
-              Pantau daya saing harga komoditas Anda dibanding rata-rata bursa dan temukan bahan baku yang paling banyak dicari resep UMKM.
+              Bandingkan harga komoditas Anda dengan bahan baku serupa di pasar untuk mengukur daya saing dan temukan bahan yang paling banyak dicari resep UMKM.
             </p>
           </div>
 
@@ -169,7 +171,7 @@ export function HomeRecommendationSection({
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              Daya Saing Harga ({benchmarks.length})
+              Komparasi Bahan Baku Serupa ({benchmarks.length})
             </button>
             <button
               type="button"
@@ -180,7 +182,7 @@ export function HomeRecommendationSection({
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              Bahan Paling Dicari ({highDemand.length})
+              Bahan Paling Dicari UMKM ({highDemand.length})
             </button>
           </div>
         </div>
@@ -190,8 +192,11 @@ export function HomeRecommendationSection({
           <div className="space-y-3">
             {benchmarks.length === 0 ? (
               <Card className="p-8 text-center bg-surface border-border rounded-2xl">
-                <p className="text-xs font-semibold text-text-secondary">
-                  Belum ada komoditas aktif untuk dibandingkan. Tambahkan katalog komoditas Anda untuk melihat analisis perbandingan harga pasar.
+                <p className="text-xs font-semibold text-text-muted">
+                  Saat ini tidak ada yang tepat untuk direkomendasikan pada Anda.
+                </p>
+                <p className="text-[11px] text-text-muted mt-1">
+                  Tambahkan katalog komoditas Anda untuk melihat komparasi harga dengan bahan baku serupa di pasar.
                 </p>
                 <Link href="/katalog/tambah" className="mt-3 inline-block">
                   <Button variant="primary" size="sm" className="font-semibold text-xs">
@@ -282,8 +287,8 @@ export function HomeRecommendationSection({
           <div className="space-y-3">
             {highDemand.length === 0 ? (
               <Card className="p-8 text-center bg-surface border-border rounded-2xl">
-                <p className="text-xs font-semibold text-text-secondary">
-                  Belum ada data permintaan resep UMKM yang tercatat.
+                <p className="text-xs font-semibold text-text-muted">
+                  Saat ini tidak ada yang tepat untuk direkomendasikan pada Anda.
                 </p>
               </Card>
             ) : (
@@ -341,20 +346,20 @@ export function HomeRecommendationSection({
               <Utensils className="w-4 h-4" />
             </span>
             <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
-              Mesin Rekomendasi Bahan Baku
+              Mesin Rekomendasi Cerdas
             </span>
             {criticalCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-md bg-red-100 text-red-700 px-2 py-0.5 text-[10px] font-bold">
                 <AlertTriangle className="w-3 h-3 text-red-600 animate-pulse" />
-                <span>{criticalCount} Bahan Kritis Dapur</span>
+                <span>{criticalCount} Bahan Kritis</span>
               </span>
             )}
           </div>
           <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
-            Rekomendasi Cerdas Pengadaan Bahan Dapur
+            Mesin Rekomendasi Cerdas (Smart Recommender Engine)
           </h2>
           <p className="text-xs text-text-secondary max-w-2xl">
-            Dioptimalkan untuk menjaga stok dapur UMKM Anda, alternatif bahan lebih sehat bersertifikasi mutu AI, serta efisiensi jarak pengiriman.
+            Kurasi bahan baku terpadu otomatis: analisis stok kritis inventaris resep, alternatif bahan pengganti terverifikasi sehat (Halal, BPOM, COA), rekomendasi penyedia terdekat di D.I. Yogyakarta, dan peluang hemat kolam patungan aktif.
           </p>
         </div>
 
@@ -363,87 +368,95 @@ export function HomeRecommendationSection({
           <button
             type="button"
             onClick={() => setUmkmTab("LOW_STOCK")}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               umkmTab === "LOW_STOCK"
                 ? "bg-primary text-white shadow-xs"
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            Stok Dapur {criticalCount > 0 ? `(${criticalCount})` : ""}
+            Deteksi Stok Kritis {criticalCount > 0 ? `(${criticalCount})` : ""}
           </button>
           <button
             type="button"
             onClick={() => setUmkmTab("HEALTHY")}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               umkmTab === "HEALTHY"
                 ? "bg-primary text-white shadow-xs"
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            Mutu AI {healthyAlternatives.length > 0 ? `(${healthyAlternatives.length})` : ""}
+            Alternatif Bersertifikasi Sehat {healthyAlternatives.length > 0 ? `(${healthyAlternatives.length})` : ""}
           </button>
           <button
             type="button"
             onClick={() => setUmkmTab("NEAREST")}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               umkmTab === "NEAREST"
                 ? "bg-primary text-white shadow-xs"
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            Pemasok Terdekat
+            Pemasok Terdekat {nearestSuppliers.length > 0 ? `(${nearestSuppliers.length})` : ""}
           </button>
-          {costSavingPools.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setUmkmTab("SAVINGS")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                umkmTab === "SAVINGS"
-                  ? "bg-primary text-white shadow-xs"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              Hemat Pool ({costSavingPools.length})
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setUmkmTab("SAVINGS")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+              umkmTab === "SAVINGS"
+                ? "bg-primary text-white shadow-xs"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            Peluang Hemat Patungan {costSavingPools.length > 0 ? `(${costSavingPools.length})` : ""}
+          </button>
         </div>
       </div>
 
-      {/* Tab 1: Stok Kritis / Resep Dapur */}
+      {/* Tab 1: Deteksi Stok Kritis */}
       {umkmTab === "LOW_STOCK" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {recommendations.slice(0, 6).map(({ commodity, recipeTag, benchmarkTag, criticalStockNotice }) => (
-            <div key={`rec-stock-${commodity.id}`} className="relative">
-              <div
-                className={`absolute -inset-0.5 rounded-2xl blur-[2px] opacity-75 pointer-events-none ${
-                  criticalStockNotice
-                    ? "bg-gradient-to-r from-red-500/25 to-amber-500/25"
-                    : "bg-gradient-to-r from-emerald-500/20 to-primary/20"
-                }`}
-              />
-              <div className="relative">
-                <CommodityCatalogCard
-                  item={commodity}
-                  role={role}
-                  pageContext="home"
-                  recipeTag={recipeTag}
-                  benchmarkTag={benchmarkTag}
-                  criticalStockNotice={criticalStockNotice}
-                  onPurchase={onPurchase}
-                />
-              </div>
+        <div className="space-y-3">
+          {recommendations.length === 0 ? (
+            <Card className="p-8 text-center bg-surface border-border rounded-2xl">
+              <p className="text-xs font-semibold text-text-muted">
+                Saat ini tidak ada yang tepat untuk direkomendasikan pada Anda.
+              </p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {recommendations.slice(0, 6).map(({ commodity, recipeTag, benchmarkTag, criticalStockNotice }) => (
+                <div key={`rec-stock-${commodity.id}`} className="relative">
+                  <div
+                    className={`absolute -inset-0.5 rounded-2xl blur-[2px] opacity-75 pointer-events-none ${
+                      criticalStockNotice
+                        ? "bg-gradient-to-r from-red-500/25 to-amber-500/25"
+                        : "bg-gradient-to-r from-emerald-500/20 to-primary/20"
+                    }`}
+                  />
+                  <div className="relative">
+                    <CommodityCatalogCard
+                      item={commodity}
+                      role={role}
+                      pageContext="home"
+                      recipeTag={recipeTag}
+                      benchmarkTag={benchmarkTag}
+                      criticalStockNotice={criticalStockNotice}
+                      onPurchase={onPurchase}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      {/* Tab 2: Alternatif Lebih Sehat (Paspor Mutu AI) */}
+      {/* Tab 2: Alternatif Bersertifikasi Sehat */}
       {umkmTab === "HEALTHY" && (
         <div className="space-y-3">
           {healthyAlternatives.length === 0 ? (
             <Card className="p-8 text-center bg-surface border-border rounded-2xl">
-              <p className="text-xs text-text-secondary">
-                Belum ada komoditas terverifikasi mutu tambahan saat ini. Seluruh komoditas bursa terverifikasi dapat dilihat pada daftar di bawah.
+              <p className="text-xs font-semibold text-text-muted">
+                Saat ini tidak ada yang tepat untuk direkomendasikan pada Anda.
               </p>
             </Card>
           ) : (
@@ -459,7 +472,7 @@ export function HomeRecommendationSection({
                           item={matched}
                           role={role}
                           pageContext="home"
-                          recipeTag="Uji Mutu AI Lolos"
+                          recipeTag="Sertifikasi Mutu Terverifikasi"
                           onPurchase={onPurchase}
                         />
                       </div>
@@ -475,7 +488,7 @@ export function HomeRecommendationSection({
                   >
                     <div>
                       <div className="text-[11px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg w-fit">
-                        <span>Paspor Mutu Gemini AI</span>
+                        <span>Mutu Terverifikasi (Halal/BPOM/COA)</span>
                       </div>
                       <h3 className="font-heading font-bold text-base text-text-primary mt-2 line-clamp-1" title={alt.commodity_name}>
                         {alt.commodity_name}
@@ -500,13 +513,13 @@ export function HomeRecommendationSection({
         </div>
       )}
 
-      {/* Tab 3: Supplier Terdekat */}
+      {/* Tab 3: Pemasok Terdekat */}
       {umkmTab === "NEAREST" && (
         <div className="space-y-3">
           {nearestSuppliers.length === 0 ? (
             <Card className="p-8 text-center bg-surface border-border rounded-2xl">
-              <p className="text-xs text-text-secondary">
-                Belum ada data jarak pemasok terdekat yang tercatat.
+              <p className="text-xs font-semibold text-text-muted">
+                Saat ini tidak ada yang tepat untuk direkomendasikan pada Anda.
               </p>
             </Card>
           ) : (
@@ -522,7 +535,7 @@ export function HomeRecommendationSection({
                           item={matched}
                           role={role}
                           pageContext="home"
-                          recipeTag={`Hub Logistik: ${near.seller_city}`}
+                          recipeTag={`Radius Terdekat: ${near.seller_city}`}
                           onPurchase={onPurchase}
                         />
                       </div>
@@ -538,7 +551,7 @@ export function HomeRecommendationSection({
                     <div>
                       <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/10 border border-primary/25 px-2.5 py-0.5 rounded-lg w-fit">
                         <MapPin className="w-3 h-3 text-primary" />
-                        <span>{near.seller_city}</span>
+                        <span>Radius D.I. Yogyakarta ({near.seller_city})</span>
                       </div>
                       <h3 className="font-heading font-bold text-base text-text-primary mt-2 line-clamp-1" title={near.commodity_name}>
                         {near.commodity_name}
@@ -563,41 +576,51 @@ export function HomeRecommendationSection({
         </div>
       )}
 
-      {/* Tab 4: Penghematan Pool */}
+      {/* Tab 4: Peluang Hemat Patungan */}
       {umkmTab === "SAVINGS" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {costSavingPools.map((pool) => (
-            <Card
-              key={pool.pool_id}
-              className="p-4 bg-surface border-border rounded-2xl shadow-elevation-1 space-y-3 flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold text-amber-800 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-md">
-                    Hemat {pool.estimated_savings_percentage}%
-                  </span>
-                  {pool.target_delivery_date && (
-                    <span className="text-[10px] text-text-muted font-medium truncate">
-                      Est. Tiba: {pool.target_delivery_date}
-                    </span>
-                  )}
-                </div>
-
-                <h3 className="font-heading font-bold text-sm text-text-primary mt-2 line-clamp-1" title={pool.commodity_name}>
-                  {pool.commodity_name}
-                </h3>
-                <p className="text-xs text-text-secondary mt-1">
-                  Target Pool: {pool.target_moq} &bull; Terkumpul: {pool.accumulated_qty}
-                </p>
-              </div>
-
-              <Link href={`/katalog/${pool.commodity_id}`}>
-                <Button variant="primary" size="sm" className="w-full text-xs font-bold">
-                  Gabung Pool Hemat Ini
-                </Button>
-              </Link>
+        <div className="space-y-3">
+          {costSavingPools.length === 0 ? (
+            <Card className="p-8 text-center bg-surface border-border rounded-2xl">
+              <p className="text-xs font-semibold text-text-muted">
+                Saat ini tidak ada yang tepat untuk direkomendasikan pada Anda.
+              </p>
             </Card>
-          ))}
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {costSavingPools.map((pool) => (
+                <Card
+                  key={pool.pool_id}
+                  className="p-4 bg-surface border-border rounded-2xl shadow-elevation-1 space-y-3 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-amber-800 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-md">
+                        Hemat {pool.estimated_savings_percentage}%
+                      </span>
+                      {pool.target_delivery_date && (
+                        <span className="text-[10px] text-text-muted font-medium truncate">
+                          Est. Tiba: {pool.target_delivery_date}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="font-heading font-bold text-sm text-text-primary mt-2 line-clamp-1" title={pool.commodity_name}>
+                      {pool.commodity_name}
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Target Pool: {pool.target_moq} &bull; Terkumpul: {pool.accumulated_qty}
+                    </p>
+                  </div>
+
+                  <Link href={`/katalog/${pool.commodity_id}`}>
+                    <Button variant="primary" size="sm" className="w-full text-xs font-bold">
+                      Gabung Pool Hemat Ini
+                    </Button>
+                  </Link>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

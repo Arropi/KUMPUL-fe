@@ -290,3 +290,58 @@ export async function confirmWastePickupAction(
     };
   }
 }
+
+/**
+ * Server Action: Beli listing limbah langsung P2P antar-UMKM (tanpa batas MOQ)
+ */
+export async function buyWasteListingAction(
+  listingId: string,
+  purchasedWeight: number,
+  pickupDate?: string
+): Promise<{
+  success: boolean;
+  data?: any;
+  message?: string;
+}> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const targetPickupDate = pickupDate || new Date().toISOString().slice(0, 10);
+    const res = await beFetch<{
+      snap_redirect_url?: string;
+      pickup_code?: string;
+      order_id?: string;
+    }>(`/waste-listings/${listingId}/buy`, {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({
+        purchased_weight: purchasedWeight,
+        pickup_date: targetPickupDate,
+      }),
+    });
+
+    if (res.success) {
+      try {
+        revalidatePath("/limbah");
+        revalidatePath("/pesanan");
+        revalidatePath("/home");
+      } catch {
+        // Safe ignore
+      }
+      return {
+        success: true,
+        data: res.data,
+        message: res.message || "Pesanan limbah sirkular berhasil diproses!",
+      };
+    }
+
+    return {
+      success: false,
+      message: res.message || "Gagal melakukan pembelian limbah",
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Terjadi kendala saat pembelian limbah",
+    };
+  }
+}
