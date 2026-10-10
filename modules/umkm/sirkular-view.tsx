@@ -571,16 +571,7 @@ export function UmkmSirkularView() {
     loadProducts();
   }, []);
 
-  // Load rekomendasi Bank Sampah terdekat dari database
-  React.useEffect(() => {
-    getNearestOfftakersAction({ latitude: -7.3248, longitude: 112.7758, limit: 6 })
-      .then((res) => {
-        if (res.success && res.data && res.data.length > 0) {
-          setNearestOfftakers(res.data.map((o) => ({ id: o.id, name: o.org_name })));
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // Catatan: nearestOfftakers disinkronkan secara real-time langsung dari Titik Bank Sampah Terdekat (BankSampahMapSection)
   // Helper kalkulasi sisa hari kadaluarsa
   const getExpiryDiffDays = (dateStr?: string): number => {
     if (!dateStr) return 999;
@@ -1224,7 +1215,11 @@ export function UmkmSirkularView() {
 
       {/* 4. Section Titik Bank Sampah Terdekat (Interactive Leaflet Map & Scraped Google Maps Locations) */}
       <div id="bank-sampah-map-section">
-        <BankSampahMapSection />
+        <BankSampahMapSection
+          onLoadedPoints={(points) => {
+            setNearestOfftakers(points.map((p) => ({ id: p.id, name: p.name })));
+          }}
+        />
       </div>
 
       {/* 5. Modal Tambah Listing Limbah Baru (Standardized Dropdowns & Tactile Controls) */}
@@ -1837,7 +1832,7 @@ export function UmkmSirkularView() {
                     required
                     value={bankSampahName}
                     onChange={(e) => setBankSampahName(e.target.value)}
-                    placeholder="Contoh: Bank Sampah Induk Surabaya (BSIS)"
+                    placeholder="Nama Bank Sampah / TPS3R terdekat"
                     className="h-10 text-xs sm:text-sm bg-surface rounded-xl"
                   />
                   {/* Pilihan Titik Terdekat: Hanya jika ada rekomendasi lokasi bank sampah terdekat */}

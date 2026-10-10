@@ -21,28 +21,33 @@ import {
   Compass,
 } from "lucide-react";
 
-export function BankSampahMapSection() {
+interface BankSampahMapSectionProps {
+  onLoadedPoints?: (points: BankSampahPoint[]) => void;
+}
+
+export function BankSampahMapSection({ onLoadedPoints }: BankSampahMapSectionProps = {}) {
   const [bankSampahList, setBankSampahList] = React.useState<BankSampahPoint[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedPointId, setSelectedPointId] = React.useState<string>("");
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
   const [profileName, setProfileName] = React.useState<string>("Dapur UMKM");
-  const [profileAddress, setProfileAddress] = React.useState<string>("Surabaya, Jawa Timur");
+  const [profileAddress, setProfileAddress] = React.useState<string>("");
   const [umkmCoords, setUmkmCoords] = React.useState<{ lat: number; lng: number }>({
-    lat: -7.3248,
-    lng: 112.7758,
+    lat: -7.797068,
+    lng: 110.370529,
   });
 
   React.useEffect(() => {
     async function loadData() {
-      let currentLat = -7.3248;
-      let currentLng = 112.7758;
+      let currentLat = -7.797068;
+      let currentLng = 110.370529;
 
       try {
         const profRes = await getBusinessProfileAction();
         if (profRes.success && profRes.entity) {
           setProfileName(profRes.entity.legal_name || "Dapur UMKM");
-          setProfileAddress(profRes.entity.default_address || "Surabaya, Jawa Timur");
+          const addr = profRes.entity.default_address || "";
+          setProfileAddress(addr);
           if (profRes.entity.latitude && profRes.entity.longitude) {
             currentLat = Number(profRes.entity.latitude) || currentLat;
             currentLng = Number(profRes.entity.longitude) || currentLng;
@@ -64,8 +69,8 @@ export function BankSampahMapSection() {
             id: off.id,
             name: off.org_name,
             category: "Bank Sampah Induk Kota",
-            address: off.address || "Surabaya, Jawa Timur",
-            subdistrict: off.service_area_city || "Surabaya",
+            address: off.address || "Sentra Layanan Bank Sampah",
+            subdistrict: off.service_area_city || "Area Layanan Terdekat",
             distanceKm: off.distance_km || 1.5,
             rating: 4.8,
             userRatingsTotal: 45,
@@ -86,16 +91,19 @@ export function BankSampahMapSection() {
             },
           }));
           setBankSampahList(mapped);
+          onLoadedPoints?.(mapped);
           if (mapped[0]) setSelectedPointId(mapped[0].id);
         } else {
           setBankSampahList([]);
+          onLoadedPoints?.([]);
         }
       } catch {
         setBankSampahList([]);
+        onLoadedPoints?.([]);
       }
     }
     loadData();
-  }, []);
+  }, [onLoadedPoints]);
 
   // Leaflet map refs
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
@@ -289,6 +297,17 @@ export function BankSampahMapSection() {
     setTimeout(() => setCopiedId(null), 2500);
   };
 
+  // Helper untuk menentukan label wilayah dapur
+  const areaLabel = React.useMemo(() => {
+    if (!profileAddress) return "Radius Dapur UMKM";
+    const parts = profileAddress.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      // Ambil 2 bagian terakhir (misal: "Sleman, D.I. Yogyakarta" atau "Kecamatan, Kota")
+      return parts.slice(-2).join(", ");
+    }
+    return parts[0] || "Radius Dapur UMKM";
+  }, [profileAddress]);
+
   return (
     <div className="space-y-4 pt-6 border-t border-border/80">
       {/* 1. Header Section Peta (Clean & Kumpul Branded) */}
@@ -339,13 +358,13 @@ export function BankSampahMapSection() {
             {/* Map Container dengan kelas .kumpul-leaflet-map */}
             <div ref={mapContainerRef} className="kumpul-leaflet-map w-full h-full z-0" />
 
-            {/* Floating Top HUD: Status Wilayah & Radius */}
-            <div className="absolute top-3 left-3 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface/90 backdrop-blur-md border border-border shadow-elevation-1 pointer-events-none">
-              <span className="font-heading text-[11px] font-bold text-text-primary">
-                Area Surabaya Timur
+            {/* Floating Top HUD: Status Wilayah & Radius Sesuai Titik Dapur */}
+            <div className="absolute top-3 left-3 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface/90 backdrop-blur-md border border-border shadow-elevation-1 pointer-events-none max-w-[85%]">
+              <span className="font-heading text-[11px] font-bold text-text-primary truncate">
+                {areaLabel}
               </span>
-              <span className="text-[10px] text-text-muted font-medium border-l border-border pl-2">
-                Radius Dapur UMKM
+              <span className="text-[10px] text-text-muted font-medium border-l border-border pl-2 shrink-0">
+                Radius Dapur
               </span>
             </div>
 
