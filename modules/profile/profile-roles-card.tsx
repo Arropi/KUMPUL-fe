@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Plus, Trash2, ArrowRightLeft, Check, Layers, AlertCircle, AlertTriangle } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, ArrowRightLeft, Check, AlertCircle, AlertTriangle } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -197,18 +197,13 @@ export function ProfileRolesCard({
     <Card className="rounded-2xl border-border bg-surface shadow-elevation-1">
       <CardHeader className="pb-3 border-b border-border/60">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-              <Layers className="w-4 h-4" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-bold text-text-primary">
-                Peran Usaha &amp; Sektor Terdaftar
-              </CardTitle>
-              <CardDescription className="text-xs text-text-secondary mt-0.5">
-                Kelola peran multi-posisi bisnis Anda sebagai UMKM pembeli bahan atau Mitra Supplier pengadaan.
-              </CardDescription>
-            </div>
+          <div>
+            <CardTitle className="text-base font-bold text-text-primary">
+              Peran Usaha &amp; Sektor Terdaftar
+            </CardTitle>
+            <CardDescription className="text-xs text-text-secondary mt-0.5">
+              Kelola peran multi-posisi bisnis Anda sebagai UMKM pembeli bahan atau Mitra Supplier pengadaan.
+            </CardDescription>
           </div>
 
           <div className="flex items-center gap-2">
@@ -218,10 +213,9 @@ export function ProfileRolesCard({
                 variant="outline"
                 size="sm"
                 onClick={handleOpenAdd}
-                className="text-xs h-8 px-3 font-semibold text-text-primary border-primary/30 hover:bg-primary/5"
+                className="text-xs h-8 px-3 font-semibold text-text-primary"
               >
-                <Plus className="w-3.5 h-3.5 mr-1 text-primary" />
-                <span>Tambah Peran</span>
+                <Plus className="w-3.5 h-3.5 mr-1" />
               </Button>
             )}
           </div>

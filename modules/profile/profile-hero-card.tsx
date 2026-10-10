@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Edit3, Check, X, MapPin, Phone, Mail, User, Building } from "lucide-react";
+import { Edit3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -110,26 +110,26 @@ export function ProfileHeroCard({
   return (
     <Card className="rounded-3xl border border-border bg-surface shadow-elevation-1 overflow-hidden">
       {/* Cover Gambar Visual Sektor */}
-      <div className="relative w-full h-36 sm:h-48 bg-neutral-900 overflow-hidden">
+      <div className="relative w-full h-48 sm:h-56 md:h-64 bg-surface-subtle overflow-hidden">
         <Image
           src={sectorMeta.image}
           alt={sectorMeta.label}
           fill
           priority
-          sizes="(max-width: 768px) 100vw, 896px"
-          className="object-cover opacity-85"
+          sizes="(max-width: 1280px) 100vw, 1200px"
+          className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-black/5 pointer-events-none" />
 
         {/* Badge Sektor di Atas Cover */}
         <div className="absolute top-4 left-4 sm:top-5 sm:left-5 flex flex-wrap items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-surface/90 backdrop-blur-md text-text-primary text-[11px] font-bold border border-white/20 shadow-xs">
+          <span className="px-3 py-1 rounded-full bg-surface/95 backdrop-blur-md text-text-primary text-[11px] font-bold border border-border/80 shadow-xs">
             {sectorMeta.label}
           </span>
         </div>
 
         <div className="absolute bottom-3 right-4 sm:bottom-4 sm:right-6 text-right">
-          <span className="text-[11px] text-white/90 font-medium tracking-wide">
+          <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md text-white/95 text-[11px] font-medium border border-white/20">
             {profile.city || "Jawa Timur"} &bull; Terdaftar sejak {profile.registrationDate || "2025"}
           </span>
         </div>
@@ -137,9 +137,9 @@ export function ProfileHeroCard({
 
       {/* Info Detail Profil Usaha */}
       <div className="px-5 sm:px-8 pb-6 sm:pb-8 pt-3 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 sm:-mt-14 relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-10 sm:-mt-12 relative z-10">
           <div className="flex items-end gap-3.5 sm:gap-4">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-primary text-text-inverse border-4 border-surface shadow-elevation-2 flex items-center justify-center font-heading font-extrabold text-2xl sm:text-3xl shrink-0">
+            <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-2xl bg-primary text-text-inverse border-4 border-surface shadow-elevation-2 flex items-center justify-center font-heading font-extrabold text-2xl sm:text-3xl shrink-0">
               {initials}
             </div>
             <div className="pb-1 min-w-0">
@@ -158,7 +158,7 @@ export function ProfileHeroCard({
               variant="primary"
               size="sm"
               onClick={() => setIsEditModalOpen(true)}
-              className="text-xs h-9 font-bold flex items-center gap-1.5 shadow-xs"
+              className="text-xs h-9 font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5" />
               <span>Ubah Profil</span>
@@ -167,36 +167,40 @@ export function ProfileHeroCard({
         </div>
 
         {/* Rincian Identitas Legal & Kontak */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-3.5 pt-2 border-t border-border/70 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-border/70 text-xs">
           {/* Kontak Resmi Usaha */}
           <div className="space-y-1">
-            <span className="text-text-muted text-[11px] flex items-center gap-1">
-              <Phone className="w-3 h-3" />
-              <span>Kontak Resmi Usaha</span>
+            <span className="text-text-muted text-[11px] block font-medium">
+              Kontak Resmi
             </span>
-            {profile.contactPhone && profile.contactPhone.trim() ? (
-              <p className="font-semibold text-text-primary font-mono">{profile.contactPhone}</p>
-            ) : (
-              <p className="text-text-muted text-xs italic">Belum terdata</p>
-            )}
-            <p className="text-text-secondary text-[11px] truncate flex items-center gap-1" title={profile.contactEmail || "-"}>
-              <Mail className="w-2.5 h-2.5" />
-              <span className="truncate">{profile.contactEmail || "-"}</span>
+            <p className="font-semibold text-text-primary font-mono text-xs">
+              {profile.contactPhone && profile.contactPhone.trim() ? profile.contactPhone : "Belum terdata"}
+            </p>
+            <p className="text-text-secondary text-[11px] truncate" title={profile.contactEmail || "-"}>
+              {profile.contactEmail || "-"}
             </p>
           </div>
 
-          {/* NIB / NPWP Legal and Alamat */}
-          <div className="space-y-1 sm:col-span-2 md:col-span-2">
-            <span className="text-text-muted text-[11px] flex items-center gap-1">
-              <Building className="w-3 h-3" />
-              <span>NIB / NPWP Legal</span>
+          {/* NIB / NPWP Legal */}
+          <div className="space-y-1">
+            <span className="text-text-muted text-[11px] block font-medium">
+              NIB / NPWP Legal
             </span>
-            <p className="font-mono text-text-primary font-medium text-[11px] break-all">
+            <p className="font-mono text-text-primary font-semibold text-xs break-all">
               {profile.npwpNib || "-"}
             </p>
-            <p className="text-text-secondary text-[11px] truncate flex items-center gap-1" title={profile.address || "-"}>
-              <MapPin className="w-2.5 h-2.5 shrink-0" />
-              <span className="truncate">{profile.address || "-"}</span>
+            <p className="text-text-secondary text-[11px]">
+              Badan Usaha Terverifikasi
+            </p>
+          </div>
+
+          {/* Alamat Operasional */}
+          <div className="space-y-1">
+            <span className="text-text-muted text-[11px] block font-medium">
+              Alamat Operasional
+            </span>
+            <p className="text-text-primary text-xs leading-relaxed line-clamp-2" title={profile.address || "-"}>
+              {profile.address || "Belum ada alamat terdaftar"}
             </p>
           </div>
         </div>
@@ -292,7 +296,6 @@ export function ProfileHeroCard({
                   onClick={() => setIsEditModalOpen(false)}
                   className="text-xs font-semibold h-10 px-4 text-text-secondary"
                 >
-                  <X className="w-3.5 h-3.5 mr-1" />
                   <span>Batal</span>
                 </Button>
                 <Button
@@ -302,7 +305,6 @@ export function ProfileHeroCard({
                   isLoading={isSaving}
                   className="font-bold text-xs min-h-[40px] px-6"
                 >
-                  <Check className="w-3.5 h-3.5 mr-1" />
                   <span>{isSaving ? "Menyimpan..." : "Simpan Perubahan"}</span>
                 </Button>
               </div>
