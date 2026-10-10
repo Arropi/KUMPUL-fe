@@ -171,9 +171,8 @@ export function ProfileBankAccountsCard({
     <Card id="section-bank-account" className="rounded-2xl border-border bg-surface shadow-elevation-1">
       <CardHeader className="pb-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <CardTitle className="text-base font-bold text-text-primary flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-primary" />
-            <span>Rekening Bank Penampung &amp; Escrow</span>
+          <CardTitle className="text-base font-bold text-text-primary">
+            Rekening Bank Penampung &amp; Escrow
           </CardTitle>
           <CardDescription className="text-xs text-text-secondary mt-0.5">
             Digunakan untuk transfer pencairan dana PO, penampungan hasil transaksi, dan escrow pooling KUMPUL.
@@ -194,16 +193,16 @@ export function ProfileBankAccountsCard({
 
       <CardContent className="p-4 sm:p-6 space-y-3">
         {accounts.length === 0 ? (
-          <div className="p-6 rounded-xl border border-dashed border-amber-300 bg-amber-50/40 text-center space-y-3">
-            <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
-              <AlertCircle className="w-5 h-5" />
+          <div className="p-6 rounded-xl border border-dashed border-border bg-surface-subtle/70 text-center space-y-3">
+            <div className="w-10 h-10 rounded-full bg-primary-light text-primary flex items-center justify-center mx-auto">
+              <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm font-bold text-amber-900">
-                Belum Ada Rekening Bank Resmi
+              <p className="text-xs sm:text-sm font-bold text-text-primary">
+                Belum Ada Rekening Bank Terdaftar
               </p>
-              <p className="text-xs text-amber-700 max-w-md mx-auto mt-0.5">
-                Tambahkan minimal 1 rekening perbankan usaha Anda agar pembayaran transaksi dan pencairan kuota dapat diproses.
+              <p className="text-xs text-text-secondary max-w-md mx-auto mt-0.5">
+                Tambahkan nomor rekening perbankan usaha Anda agar pembayaran transaksi dan pencairan kuota dapat diproses.
               </p>
             </div>
             <Button

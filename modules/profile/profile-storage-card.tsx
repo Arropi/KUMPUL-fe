@@ -72,9 +72,8 @@ export function ProfileStorageCard({
       <div>
         <CardHeader className="pb-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <CardTitle className="text-base font-bold text-text-primary flex items-center gap-2">
-              <Warehouse className="w-4 h-4 text-cyan-600" />
-              <span>Kapasitas Ruang Penyimpanan</span>
+            <CardTitle className="text-base font-bold text-text-primary">
+              Kapasitas Ruang Penyimpanan
             </CardTitle>
             <CardDescription className="text-xs text-text-secondary mt-0.5">
               Daya tampung komoditas usaha Anda ({currentRole?.role_type || "UMKM"}).
@@ -84,7 +83,7 @@ export function ProfileStorageCard({
           <div className="flex items-center gap-2">
             {isStorageIncomplete ? (
               <Badge variant="warning" className="text-[10px] font-bold py-0.5">
-                ⚠️ Belum Diatur
+                Belum Diatur
               </Badge>
             ) : (
               <Badge variant="success" className="text-[10px] font-bold py-0.5">
@@ -97,11 +96,10 @@ export function ProfileStorageCard({
 
         <CardContent className="p-4 sm:p-5 space-y-4">
           {/* Informasi Perhitungan Satuan Unit */}
-          <div className="p-3 rounded-xl border border-cyan-200 bg-cyan-50/60 flex items-start gap-2.5 text-xs text-cyan-950">
-            <AlertCircle className="w-4 h-4 text-cyan-700 shrink-0 mt-0.5" />
+          <div className="p-3 rounded-xl border border-border bg-surface-subtle flex items-start gap-2.5 text-xs">
             <div className="space-y-0.5">
-              <span className="font-bold block text-cyan-900 text-xs">Perhitungan Satuan Unit</span>
-              <p className="text-[11px] text-cyan-800 leading-relaxed">
+              <span className="font-bold block text-text-primary text-xs">Perhitungan Satuan Unit</span>
+              <p className="text-[11px] text-text-secondary leading-relaxed">
                 Kapasitas dihitung <strong>per Unit</strong>. Contoh: 100 kg bahan baku = 100 unit kapasitas penyimpanan.
               </p>
             </div>
