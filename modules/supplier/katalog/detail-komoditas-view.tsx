@@ -113,13 +113,8 @@ export function DetailKomoditasView({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Link
-<<<<<<< HEAD
             href={fromHome || !isOwner ? "/home" : "/katalog"}
-            className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1.5 mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
-=======
-            href={isOwner ? "/katalog" : "/home"}
             className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1.5 mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
->>>>>>> matthewpriantara/move-kitchen-inventory-to-produk
           >
             &larr; {fromHome || !isOwner ? "Kembali ke Bursa Pasokan" : "Kembali ke Katalog"}
           </Link>
