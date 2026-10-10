@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { SidebarLeftIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -29,7 +29,9 @@ export function Navbar({
   onCloseMobile,
 }: NavbarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
+  const isFromHome = searchParams?.get("from") === "home";
   const [isOpen, setIsOpen] = React.useState<boolean>(true);
   const [isSwitching, setIsSwitching] = React.useState(false);
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
@@ -90,7 +92,13 @@ export function Navbar({
 
   const isLinkActive = (item: NavItemDef) => {
     if (item.href === "/home") {
-      return pathname === "/home";
+      if (pathname === "/home") return true;
+      if (isFromHome && pathname.startsWith("/katalog/")) return true;
+      return false;
+    }
+    if (item.href === "/katalog") {
+      if (isFromHome) return false;
+      return pathname === item.href || pathname.startsWith(`${item.href}/`);
     }
     if (item.href === "/produk" && (pathname === "/menu" || pathname.startsWith("/menu/"))) {
       return true;
