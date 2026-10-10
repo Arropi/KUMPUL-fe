@@ -276,6 +276,16 @@ export async function updateSupplierCommodityAction(
   data?: BESupplierCommodity;
   message?: string;
 }> {
+  if (id.startsWith("mock-")) {
+    revalidatePath("/katalog");
+    revalidatePath("/home");
+    revalidatePath(`/katalog/${id}`);
+    return {
+      success: true,
+      message: "Data komoditas berhasil diperbarui (Mode Testing FE)",
+    };
+  }
+
   try {
     const res = await beFetch<BESupplierCommodity>(`/supplier-catalogs/${id}`, {
       method: "PUT",
@@ -298,8 +308,13 @@ export async function updateSupplierCommodityAction(
       }),
     });
 
-    revalidatePath("/katalog");
-    revalidatePath("/home");
+    try {
+      revalidatePath("/katalog");
+      revalidatePath("/home");
+      revalidatePath(`/katalog/${id}`);
+      revalidatePath(`/katalog/${id}/edit`);
+    } catch {}
+
     return {
       success: res.success,
       data: res.data,
@@ -320,13 +335,26 @@ export async function deleteSupplierCommodityAction(id: string): Promise<{
   success: boolean;
   message?: string;
 }> {
+  if (id.startsWith("mock-")) {
+    revalidatePath("/katalog");
+    revalidatePath("/home");
+    return {
+      success: true,
+      message: "Komoditas berhasil dihapus dari katalog (Mode Testing FE)",
+    };
+  }
+
   try {
     const res = await beFetch(`/supplier-catalogs/${id}`, {
       method: "DELETE",
     });
 
-    revalidatePath("/katalog");
-    revalidatePath("/home");
+    try {
+      revalidatePath("/katalog");
+      revalidatePath("/home");
+      revalidatePath(`/katalog/${id}`);
+    } catch {}
+
     return {
       success: res.success,
       message: res.message,

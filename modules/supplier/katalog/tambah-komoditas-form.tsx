@@ -211,7 +211,7 @@ export function TambahKomoditasForm({
         Number(bankInfoCheck.storage_value) > 0
       );
 
-      if (!phoneOk || !bankOk || !storageOk) {
+      if (!isEdit && (!phoneOk || !bankOk || !storageOk)) {
         const missingFields: string[] = [];
         if (!phoneOk) missingFields.push("Nomor Telepon/Kontak");
         if (!bankOk) missingFields.push("Informasi Rekening Bank");
