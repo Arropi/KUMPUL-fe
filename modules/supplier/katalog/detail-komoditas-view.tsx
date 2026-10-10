@@ -179,7 +179,7 @@ export function DetailKomoditasView({
                 <span>Hapus</span>
               </Button>
             </>
-          ) : commodity.isActive ? (
+          ) : role === "umkm" && commodity.isActive ? (
             <Button
               type="button"
               variant="primary"
@@ -190,6 +190,10 @@ export function DetailKomoditasView({
               <ShoppingCart className="w-4 h-4" />
               <span>Beli / Buat Pool</span>
             </Button>
+          ) : commodity.isActive ? (
+            <Badge variant="success" className="px-3 py-2 text-xs font-semibold">
+              Aktif di Bursa
+            </Badge>
           ) : (
             <Badge variant="neutral" className="px-3 py-2 text-xs font-semibold">
               Belum Dibuka di Bursa
@@ -214,7 +218,7 @@ export function DetailKomoditasView({
 
       {/* Grid Banner Foto & Informasi Inti */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Kolom Kiri: Foto Komoditas & Asal Panen */}
+        {/* Kolom Kiri: Foto Komoditas & Asal Panen, serta Kamar Pool Berjalan */}
         <div className="space-y-5">
           <Card className="flex flex-col rounded-2xl border-border bg-surface p-3.5 sm:p-4 shadow-elevation-1">
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-neutral-100 border border-border/40">
@@ -242,43 +246,49 @@ export function DetailKomoditasView({
             </div>
           </Card>
 
-          {/* Jika Pembeli (UMKM/Supplier Lain): Tampilkan Daftar Card Pool Berjalan */}
-          {isBuyer && (
-            <div ref={purchaseSectionRef}>
-              {commodity.isActive ? (
-                <CommodityRunningPools
-                  commodity={commodity}
-                  initialPools={pools}
-                  userProfile={userProfile}
-                  isBuyer={isBuyer}
-                  currentRoleId={currentRoleId}
-                  onRequestCreatePool={() => setIsCreatePoolOpen(true)}
-                />
-              ) : (
-                <Card className="p-5 bg-surface border-border shadow-elevation-1 rounded-3xl space-y-3">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                    <h3 className="font-heading font-bold text-sm text-text-primary">
-                      Belum Tersedia di Bursa Pasokan
-                    </h3>
-                  </div>
-                  <p className="text-xs text-text-secondary leading-relaxed">
-                    Komoditas ini masih berstatus nonaktif (draft) oleh pemasok dan belum dibuka untuk pemesanan umum.
-                  </p>
-                  <Link href="/home" className="block pt-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-xs font-semibold cursor-pointer"
-                    >
-                      &larr; Lihat Pasokan Aktif di Bursa
-                    </Button>
-                  </Link>
-                </Card>
-              )}
-            </div>
-          )}
+          {/* Daftar Card Pool Berjalan (Sama seperti sisi UMKM: berada di bagian kiri) */}
+          <div ref={purchaseSectionRef}>
+            {commodity.isActive ? (
+              <CommodityRunningPools
+                commodity={commodity}
+                initialPools={pools}
+                userProfile={userProfile}
+                isBuyer={role === "umkm" && !isOwner}
+                currentRoleId={currentRoleId}
+                onRequestCreatePool={() => setIsCreatePoolOpen(true)}
+              />
+            ) : isOwner ? (
+              <CommodityRunningPools
+                commodity={commodity}
+                initialPools={pools}
+                userProfile={userProfile}
+                isBuyer={false}
+                currentRoleId={currentRoleId}
+              />
+            ) : (
+              <Card className="p-5 bg-surface border-border shadow-elevation-1 rounded-3xl space-y-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <h3 className="font-heading font-bold text-sm text-text-primary">
+                    Belum Tersedia di Bursa Pasokan
+                  </h3>
+                </div>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  Komoditas ini masih berstatus nonaktif (draft) oleh pemasok dan belum dibuka untuk pemesanan umum.
+                </p>
+                <Link href="/home" className="block pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs font-semibold cursor-pointer"
+                  >
+                    &larr; Lihat Pasokan Aktif di Bursa
+                  </Button>
+                </Link>
+              </Card>
+            )}
+          </div>
         </div>
 
         {/* Kolom Kanan: Rincian Harga & Spesifikasi Pasokan */}
@@ -458,15 +468,6 @@ export function DetailKomoditasView({
               </div>
             </Card>
           )}
-          {/* Untuk Pemilik (Supplier): Tampilkan Pantauan Kamar Pool Komoditas */}
-          {isOwner && (
-            <CommodityRunningPools
-              commodity={commodity}
-              initialPools={pools}
-              userProfile={userProfile}
-              isBuyer={false}
-            />
-          )}
         </div>
       </div>
 
@@ -504,24 +505,24 @@ export function DetailKomoditasView({
                 Apakah Anda yakin ingin menghapus komoditas <strong>{commodity.name}</strong> ({commodity.sku}) dari katalog pasokan Anda? Tindakan ini tidak dapat dibatalkan.
               </p>
             </div>
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/70">
               <Button
                 type="button"
                 variant="outline"
-                size="md"
+                size="sm"
                 disabled={isDeleting}
                 onClick={() => setIsDeleteDialogOpen(false)}
-                className="w-full text-xs font-semibold cursor-pointer"
+                className="px-4 text-xs font-semibold cursor-pointer h-9"
               >
                 Batal
               </Button>
               <Button
                 type="button"
                 variant="destructive"
-                size="md"
+                size="sm"
                 isLoading={isDeleting}
                 onClick={handleDeleteCommodity}
-                className="w-full text-xs font-semibold cursor-pointer bg-red-600 hover:bg-red-700 text-white"
+                className="px-4 text-xs font-semibold cursor-pointer bg-red-600 hover:bg-red-700 text-white h-9"
               >
                 {isDeleting ? "Menghapus..." : "Ya, Hapus Komoditas"}
               </Button>

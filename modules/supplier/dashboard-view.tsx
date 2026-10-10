@@ -133,7 +133,7 @@ export function SupplierDashboardView() {
           </Button>
 
           <Button asChild variant="primary" size="sm" className="rounded-xl font-bold gap-1.5 text-xs">
-            <Link href="/supplier/katalog/tambah">
+            <Link href="/katalog/tambah">
               <Plus className="size-3.5" />
               <span>Tambah Komoditas</span>
             </Link>
@@ -164,7 +164,7 @@ export function SupplierDashboardView() {
           </div>
 
           <Button asChild variant="accent" size="sm" className="font-bold shrink-0 self-start sm:self-auto min-h-[40px] rounded-xl text-xs">
-            <Link href="/supplier/profil?onboarding=pending">
+            <Link href="/profil?onboarding=pending">
               <span>Lengkapi Profil Sekarang &rarr;</span>
             </Link>
           </Button>
@@ -284,7 +284,7 @@ export function SupplierDashboardView() {
             </div>
           </div>
           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-bold gap-1 self-start sm:self-auto">
-            <Link href="/supplier/katalog">
+            <Link href="/katalog">
               <span>Buka Seluruh Katalog</span>
               <ArrowRight className="size-3.5" />
             </Link>
@@ -443,7 +443,7 @@ export function SupplierDashboardView() {
             </div>
             <CardAction>
               <Link
-                href="/supplier/pesanan"
+                href="/pesanan"
                 className="text-xs font-bold text-primary hover:underline"
               >
                 Lihat Semua &rarr;
@@ -501,7 +501,7 @@ export function SupplierDashboardView() {
                         <TableCell>{getOrderStatusBadge(po.po_status as POStatus)}</TableCell>
                         <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-semibold">
-                            <Link href={`/supplier/pesanan/${po.id}`}>
+                            <Link href={`/pesanan/${po.id}`}>
                               Detail
                             </Link>
                           </Button>
@@ -525,7 +525,7 @@ export function SupplierDashboardView() {
             </div>
             <CardAction>
               <Link
-                href="/supplier/katalog"
+                href="/katalog"
                 className="text-xs font-bold text-primary hover:underline"
               >
                 Kelola &rarr;
@@ -572,7 +572,7 @@ export function SupplierDashboardView() {
 
           <div className="p-5 pt-0">
             <Button asChild variant="secondary" size="default" className="w-full font-bold text-xs min-h-[40px] rounded-xl">
-              <Link href="/supplier/katalog/tambah">
+              <Link href="/katalog/tambah">
                 <span>+ Tambah Komoditas Baru</span>
               </Link>
             </Button>
