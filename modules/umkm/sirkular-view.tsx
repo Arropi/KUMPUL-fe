@@ -6,7 +6,12 @@ import {
   type WasteListing,
   type WasteBuyerOrder,
 } from "@/constants/umkm";
-import { getWasteListingsAction, createWasteListingAction } from "@/actions/waste";
+import {
+  getWasteListingsAction,
+  createWasteListingAction,
+  updateWasteListingAction,
+  deleteWasteListingAction,
+} from "@/actions/waste";
 import type { BEWasteListing, BEWasteCategory, BEProduct } from "@/lib/api/types";
 import { getUmkmProductsAction } from "@/actions/products";
 import { BankSampahMapSection } from "@/modules/umkm/bank-sampah-map-section";
@@ -28,6 +33,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Dialog3 } from "@/components/ui/dialog-3";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -45,6 +51,8 @@ import {
   Wallet,
   ArrowRight,
   ExternalLink,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { formatCurrency, formatNumber, formatDate } from "@/lib/utils";
@@ -329,6 +337,22 @@ export function UmkmSirkularView() {
   const [newImageUrl, setNewImageUrl] = React.useState<string>("");
   const [newDescription, setNewDescription] = React.useState<string>("");
 
+  // State Modal Edit Listing
+  const [editingListing, setEditingListing] = React.useState<WasteListing | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [editTitle, setEditTitle] = React.useState("");
+  const [editCategory, setEditCategory] = React.useState<BEWasteCategory>("ORGANIK_BASAH");
+  const [editVolume, setEditVolume] = React.useState<number>(50);
+  const [editUnit, setEditUnit] = React.useState<string>("Kg");
+  const [editPricePerUnit, setEditPricePerUnit] = React.useState<number>(1500);
+  const [editExpiryDate, setEditExpiryDate] = React.useState<string>("");
+  const [editDescription, setEditDescription] = React.useState<string>("");
+  const [isUpdating, setIsUpdating] = React.useState(false);
+
+  // State Dialog Konfirmasi Hapus Listing
+  const [deletingListing, setDeletingListing] = React.useState<WasteListing | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
   // AI 1-Click Price Recommendation State
   const [aiPriceInsight, setAiPriceInsight] = React.useState<{
     suggestedPrice: number;
@@ -562,6 +586,81 @@ export function UmkmSirkularView() {
     }
   };
 
+  // Buka modal edit listing dengan data terpilih
+  const handleOpenEdit = (item: WasteListing) => {
+    setEditingListing(item);
+    setEditTitle(item.title);
+    setEditCategory((item.category as BEWasteCategory) || "ORGANIK_BASAH");
+    setEditVolume(item.volumeKg);
+    setEditUnit(item.unit || "Kg");
+    setEditPricePerUnit(item.pricePerKg);
+    setEditExpiryDate(item.expiryDate || new Date().toISOString().split("T")[0]);
+    setEditDescription(item.description || "");
+    setIsEditModalOpen(true);
+  };
+
+  // Simpan perubahan edit listing ke backend
+  const handleUpdateListing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingListing || !editTitle.trim()) return;
+
+    setIsUpdating(true);
+    try {
+      const res = await updateWasteListingAction(editingListing.id, {
+        title: editTitle.trim(),
+        category: editCategory,
+        availableWeight: editVolume,
+        pricePerKg: editPricePerUnit,
+        expiredAt: editExpiryDate,
+        notes: editDescription.trim() || undefined,
+      });
+
+      if (res.success && res.data) {
+        const updatedUI = mapBEWasteToUI(res.data);
+        setWasteListings((prev) =>
+          prev.map((item) => (item.id === editingListing.id ? updatedUI : item))
+        );
+        setIsEditModalOpen(false);
+        setEditingListing(null);
+        toast.success("Perubahan listing limbah berhasil disimpan!", "Listing Diperbarui");
+      } else {
+        toast.error(res.message || "Gagal memperbarui listing limbah.");
+      }
+    } catch {
+      toast.error("Terjadi kendala saat menghubungi server.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Buka dialog konfirmasi hapus listing
+  const handleOpenDelete = (item: WasteListing) => {
+    setDeletingListing(item);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Eksekusi hapus listing di backend
+  const handleConfirmDelete = async () => {
+    if (!deletingListing) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await deleteWasteListingAction(deletingListing.id);
+      if (res.success) {
+        setWasteListings((prev) => prev.filter((item) => item.id !== deletingListing.id));
+        setIsDeleteDialogOpen(false);
+        setDeletingListing(null);
+        toast.success("Listing limbah berhasil dihapus dari bursa!", "Listing Dihapus");
+      } else {
+        toast.error(res.message || "Gagal menghapus listing limbah.");
+      }
+    } catch {
+      toast.error("Terjadi kendala saat menghapus listing.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Filter listings
   const filteredListings = wasteListings.filter((item) => {
     if (activeFilter === "ADA_PEMBELI") {
@@ -746,7 +845,7 @@ export function UmkmSirkularView() {
                     <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/25 to-black/55 pointer-events-none" />
 
                     {/* Status Badges on Image Frame (Rata Kiri, Vertikal Bertumpuk) */}
-                    <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1.5 pointer-events-none z-10 max-w-[85%]">
+                    <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1.5 pointer-events-none z-10 max-w-[65%]">
                       {isPastDue ? (
                         <>
                           <Badge
@@ -793,6 +892,34 @@ export function UmkmSirkularView() {
                           )}
                         </>
                       )}
+                    </div>
+
+                    {/* Top Right Quick Actions: Edit & Delete */}
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-20">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEdit(item);
+                        }}
+                        className="size-8 rounded-xl flex items-center justify-center bg-surface/90 backdrop-blur-xs text-text-secondary border border-border/80 hover:bg-surface hover:text-text-primary hover:border-primary/40 transition-all shadow-xs cursor-pointer"
+                        title="Edit Listing Limbah"
+                        aria-label={`Edit ${item.title}`}
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDelete(item);
+                        }}
+                        className="size-8 rounded-xl flex items-center justify-center bg-surface/90 backdrop-blur-xs text-red-600 border border-red-200/80 hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-all shadow-xs cursor-pointer"
+                        title="Hapus Listing Limbah"
+                        aria-label={`Hapus ${item.title}`}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
                     </div>
                   </div>
 
@@ -940,7 +1067,27 @@ export function UmkmSirkularView() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleOpenEdit(item)}
+                          className="font-bold text-xs gap-1 rounded-xl cursor-pointer h-8 px-2.5"
+                          title="Edit Listing Limbah"
+                        >
+                          <Pencil className="size-3.5" />
+                          <span>Edit</span>
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDelete(item)}
+                          className="size-8 rounded-xl flex items-center justify-center text-red-600 bg-red-50 border border-red-200/90 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-all shadow-xs cursor-pointer shrink-0"
+                          title="Hapus Listing Limbah"
+                          aria-label={`Hapus listing ${item.title}`}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
                         {getOrders(item).length > 0 ? (
                           <Button
                             asChild
@@ -1316,6 +1463,231 @@ export function UmkmSirkularView() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* 6. Modal Edit Listing Limbah Baru (Standardized Dropdowns & Tactile Controls) */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-lg w-full !p-0 !overflow-hidden flex flex-col max-h-[90vh] rounded-3xl bg-surface border border-border shadow-2xl">
+          <div className="px-6 py-4.5 pr-16 border-b border-border/80 bg-surface shrink-0">
+            <DialogTitle className="font-heading text-base sm:text-lg font-bold text-text-primary leading-tight">
+              Edit Listing Residu Limbah
+            </DialogTitle>
+            <DialogDescription className="text-xs text-text-secondary mt-0.5 truncate sm:text-wrap">
+              Perbarui informasi ketersediaan stok, harga, atau masa simpan residu dapur
+            </DialogDescription>
+          </div>
+
+          <form onSubmit={handleUpdateListing} className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 !overflow-y-auto px-5 sm:px-6 py-5 space-y-4.5 custom-scrollbar min-h-0">
+              {/* NAMA LISTING */}
+              <div className="space-y-1.5">
+                <label className="font-heading text-xs font-bold text-text-primary flex items-center justify-between">
+                  <span>Nama Listing Limbah</span>
+                  <span className="text-[10px] text-text-muted font-normal">Wajib diisi</span>
+                </label>
+                <Input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="Contoh: Minyak Jelantah Penggorengan Bebek"
+                  className="w-full h-10 text-xs rounded-xl"
+                />
+              </div>
+
+              {/* KATEGORI LIMBAH */}
+              <div className="space-y-1.5">
+                <label className="font-heading text-xs font-bold text-text-primary">
+                  Kategori Limbah *
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center justify-between gap-2 h-10 w-full px-3.5 rounded-xl border border-border bg-surface text-xs font-medium text-text-primary shadow-xs outline-none cursor-pointer hover:border-primary/40 hover:bg-surface-subtle focus:ring-2 focus:ring-primary/20 transition-all text-left"
+                    >
+                      <span className="truncate">
+                        {WASTE_CATEGORY_OPTIONS.find((c) => c.value === editCategory)?.label || editCategory}
+                      </span>
+                      <ChevronDown className="size-3.5 text-text-muted shrink-0 ml-1" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    className="w-[calc(100vw-3rem)] sm:w-64 max-h-64 overflow-y-auto p-1 rounded-xl shadow-elevation-2 bg-surface border border-border custom-scrollbar z-50"
+                  >
+                    <DropdownMenuRadioGroup
+                      value={editCategory}
+                      onValueChange={(val) => setEditCategory(val as BEWasteCategory)}
+                    >
+                      {WASTE_CATEGORY_OPTIONS.map((cat) => (
+                        <DropdownMenuRadioItem
+                          key={cat.value}
+                          value={cat.value}
+                          className="py-2 px-2.5 rounded-lg cursor-pointer hover:bg-surface-subtle text-xs font-medium text-text-primary"
+                        >
+                          {cat.label}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* VOLUME & SATUAN */}
+              <div className="space-y-1.5">
+                <label className="font-heading text-xs font-bold text-text-primary flex items-center justify-between">
+                  <span>Jumlah Volume &amp; Satuan</span>
+                  <span className="text-[10px] text-text-muted font-normal">Stok tersedia</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    required
+                    value={editVolume}
+                    onChange={(e) => setEditVolume(Number(e.target.value))}
+                    placeholder="Jumlah volume"
+                    className="flex-1 h-10 text-xs tabular-nums rounded-xl"
+                  />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center justify-between gap-2 h-10 min-w-[120px] px-3 rounded-xl border border-border bg-surface text-xs font-bold text-text-primary shadow-xs outline-none cursor-pointer hover:border-primary/40 hover:bg-surface-subtle focus:ring-2 focus:ring-primary/20 transition-all"
+                      >
+                        <span className="truncate">{editUnit}</span>
+                        <ChevronDown className="size-3.5 text-text-muted shrink-0" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="max-h-60 overflow-y-auto min-w-[140px] p-1.5 rounded-xl shadow-elevation-2 bg-surface border border-border custom-scrollbar"
+                    >
+                      <div className="px-2 py-1 text-[10px] font-bold text-text-muted uppercase tracking-wider border-b border-border/60 mb-1 select-none">
+                        Pilih Satuan
+                      </div>
+                      <DropdownMenuRadioGroup
+                        value={editUnit}
+                        onValueChange={(val) => setEditUnit(val)}
+                      >
+                        {WASTE_UNITS.map((unit) => (
+                          <DropdownMenuRadioItem
+                            key={unit}
+                            value={unit}
+                            className="py-1.5 px-2.5 text-xs font-semibold rounded-lg cursor-pointer hover:bg-surface-subtle"
+                          >
+                            <span>{unit}</span>
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              {/* TANGGAL KADALUWARSA */}
+              <div className="space-y-1.5">
+                <label className="font-heading text-xs font-bold text-text-primary flex items-center justify-between">
+                  <span>Tanggal Kadaluwarsa</span>
+                  <span className="text-[10px] text-text-muted font-normal">Batas aman penjemputan</span>
+                </label>
+                <Input
+                  type="date"
+                  required
+                  value={editExpiryDate}
+                  onChange={(e) => setEditExpiryDate(e.target.value)}
+                  className="w-full h-10 text-xs rounded-xl"
+                />
+              </div>
+
+              {/* DESKRIPSI & KONDISI LIMBAH */}
+              <div className="space-y-1.5">
+                <label className="font-heading text-xs font-bold text-text-primary flex items-center justify-between">
+                  <span>Deskripsi &amp; Kondisi Limbah (Opsional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Keterangan kondisi limbah, wadah simpan, dll."
+                  className="w-full rounded-xl border border-border bg-surface p-3 text-xs text-text-primary placeholder:text-text-muted outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none leading-relaxed"
+                />
+              </div>
+
+              {/* HARGA PER SATUAN */}
+              <div className="space-y-1.5">
+                <label className="font-heading text-xs font-bold text-text-primary block">
+                  Harga per {editUnit} (Rp)
+                </label>
+                <Input
+                  type="number"
+                  min="100"
+                  step="100"
+                  required
+                  value={editPricePerUnit}
+                  onChange={(e) => setEditPricePerUnit(Number(e.target.value))}
+                  placeholder="Harga per satuan"
+                  className="w-full h-10 text-xs tabular-nums rounded-xl bg-surface"
+                />
+              </div>
+
+              {/* ESTIMASI POTENSI NILAI CUAN */}
+              <div className="p-3 rounded-xl bg-surface-subtle border border-border/80 text-xs flex justify-between items-center">
+                <div className="flex flex-col">
+                  <span className="font-sans text-text-secondary text-[11px] font-medium">Estimasi Potensi Nilai:</span>
+                  <span className="text-[10px] text-text-muted">{editVolume} {editUnit} &times; {formatCurrency(editPricePerUnit)}</span>
+                </div>
+                <strong className="text-circular-waste text-base font-bold tabular-nums font-heading">
+                  {formatCurrency(editVolume * editPricePerUnit)}
+                </strong>
+              </div>
+            </div>
+
+            {/* FIXED FOOTER */}
+            <div className="px-6 py-3.5 border-t border-border/80 bg-surface-subtle/40 shrink-0 flex items-center gap-2.5">
+              <Button
+                type="button"
+                variant="secondary"
+                size="default"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingListing(null);
+                }}
+                disabled={isUpdating}
+                className="flex-1 min-h-[42px] cursor-pointer"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="default"
+                disabled={isUpdating}
+                isLoading={isUpdating}
+                className="flex-1 font-bold min-h-[42px] cursor-pointer shadow-xs"
+              >
+                {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 7. Dialog Konfirmasi Hapus Listing (Dialog3 dari Watermelon UI) */}
+      <Dialog3
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) setDeletingListing(null);
+        }}
+        title={`Hapus Listing "${deletingListing?.title}"?`}
+        description="Listing residu limbah ini akan dihapus permanen dari bursa dan tidak dapat lagi dibeli oleh offtaker mitra."
+        checkboxLabel="Saya paham bahwa listing ini akan dihapus permanen"
+        confirmLabel="Hapus Listing"
+        cancelLabel="Batal"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
 
 
     </div>
