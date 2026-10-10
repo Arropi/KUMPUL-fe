@@ -76,6 +76,8 @@ export interface BESupplierCommodity {
   wholesale_unit: BEWholesaleUnit;
   base_price: string | number;
   stock: string | number;
+  available_stock?: string | number;
+  reserved_stock?: string | number;
   base_moq: string | number;
   lead_time_days: number;
   image_url: string | null;
