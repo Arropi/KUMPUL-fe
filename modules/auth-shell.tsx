@@ -28,12 +28,14 @@ export function AuthShell({ children, role, session }: AuthShellProps) {
   return (
     <div className="h-screen overflow-hidden bg-background text-text-primary flex flex-col md:flex-row font-sans selection:bg-primary-light selection:text-primary">
       {/* Unified Sidebar Navigation */}
-      <Navbar
-        role={role}
-        session={session}
-        isMobileOpen={isMobileNavOpen}
-        onCloseMobile={() => setIsMobileNavOpen(false)}
-      />
+      <React.Suspense fallback={<aside className="hidden md:flex w-[260px] h-full shrink-0 border-r border-border bg-surface" />}>
+        <Navbar
+          role={role}
+          session={session}
+          isMobileOpen={isMobileNavOpen}
+          onCloseMobile={() => setIsMobileNavOpen(false)}
+        />
+      </React.Suspense>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">

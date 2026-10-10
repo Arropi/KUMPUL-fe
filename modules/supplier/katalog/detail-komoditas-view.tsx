@@ -28,6 +28,7 @@ interface DetailKomoditasViewProps {
   role?: "umkm" | "supplier";
   isOwner?: boolean;
   currentRoleId?: string;
+  fromHome?: boolean;
 }
 
 export function DetailKomoditasView({
@@ -37,6 +38,7 @@ export function DetailKomoditasView({
   role = "umkm",
   isOwner = false,
   currentRoleId,
+  fromHome = false,
 }: DetailKomoditasViewProps) {
   const router = useRouter();
   const [commodity, setCommodity] =
@@ -105,10 +107,10 @@ export function DetailKomoditasView({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Link
-            href={isOwner ? "/katalog" : "/home"}
+            href={fromHome || !isOwner ? "/home" : "/katalog"}
             className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1.5 mb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
           >
-            &larr; {isOwner ? "Kembali ke Katalog" : "Kembali ke Bursa Pasokan"}
+            &larr; {fromHome || !isOwner ? "Kembali ke Bursa Pasokan" : "Kembali ke Katalog"}
           </Link>
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="font-mono text-xs font-bold text-text-secondary bg-neutral-100 px-2.5 py-0.5 rounded-md border border-neutral-200">
@@ -195,6 +197,20 @@ export function DetailKomoditasView({
           )}
         </div>
       </div>
+
+      {isOwner && fromHome && (
+        <div className="rounded-xl border border-primary/20 bg-primary-light/40 p-4 text-xs text-text-primary flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-primary shrink-0" />
+            <span>
+              Komoditas ini adalah pasokan yang terdaftar atas nama entitas usaha Anda di bursa. Untuk mengelola atau mengubah data komoditas ini, Anda dapat mengakses menu Katalog Saya.
+            </span>
+          </div>
+          <Link href="/katalog" className="font-semibold text-primary underline shrink-0 hover:text-primary-dark">
+            Buka Katalog Saya &rarr;
+          </Link>
+        </div>
+      )}
 
       {/* Grid Banner Foto & Informasi Inti */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -552,7 +552,7 @@ export function UmkmPesananView() {
   // Handlers
   const handleOpenDetail = (order: UMKMPurchaseHistory) => {
     setSelectedOrder(order);
-    setPickupPinInput("");
+    setPickupPinInput(order.pickupCode || order.hubPickupCode || "");
     setDetailModalOpen(true);
   };
 
@@ -573,14 +573,15 @@ export function UmkmPesananView() {
 
   const handleConfirmPickup = async () => {
     if (!selectedOrder) return;
-    if (!pickupPinInput.trim()) {
+    const pinToUse = pickupPinInput.trim() || selectedOrder.pickupCode || selectedOrder.hubPickupCode || "";
+    if (!pinToUse) {
       toast.error("Silakan masukkan kode serah-terima fisik", "Validasi");
       return;
     }
 
     setIsConfirmingPickup(true);
     try {
-      const res = await confirmOrderPickupAction(selectedOrder.id, pickupPinInput.trim());
+      const res = await confirmOrderPickupAction(selectedOrder.id, pinToUse);
       if (res.success) {
         toast.success(
           `Pengambilan ${selectedOrder.commodityName} terkonfirmasi selesai!`,
@@ -740,16 +741,7 @@ export function UmkmPesananView() {
               <h2 className="font-heading font-bold text-base sm:text-lg text-text-primary">
                 Daftar Pesanan Bahan Baku Masuk
               </h2>
-              <p className="font-sans text-xs text-text-secondary mt-0.5 text-pretty">
-                Transisi otomatis 6 status: Pending &rarr; Menunggu Bayar &rarr; Diproses &rarr; Siap Diambil &rarr; Selesai.
-              </p>
             </div>
-            <Link href="/katalog" className="shrink-0">
-              <Button variant="primary" size="default" className="font-bold min-h-[40px] gap-1.5 shadow-xs">
-                <Plus className="size-4" />
-                <span>+ Pesan Bahan Baku</span>
-              </Button>
-            </Link>
           </div>
 
           {/* Sub-filter Pills */}
@@ -1209,16 +1201,48 @@ export function UmkmPesananView() {
               {(selectedOrder.status === "READY_FOR_PICKUP" ||
                 selectedOrder.status === "TIBA_DI_HUB") && (
                 <div className="space-y-4">
+                  {/* Info Logistik dari Supplier bila ada */}
+                  {(selectedOrder.driverName || selectedOrder.trackingNumber) && (
+                    <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 text-xs space-y-1.5">
+                      <div className="flex items-center gap-1.5 font-bold text-blue-950">
+                        <Truck className="size-4 text-primary shrink-0" />
+                        <span>Informasi Logistik Pengiriman:</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[11px] text-blue-900 pt-0.5">
+                        {selectedOrder.driverName && (
+                          <div>
+                            <span className="text-text-muted">Kurir / Armada:</span>
+                            <p className="font-semibold text-text-primary truncate">{selectedOrder.driverName}</p>
+                          </div>
+                        )}
+                        {selectedOrder.trackingNumber && (
+                          <div>
+                            <span className="text-text-muted">No. Resi / Plat:</span>
+                            <p className="font-mono font-bold text-primary truncate">{selectedOrder.trackingNumber}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Kode Verifikasi / PIN Box */}
-                  <div className="p-5 rounded-2xl bg-surface-subtle border-2 border-dashed border-primary/50 text-center space-y-2">
+                  <div
+                    onClick={() => {
+                      const autoCode = selectedOrder.pickupCode || selectedOrder.hubPickupCode || "KMPL-889";
+                      setPickupPinInput(autoCode);
+                      toast.info("Kode PIN berhasil disalin ke kolom konfirmasi", "PIN Siap Digunakan");
+                    }}
+                    className="p-5 rounded-2xl bg-surface-subtle border-2 border-dashed border-primary/50 text-center space-y-2 cursor-pointer hover:bg-primary/5 transition-colors group"
+                    title="Klik untuk menyalin/mengisi otomatis ke formulir konfirmasi"
+                  >
                     <span className="text-xs font-semibold text-text-muted">
                       Kode Verifikasi Serah-Terima Fisik Barang:
                     </span>
-                    <p className="font-mono text-3xl font-black text-primary tracking-widest tabular-nums">
+                    <p className="font-mono text-3xl font-black text-primary tracking-widest tabular-nums group-hover:scale-105 transition-transform">
                       {selectedOrder.pickupCode || selectedOrder.hubPickupCode || "KMPL-889"}
                     </p>
                     <p className="text-[11px] text-text-muted">
-                      Tunjukkan kode ini kepada Host Hub saat mengambil muatan.
+                      Tunjukkan kode ini kepada Host Hub / Kurir, atau klik kotak ini untuk mengisi otomatis.
                     </p>
                   </div>
 
@@ -1243,9 +1267,21 @@ export function UmkmPesananView() {
 
                   {/* Form Konfirmasi Serah-Terima */}
                   <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 space-y-2.5">
-                    <label className="text-xs font-bold text-emerald-950 block">
-                      Konfirmasi Terima Barang (Input Kode PIN):
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-emerald-950 block">
+                        Konfirmasi Terima Barang (Input Kode PIN):
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const autoCode = selectedOrder.pickupCode || selectedOrder.hubPickupCode || "KMPL-889";
+                          setPickupPinInput(autoCode);
+                        }}
+                        className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                      >
+                        Gunakan Kode Saya
+                      </button>
+                    </div>
                     <div className="flex gap-2">
                       <Input
                         type="text"

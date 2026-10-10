@@ -102,6 +102,7 @@ export interface BESupplierCommodity {
   active_pools?: any[];
   supplier?: {
     role_id?: string;
+    entity_id?: string;
     legal_name?: string;
     default_address?: string;
     latitude?: number;

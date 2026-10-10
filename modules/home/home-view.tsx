@@ -26,6 +26,7 @@ import { getAllMarketplaceCatalogsAction } from "@/actions/supplier-catalog";
 import { mapBEToSupplierCommodity } from "@/modules/supplier/helpers";
 import { HomeRecommendationSection } from "./home-recommendation-section";
 import { CreatePoolDialog } from "@/modules/supplier/katalog/create-pool-dialog";
+import { BuyWasteDialog } from "./buy-waste-dialog";
 import { beFetch } from "@/lib/api/be-client";
 import type { BEBusinessEntity } from "@/lib/api/types";
 import type { MatchedCommodity, RawRecommendationsData } from "./home-recommendation-section";
@@ -62,6 +63,7 @@ export function HomeView({
   const searchParams = useSearchParams();
   const [commodities, setCommodities] = React.useState<SupplierCommodity[]>(catalog);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedSource, setSelectedSource] = React.useState<"ALL" | "SUPPLIER" | "WASTE">("ALL");
   const [selectedSector, setSelectedSector] = React.useState<string>("ALL");
   const [onlyReadyStock, setOnlyReadyStock] = React.useState<boolean>(false);
   const [onlyOpenPools, setOnlyOpenPools] = React.useState<boolean>(false);
@@ -105,7 +107,37 @@ export function HomeView({
   const selectedSectorLabel =
     SECTOR_OPTIONS.find((s) => s.value === selectedSector)?.label || "Semua Sektor";
 
+  const isOwnCommodity = React.useCallback(
+    (item: SupplierCommodity) => {
+      const profileName = userProfile?.legal_name?.toLowerCase().trim();
+      const sessionName = initialSession?.name?.toLowerCase().trim();
+      const seller = item.sellerName?.toLowerCase().trim();
+
+      if (seller && (seller === profileName || seller === sessionName)) {
+        return true;
+      }
+
+      if (item.supplierEntityId) {
+        if (userProfile?.id && item.supplierEntityId === userProfile.id) {
+          return true;
+        }
+        if (initialSession?.entityId && item.supplierEntityId === initialSession.entityId) {
+          return true;
+        }
+      }
+
+      if (item.supplierRoleId && initialSession?.roleId && item.supplierRoleId === initialSession.roleId) {
+        return true;
+      }
+
+      return false;
+    },
+    [userProfile, initialSession]
+  );
+
   const filteredCommodities = commodities.filter((item) => {
+    if (isOwnCommodity(item)) return false;
+
     const matchSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -121,14 +153,17 @@ export function HomeView({
       Boolean(item.hasOpenPools || (item.activePools && item.activePools.length > 0));
     const matchVerified =
       !onlyVerified || item.batchTag.hygieneStatus === "TERVERIFIKASI";
+    const matchSource =
+      selectedSource === "ALL" ||
+      (selectedSource === "WASTE" ? item.sourceType === "WASTE" : item.sourceType !== "WASTE");
 
-    return matchSearch && matchSector && matchReadyStock && matchPool && matchVerified;
+    return matchSearch && matchSector && matchReadyStock && matchPool && matchVerified && matchSource;
   });
 
   // Reset halaman saat filter berubah
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedSector, onlyReadyStock, onlyOpenPools, onlyVerified]);
+  }, [searchQuery, selectedSector, onlyReadyStock, onlyOpenPools, onlyVerified, selectedSource]);
 
   const totalPages = Math.max(1, Math.ceil(filteredCommodities.length / pageSize));
   const paginatedCommodities = React.useMemo(() => {
@@ -136,21 +171,11 @@ export function HomeView({
     return filteredCommodities.slice(start, start + pageSize);
   }, [filteredCommodities, currentPage, pageSize]);
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-2 pb-10">
       {/* 1. Header Marketplace */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/60">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="p-1 rounded-lg bg-primary-light text-primary">
-              <Sparkles className="w-4 h-4" />
-            </span>
-            <span className="text-xs font-bold text-primary font-heading uppercase tracking-wider">
-              {isSupplier ? "Portal Pemasok & Bursa Pasokan" : "Bursa Pengadaan Bahan Baku UMKM"}
-            </span>
-          </div>
-          <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary">
-            {isSupplier ? "Bursa Pasokan Komoditas Pangan" : "Marketplace Pasokan Bahan Baku"}
-          </h1>
+          <h1 className="font-heading font-bold text-xl sm:text-2xl text-text-primary">Marketplace Pasokan Bahan Baku</h1>
           <p className="font-body text-xs sm:text-sm text-text-secondary mt-1">
             {isSupplier
               ? "Katalog pasokan komoditas bersertifikasi mutu dan fasilitas pooling untuk distribusi agregasi UMKM."
@@ -160,12 +185,8 @@ export function HomeView({
 
         <div className="flex items-center gap-2.5">
           {isSupplier ? (
-            <Link href="/katalog/tambah" className="shrink-0">
-              <Button variant="primary" size="md" className="font-semibold min-h-[42px] cursor-pointer">
-                <Plus className="w-4 h-4 mr-1.5" />
-                <span>+ Tambah Pasokan Komoditas</span>
-              </Button>
-            </Link>
+            <>
+            </>
           ) : (
             <Link href="/produk" className="shrink-0">
               <Button variant="secondary" size="md" className="font-semibold min-h-[42px] cursor-pointer">
@@ -180,10 +201,12 @@ export function HomeView({
       {/* 2. Section Rekomendasi Khusus */}
       <HomeRecommendationSection
         role={role}
+        initialSession={initialSession}
         commodities={commodities}
         recommendations={recommendations}
         rawRecommendations={rawRecommendations}
         recsError={recsError}
+        userProfile={userProfile}
         onPurchase={isUmkm ? setPurchasingCommodity : undefined}
       />
 
@@ -250,6 +273,42 @@ export function HomeView({
 
           {/* Filter Pills Tambahan */}
           <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
+            <span className="text-xs font-semibold text-text-muted mr-1">Sumber:</span>
+            <button
+              type="button"
+              onClick={() => setSelectedSource("ALL")}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                selectedSource === "ALL"
+                  ? "bg-text-primary text-white border-text-primary shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+              }`}
+            >
+              Semua Sumber
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedSource("SUPPLIER")}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                selectedSource === "SUPPLIER"
+                  ? "bg-primary-dark text-white border-primary-dark shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+              }`}
+            >
+              Komoditas Pemasok
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedSource("WASTE")}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                selectedSource === "WASTE"
+                  ? "bg-emerald-800 text-white border-emerald-800 shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+              }`}
+            >
+              Limbah Sirkular
+            </button>
+
+            <span className="text-xs font-semibold text-text-muted mx-1 hidden sm:inline">&bull;</span>
             <span className="text-xs font-semibold text-text-muted mr-1">Filter Cepat:</span>
             <button
               type="button"
@@ -262,17 +321,19 @@ export function HomeView({
             >
               Ready Stock
             </button>
-            <button
-              type="button"
-              onClick={() => setOnlyOpenPools(!onlyOpenPools)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                onlyOpenPools
-                  ? "bg-amber-600 text-white border-amber-600 shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
-              }`}
-            >
-              Pool Terbuka Saja
-            </button>
+            {selectedSource !== "WASTE" && (
+              <button
+                type="button"
+                onClick={() => setOnlyOpenPools(!onlyOpenPools)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                  onlyOpenPools
+                    ? "bg-amber-600 text-white border-amber-600 shadow-xs"
+                    : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                }`}
+              >
+                Pool Terbuka Saja
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setOnlyVerified(!onlyVerified)}
@@ -282,7 +343,7 @@ export function HomeView({
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
               }`}
             >
-              Terverifikasi Mutu AI
+              Terverifikasi Mutu
             </button>
           </div>
         </Card>
@@ -330,16 +391,28 @@ export function HomeView({
 
       {/* Dialog Beli / Buat Pool di Beranda */}
       {purchasingCommodity && (
-        <CreatePoolDialog
-          isOpen={!!purchasingCommodity}
-          onClose={() => setPurchasingCommodity(null)}
-          commodity={purchasingCommodity}
-          userProfile={userProfile}
-          onSuccess={() => {
-            setPurchasingCommodity(null);
-            router.refresh();
-          }}
-        />
+        purchasingCommodity.sourceType === "WASTE" ? (
+          <BuyWasteDialog
+            isOpen={!!purchasingCommodity}
+            onClose={() => setPurchasingCommodity(null)}
+            wasteItem={purchasingCommodity}
+            onSuccess={() => {
+              setPurchasingCommodity(null);
+              router.refresh();
+            }}
+          />
+        ) : (
+          <CreatePoolDialog
+            isOpen={!!purchasingCommodity}
+            onClose={() => setPurchasingCommodity(null)}
+            commodity={purchasingCommodity}
+            userProfile={userProfile}
+            onSuccess={() => {
+              setPurchasingCommodity(null);
+              router.refresh();
+            }}
+          />
+        )
       )}
     </div>
   );

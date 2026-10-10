@@ -49,8 +49,9 @@ export function getStatusStepIndex(status: POStatus): number {
   }
 }
 
-import type { BESupplierCommodity } from "@/lib/api/types";
+import type { BESupplierCommodity, BEWasteListing } from "@/lib/api/types";
 import type { SupplierCommodity, WholesaleUnit, CommodityPriceTier } from "@/constants/supplier";
+import { formatCurrency } from "@/lib/utils";
 
 export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommodity {
   const basePrice = Number(be.base_price) || 0;
@@ -140,16 +141,80 @@ export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommo
       underMoqPricePerKg: be.under_moq_price_per_kg ? Number(be.under_moq_price_per_kg) : null,
       productionDate: be.production_date || "-",
       expiryDate: be.closed_date || "-",
-      supplierRoleId: be.supplier_role_id,
-      supplierEntityId: be.supplier_entity_id,
+      supplierRoleId: be.supplier_role_id || be.supplier?.role_id,
+      supplierEntityId: be.supplier_entity_id || be.supplier?.entity_id,
       hasTieringPrice: be.has_tiering_price !== undefined ? be.has_tiering_price : tiers.length > 1,
       hasOpenPools: hasOpen,
       openPoolsCount: openCount,
       sourceType: be.source_type || "SUPPLIER",
       sellerCity: be.seller_city || "Sentra Distribusi",
-      sellerName: be.supplier?.legal_name,
+      sellerName: be.supplier?.legal_name || (be as any).supplier_legal_name || (be as any).seller_name,
       distanceKm: be.distance_km ?? null,
       activePools: parsedPools,
     };
   }
+
+export function mapBEWasteToSupplierCommodity(waste: BEWasteListing): SupplierCommodity {
+  const price = Number(waste.price_per_kg) || 0;
+  const weight = Number(waste.available_weight) || 0;
+  const categoryLabel = waste.waste_category
+    ? waste.waste_category.replace(/_/g, " ")
+    : "Residu Organik";
+
+  const parts = (waste.seller_address || "").split(",").map((p) => p.trim());
+  const city =
+    parts.length >= 2
+      ? parts[parts.length - 2] || parts[parts.length - 1]
+      : parts[0] || "D.I. Yogyakarta";
+
+  return {
+    id: waste.id,
+    sku: `WST-${waste.id.slice(0, 6).toUpperCase()}`,
+    name: waste.listing_title,
+    sector: "FnB / Pengolahan",
+    description:
+      waste.notes ||
+      `Limbah sisa produksi ${categoryLabel} dari mitra UMKM. Siap diolah kembali untuk simbiosis sirkular.`,
+    wholesaleUnit: "KG",
+    unitWeightKg: 1,
+    baseMoq: 1, // Tanpa batas MOQ
+    availableStock: weight,
+    leadTimeDays: 1,
+    isActive: waste.listing_status === "AVAILABLE",
+    priceTiers: [
+      {
+        id: `tier-waste-${waste.id}`,
+        minQty: 1,
+        maxQty: null,
+        pricePerUnit: price,
+        label: `Beli Langsung (${formatCurrency(price)}/kg - Tanpa MOQ)`,
+      },
+    ],
+    batchTag: {
+      id: `bt-waste-${waste.id}`,
+      licenseNumber: "RESIDU-SIRKULAR",
+      verificationNotes: "Limbah terverifikasi bursa sirkular KUMPUL",
+      supportingFileUrl: null,
+      productionDate: waste.created_at ? new Date(waste.created_at).toISOString().slice(0, 10) : "-",
+      expiryDate: waste.expired_at ? new Date(waste.expired_at).toISOString().slice(0, 10) : "-",
+      storageTemperature: "AMBIENT",
+      originLocation: waste.seller_address || "D.I. Yogyakarta",
+      hygieneStatus: "TERVERIFIKASI",
+    },
+    imageUrl: undefined, // Otomatis fallback ke logo KUMPUL sidebar /logo/without-bg.svg
+    createdAt: waste.created_at || new Date().toISOString(),
+    allowsUnderMoq: true,
+    underMoqPricePerKg: price,
+    hasTieringPrice: false,
+    hasOpenPools: false,
+    openPoolsCount: 0,
+    sourceType: "WASTE",
+    sellerCity: city,
+    supplierRoleId: waste.seller_role_id,
+    supplierEntityId: (waste as any).seller_entity_id,
+    sellerName: waste.seller_business_name || (waste as any).seller_name || "Mitra UMKM",
+    distanceKm: null,
+    activePools: [],
+  };
+}
 
