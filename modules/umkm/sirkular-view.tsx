@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   type WasteListing,
   type WasteBuyerOrder,
@@ -294,32 +295,6 @@ export const WASTE_CATEGORY_OPTIONS: Array<{
   },
 ];
 
-function getWasteImage(title: string, category: string): string | undefined {
-  const t = title.toLowerCase();
-  if (t.includes("minyak") || t.includes("jelantah") || t.includes("uco")) {
-    return "https://images.unsplash.com/photo-1541625602330-2277a4c46182?auto=format&fit=crop&w=600&q=80";
-  }
-  if (t.includes("kopi") || t.includes("coffee")) {
-    return "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80";
-  }
-  if (t.includes("tahu") || t.includes("kedelai") || t.includes("ampas")) {
-    return "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80";
-  }
-  if (t.includes("telur") || t.includes("cangkang")) {
-    return "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=600&q=80";
-  }
-  if (t.includes("tulang") || t.includes("daging") || t.includes("ayam")) {
-    return "https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=600&q=80";
-  }
-  if (t.includes("sayur") || t.includes("cabai") || t.includes("buah") || t.includes("kulit")) {
-    return "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80";
-  }
-  if (t.includes("kayu") || t.includes("serbuk") || category === "ORGANIK_KERING") {
-    return "https://images.unsplash.com/photo-1533090161767-e6ffed986b88?auto=format&fit=crop&w=600&q=80";
-  }
-  return undefined;
-}
-
 function mapBEWasteToUI(be: BEWasteListing): WasteListing {
   const weight = Number(be.available_weight) || 0;
   const price = Number(be.price_per_kg) || 0;
@@ -335,7 +310,7 @@ function mapBEWasteToUI(be: BEWasteListing): WasteListing {
     id: be.id,
     title: be.listing_title,
     category: be.waste_category,
-    imageUrl: getWasteImage(be.listing_title, be.waste_category),
+    imageUrl: undefined, // Tidak menggunakan foto Unsplash jika tidak diunggah, akan fallback ke logo KUMPUL
     description: be.notes || undefined,
     totalVolume,
     volumeKg: weight,
@@ -398,6 +373,15 @@ export function UmkmSirkularView() {
   const [bankSampahNotes, setBankSampahNotes] = React.useState("");
   const [isSubmittingBankSampah, setIsSubmittingBankSampah] = React.useState(false);
   const [nearestOfftakers, setNearestOfftakers] = React.useState<Array<{ id: string; name: string }>>([]);
+
+  const handleLoadedPoints = React.useCallback((points: Array<{ id: string; name: string }>) => {
+    setNearestOfftakers((prev) => {
+      if (prev.length === points.length && prev.every((p, i) => p.id === points[i]?.id)) {
+        return prev;
+      }
+      return points.map((p) => ({ id: p.id, name: p.name }));
+    });
+  }, []);
 
   const handleOpenBankSampah = (item: WasteListing) => {
     setBankSampahItem(item);
@@ -537,7 +521,7 @@ export function UmkmSirkularView() {
   const loadListings = React.useCallback(async () => {
     setIsLoadingListings(true);
     try {
-      const res = await getWasteListingsAction();
+      const res = await getWasteListingsAction({ myListingsOnly: true });
       if (res.success && res.data) {
         setWasteListings(res.data.map(mapBEWasteToUI));
       } else {
@@ -941,16 +925,22 @@ export function UmkmSirkularView() {
                         }`}
                       />
                     ) : (
-                      <div className="size-full flex flex-col items-center justify-center bg-linear-to-br from-surface-subtle via-surface to-surface-subtle text-text-muted gap-1.5 p-3 text-center">
-                        <div className="p-2 rounded-full bg-circular-waste-light border border-circular-waste/20 text-circular-waste">
-                          <Recycle className="size-5" />
-                        </div>
-                        <span className="text-[11px] font-semibold text-text-secondary">
-                          Residu Dapur UMKM
+                      <div className="size-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-neutral-50 via-white to-neutral-100 text-text-muted select-none">
+                        <Image
+                          src="/logo/without-bg.svg"
+                          alt="Logo KUMPUL"
+                          width={110}
+                          height={36}
+                          className="h-8 w-auto object-contain opacity-75 transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <span className="text-[11px] font-medium text-text-muted mt-2 tracking-wide">
+                          Katalog Residu Sirkular
                         </span>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/25 to-black/55 pointer-events-none" />
+                    {item.imageUrl && (
+                      <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/25 to-black/55 pointer-events-none" />
+                    )}
 
                     {/* Status Badges on Image Frame (Rata Kiri, Vertikal Bertumpuk) */}
                     <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1.5 pointer-events-none z-10 max-w-[65%]">
@@ -1215,11 +1205,7 @@ export function UmkmSirkularView() {
 
       {/* 4. Section Titik Bank Sampah Terdekat (Interactive Leaflet Map & Scraped Google Maps Locations) */}
       <div id="bank-sampah-map-section">
-        <BankSampahMapSection
-          onLoadedPoints={(points) => {
-            setNearestOfftakers(points.map((p) => ({ id: p.id, name: p.name })));
-          }}
-        />
+        <BankSampahMapSection onLoadedPoints={handleLoadedPoints} />
       </div>
 
       {/* 5. Modal Tambah Listing Limbah Baru (Standardized Dropdowns & Tactile Controls) */}
