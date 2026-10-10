@@ -19,7 +19,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
 } from "@/components/ui/card";
 import {
@@ -199,9 +198,6 @@ export function UmkmDashboardView() {
           <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-primary tracking-tight mt-0.5">
             {greeting}
           </h1>
-          <p className="text-xs text-text-muted mt-0.5">
-            Sentral pengadaan pasokan bahan baku, efisiensi modal, dan pemantauan stok dapur terintegrasi.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -332,9 +328,6 @@ export function UmkmDashboardView() {
                 {filteredPools.length}
               </span>
             </div>
-            <p className="text-xs text-text-secondary mt-0.5">
-              Agregasi kuota pengadaan kolektif langsung terhubung dengan supplier hulu KUMPUL.
-            </p>
           </div>
 
           {/* Filter Kategori */}
@@ -504,9 +497,6 @@ export function UmkmDashboardView() {
                 </span>
               )}
             </div>
-            <p className="text-xs text-text-secondary mt-0.5">
-              Prediksi laju konsumsi harian bahan baku dihitung langsung dari komposisi resep menu produk UMKM Anda.
-            </p>
           </div>
           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-bold gap-1 self-start sm:self-auto">
             <Link href="/produk#kitchen-inventory">
@@ -598,9 +588,6 @@ export function UmkmDashboardView() {
               <CardTitle className="text-base font-bold text-text-primary">
                 Pesanan Pengadaan Terkini
               </CardTitle>
-              <CardDescription className="text-xs text-text-secondary mt-0.5">
-                Daftar pesanan bahan baku yang sedang diproses atau siap diambil.
-              </CardDescription>
             </div>
             <Link href="/pesanan" className="text-xs font-bold text-primary hover:underline">
               Lihat Semua &rarr;
@@ -649,9 +636,6 @@ export function UmkmDashboardView() {
               <CardTitle className="text-base font-bold text-text-primary">
                 Bursa Limbah Produktif
               </CardTitle>
-              <CardDescription className="text-xs text-text-secondary mt-0.5">
-                Listing sisa olahan dapur yang terhubung ke offtaker bursa.
-              </CardDescription>
             </div>
             <Badge variant="waste">Sirkular</Badge>
           </CardHeader>
