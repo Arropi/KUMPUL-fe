@@ -298,8 +298,13 @@ export async function updateSupplierCommodityAction(
       }),
     });
 
-    revalidatePath("/katalog");
-    revalidatePath("/home");
+    try {
+      revalidatePath("/katalog");
+      revalidatePath("/home");
+      revalidatePath(`/katalog/${id}`);
+      revalidatePath(`/katalog/${id}/edit`);
+    } catch {}
+
     return {
       success: res.success,
       data: res.data,
@@ -325,8 +330,12 @@ export async function deleteSupplierCommodityAction(id: string): Promise<{
       method: "DELETE",
     });
 
-    revalidatePath("/katalog");
-    revalidatePath("/home");
+    try {
+      revalidatePath("/katalog");
+      revalidatePath("/home");
+      revalidatePath(`/katalog/${id}`);
+    } catch {}
+
     return {
       success: res.success,
       message: res.message,

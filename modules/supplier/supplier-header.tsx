@@ -99,7 +99,7 @@ export function SupplierHeader({ onToggleMobileNav }: SupplierHeaderProps) {
 
           {/* Notifikasi PO Cepat */}
           <Link
-            href="/supplier/pesanan"
+            href="/pesanan"
             className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl border border-border bg-surface text-text-secondary shadow-[inset_0_1px_0_#FFFFFF,inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.04)] hover:bg-surface-subtle hover:text-text-primary hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_#FFFFFF,0_4px_12px_rgba(0,0,0,0.08)] active:scale-[0.98] active:translate-y-[0.5px] relative transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             aria-label="Lihat pesanan masuk"
           >
@@ -115,7 +115,7 @@ export function SupplierHeader({ onToggleMobileNav }: SupplierHeaderProps) {
 
           {/* Link Profil Supplier */}
           <Link
-            href="/supplier/profil"
+            href="/profil"
             className="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-subtle transition-colors"
             title="Profil Badan Usaha Supplier"
           >

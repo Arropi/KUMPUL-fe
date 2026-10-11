@@ -46,8 +46,8 @@ export function ProfileMetricsCards({
           <span className="text-xs font-semibold text-text-secondary">
             {isSupplier ? "Total Penjualan" : "Total Pengadaan Bahan"}
           </span>
-          <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-            Rp
+          <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-md border border-primary/20">
+            IDR
           </span>
         </div>
         <div>
@@ -68,8 +68,8 @@ export function ProfileMetricsCards({
           <span className="text-xs font-semibold text-text-secondary">
             {isSupplier ? "Total Katalog" : "Total Menu Usaha"}
           </span>
-          <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-            {isSupplier ? "📦" : "🍽️"}
+          <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-md border border-primary/20">
+            {isSupplier ? "Komoditas" : "Resep"}
           </span>
         </div>
         <div>
@@ -90,8 +90,8 @@ export function ProfileMetricsCards({
           <span className="text-xs font-semibold text-text-secondary">
             Kapasitas Gudang
           </span>
-          <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-            🏢
+          <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-md border border-primary/20">
+            Gudang
           </span>
         </div>
         <div>

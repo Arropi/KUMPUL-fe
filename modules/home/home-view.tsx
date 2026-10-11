@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  MOCK_SUPPLIER_COMMODITIES,
   SupplierCommodity,
 } from "@/constants/supplier";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import {
 import { Pagination15 } from "@/components/ui/pagination";
 import { CommodityCatalogCard } from "@/components/katalog/commodity-catalog-card";
 import { UserRole, UserSession } from "@/constants/auth";
-import { Search, ChevronDown, Sparkles, ShoppingBag, Plus } from "lucide-react";
+import { Search, ChevronDown, ShoppingBag } from "lucide-react";
 import { getAllMarketplaceCatalogsAction } from "@/actions/supplier-catalog";
 import { mapBEToSupplierCommodity } from "@/modules/supplier/helpers";
 import { HomeRecommendationSection } from "./home-recommendation-section";
@@ -83,10 +82,7 @@ export function HomeView({
       setSearchQuery(searchParam);
     }
     if (commodityIdParam) {
-      const allItems = commodities.length > 0 ? commodities : MOCK_SUPPLIER_COMMODITIES;
-      const found =
-        allItems.find((c) => c.id === commodityIdParam) ||
-        MOCK_SUPPLIER_COMMODITIES.find((c) => c.id === commodityIdParam);
+      const found = commodities.find((c) => c.id === commodityIdParam);
       if (found) {
         setPurchasingCommodity(found);
       }

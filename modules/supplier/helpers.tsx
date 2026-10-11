@@ -55,7 +55,11 @@ import { formatCurrency } from "@/lib/utils";
 
 export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommodity {
   const basePrice = Number(be.base_price) || 0;
-  const stock = Number(be.stock) || 0;
+  const rawStock = Number(be.stock) || 0;
+  const reservedStock = Number(be.reserved_stock) || 0;
+  const availableStock = be.available_stock !== undefined
+    ? Number(be.available_stock)
+    : Math.max(0, rawStock - reservedStock);
   const moq = Number(be.base_moq) || 1;
 
   const tiers: CommodityPriceTier[] = (be.price_tiers && be.price_tiers.length > 0)
@@ -105,7 +109,7 @@ export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommo
       wholesaleUnit: (be.wholesale_unit as WholesaleUnit) || "KARUNG",
       unitWeightKg: 20,
       baseMoq: moq,
-      availableStock: stock,
+      availableStock: availableStock,
       leadTimeDays: be.lead_time_days || 1,
       isActive: be.is_marketplace_active ?? true,
       priceTiers: tiers,

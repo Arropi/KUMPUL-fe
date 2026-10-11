@@ -19,7 +19,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
 } from "@/components/ui/card";
 import {
@@ -32,6 +31,7 @@ import {
 import { toast } from "@/components/ui/toast";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import { beFetch } from "@/lib/api/be-client";
+import { Pagination15 } from "@/components/ui/pagination";
 import {
   getUmkmDashboardDataAction,
   type UmkmDashboardData,
@@ -104,7 +104,7 @@ export function UmkmDashboardView() {
 
     return dashboardData.pools.map((p) => {
       const name = p.commodity_name || "Komoditas Pertanian Pilihan";
-      const category = "Pertanian";
+      const category = (p as any).sector || "Pertanian";
       const targetMoq = Number(p.target_moq) || 50;
       const acc = Number(p.accumulated_qty) || 0;
       const price = Number(p.locked_tier_price) || 35000;
@@ -134,6 +134,20 @@ export function UmkmDashboardView() {
     return mappedPools.filter((p) => p.category.toLowerCase().includes(selectedCategory.toLowerCase()));
   }, [mappedPools, selectedCategory]);
 
+  // Pagination state untuk Radar Pooling Aktif (maksimal 4 card)
+  const [poolCurrentPage, setPoolCurrentPage] = React.useState<number>(1);
+  const [poolPageSize, setPoolPageSize] = React.useState<number>(4);
+
+  // Reset halaman pagination saat kategori filter berubah
+  React.useEffect(() => {
+    setPoolCurrentPage(1);
+  }, [selectedCategory]);
+
+  const totalPoolPages = Math.max(1, Math.ceil(filteredPools.length / poolPageSize));
+  const paginatedPools = React.useMemo(() => {
+    const start = (poolCurrentPage - 1) * poolPageSize;
+    return filteredPools.slice(start, start + poolPageSize);
+  }, [filteredPools, poolCurrentPage, poolPageSize]);
   const handleJoinPoolSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeJoinPool) return;
@@ -176,17 +190,13 @@ export function UmkmDashboardView() {
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/70">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary" />
             <span className="text-xs font-semibold text-text-secondary">
-              {businessName} &bull; Sektor Kuliner &amp; Pengolahan
+              {businessName} | Sektor Kuliner &amp; Pengolahan
             </span>
           </div>
           <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-primary tracking-tight mt-0.5">
             {greeting}
           </h1>
-          <p className="text-xs text-text-muted mt-0.5">
-            Sentral pengadaan pasokan bahan baku, efisiensi modal, dan pemantauan stok dapur terintegrasi.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -317,9 +327,6 @@ export function UmkmDashboardView() {
                 {filteredPools.length}
               </span>
             </div>
-            <p className="text-xs text-text-secondary mt-0.5">
-              Agregasi kuota pengadaan kolektif langsung terhubung dengan supplier hulu KUMPUL.
-            </p>
           </div>
 
           {/* Filter Kategori */}
@@ -355,44 +362,44 @@ export function UmkmDashboardView() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {filteredPools.map((pool) => {
-              const percentage = Math.min(
-                100,
-                Math.round((pool.accumulatedKg / Math.max(1, pool.targetMoqKg)) * 100)
-              );
-              const savingsPerKg = Math.max(0, pool.pricePerKgRetailMarket - pool.pricePerKgWholesale);
-              const isLocked = pool.status === "LOCKED";
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {paginatedPools.map((pool) => {
+                const percentage = Math.min(
+                  100,
+                  Math.round((pool.accumulatedKg / Math.max(1, pool.targetMoqKg)) * 100)
+                );
+                const savingsPerKg = Math.max(0, pool.pricePerKgRetailMarket - pool.pricePerKgWholesale);
+                const isLocked = pool.status === "LOCKED";
 
-              return (
-                <Card
-                  key={pool.id}
-                  className="flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2"
-                >
-                  <div className="p-5 sm:p-6 space-y-4">
-                    {/* Header Komoditas & Status */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-primary bg-primary-light px-2 py-0.5 rounded-md border border-primary/20">
-                          {pool.category}
-                        </span>
-                        <h3 className="font-heading font-bold text-base text-text-primary leading-snug line-clamp-1" title={pool.commodityName}>
-                          {pool.commodityName}
-                        </h3>
-                        <p className="text-xs text-text-muted truncate" title={pool.supplierName}>
-                          {pool.supplierName}
-                        </p>
+                return (
+                  <Card
+                    key={pool.id}
+                    className="flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2"
+                  >
+                    <div className="p-5 sm:p-6 space-y-4">
+                      {/* Header Komoditas & Status */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-primary bg-primary-light px-2.5 py-0.5 rounded-md border border-primary/20">
+                            {pool.category}
+                          </span>
+                          <h3 className="font-heading font-bold text-base text-text-primary leading-snug line-clamp-1" title={pool.commodityName}>
+                            {pool.commodityName}
+                          </h3>
+                          <p className="text-xs text-text-muted truncate" title={pool.supplierName}>
+                            {pool.supplierName}
+                          </p>
+                        </div>
+
+                        {isLocked ? (
+                          <Badge variant="success">Kuota Terkunci</Badge>
+                        ) : (
+                          <Badge variant="primary" className="font-bold">
+                            <span>{percentage}% Tercapai</span>
+                          </Badge>
+                        )}
                       </div>
-
-                      {isLocked ? (
-                        <Badge variant="success">Kuota Terkunci</Badge>
-                      ) : (
-                        <Badge variant="primary" className="gap-1.5 font-bold">
-                          <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-                          <span>{percentage}% Tercapai</span>
-                        </Badge>
-                      )}
-                    </div>
 
                     {/* Progress Bar Kuota MOQ */}
                     <div className="space-y-1.5">
@@ -456,6 +463,21 @@ export function UmkmDashboardView() {
                 </Card>
               );
             })}
+            </div>
+
+            {/* Watermelon UI Pagination-15 Component */}
+            {filteredPools.length > 0 && (
+              <Pagination15
+                currentPage={poolCurrentPage}
+                totalPages={totalPoolPages}
+                pageSize={poolPageSize}
+                totalItems={filteredPools.length}
+                onPageChange={setPoolCurrentPage}
+                onPageSizeChange={setPoolPageSize}
+                pageSizeOptions={[4, 8, 12]}
+                itemLabel="pool"
+              />
+            )}
           </div>
         )}
       </section>
@@ -474,9 +496,6 @@ export function UmkmDashboardView() {
                 </span>
               )}
             </div>
-            <p className="text-xs text-text-secondary mt-0.5">
-              Prediksi laju konsumsi harian bahan baku dihitung langsung dari komposisi resep menu produk UMKM Anda.
-            </p>
           </div>
           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-bold gap-1 self-start sm:self-auto">
             <Link href="/produk#kitchen-inventory">
@@ -568,9 +587,6 @@ export function UmkmDashboardView() {
               <CardTitle className="text-base font-bold text-text-primary">
                 Pesanan Pengadaan Terkini
               </CardTitle>
-              <CardDescription className="text-xs text-text-secondary mt-0.5">
-                Daftar pesanan bahan baku yang sedang diproses atau siap diambil.
-              </CardDescription>
             </div>
             <Link href="/pesanan" className="text-xs font-bold text-primary hover:underline">
               Lihat Semua &rarr;
@@ -619,9 +635,6 @@ export function UmkmDashboardView() {
               <CardTitle className="text-base font-bold text-text-primary">
                 Bursa Limbah Produktif
               </CardTitle>
-              <CardDescription className="text-xs text-text-secondary mt-0.5">
-                Listing sisa olahan dapur yang terhubung ke offtaker bursa.
-              </CardDescription>
             </div>
             <Badge variant="waste">Sirkular</Badge>
           </CardHeader>

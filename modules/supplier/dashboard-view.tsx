@@ -19,7 +19,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   CardAction,
 } from "@/components/ui/card";
@@ -118,9 +117,6 @@ export function SupplierDashboardView() {
           <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-primary tracking-tight mt-0.5">
             {greeting}
           </h1>
-          <p className="text-xs text-text-muted mt-0.5">
-            Monitoring pesanan agregasi pooling, alokasi pasokan komoditas, dan proteksi pencairan dana escrow.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -137,7 +133,7 @@ export function SupplierDashboardView() {
           </Button>
 
           <Button asChild variant="primary" size="sm" className="rounded-xl font-bold gap-1.5 text-xs">
-            <Link href="/supplier/katalog/tambah">
+            <Link href="/katalog/tambah">
               <Plus className="size-3.5" />
               <span>Tambah Komoditas</span>
             </Link>
@@ -168,7 +164,7 @@ export function SupplierDashboardView() {
           </div>
 
           <Button asChild variant="accent" size="sm" className="font-bold shrink-0 self-start sm:self-auto min-h-[40px] rounded-xl text-xs">
-            <Link href="/supplier/profil?onboarding=pending">
+            <Link href="/profil?onboarding=pending">
               <span>Lengkapi Profil Sekarang &rarr;</span>
             </Link>
           </Button>
@@ -286,13 +282,9 @@ export function SupplierDashboardView() {
                 </span>
               )}
             </div>
-            <p className="text-xs text-text-secondary mt-0.5">
-              Pantau laju pemenuhan kuota agregasi pesanan UMKM secara real-time sebelum batas waktu penguncian batch.
-            </p>
           </div>
-
           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-bold gap-1 self-start sm:self-auto">
-            <Link href="/supplier/katalog">
+            <Link href="/katalog">
               <span>Buka Seluruh Katalog</span>
               <ArrowRight className="size-3.5" />
             </Link>
@@ -379,9 +371,6 @@ export function SupplierDashboardView() {
                   Bursa KUMPUL AI
                 </Badge>
               </div>
-              <p className="text-xs text-text-secondary mt-0.5">
-                Perbandingan harga komoditas Anda terhadap rata-rata harga pasar bursa sejenis untuk menjaga daya serap kuota pooling.
-              </p>
             </div>
           </div>
 
@@ -451,13 +440,10 @@ export function SupplierDashboardView() {
               <CardTitle className="text-base font-bold text-text-primary">
                 Pesanan Terpadu Masuk (Consolidated PO)
               </CardTitle>
-              <CardDescription className="text-xs text-text-secondary mt-0.5">
-                Pesanan agregasi pooling yang telah terkunci dan siap diproses ke Hub.
-              </CardDescription>
             </div>
             <CardAction>
               <Link
-                href="/supplier/pesanan"
+                href="/pesanan"
                 className="text-xs font-bold text-primary hover:underline"
               >
                 Lihat Semua &rarr;
@@ -515,7 +501,7 @@ export function SupplierDashboardView() {
                         <TableCell>{getOrderStatusBadge(po.po_status as POStatus)}</TableCell>
                         <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-semibold">
-                            <Link href={`/supplier/pesanan/${po.id}`}>
+                            <Link href={`/pesanan/${po.id}`}>
                               Detail
                             </Link>
                           </Button>
@@ -536,13 +522,10 @@ export function SupplierDashboardView() {
               <CardTitle className="text-base font-bold text-text-primary">
                 Katalog Pasokan Gudang
               </CardTitle>
-              <CardDescription className="text-xs text-text-secondary mt-0.5">
-                Kesiapan komoditas dan stok buffer di gudang.
-              </CardDescription>
             </div>
             <CardAction>
               <Link
-                href="/supplier/katalog"
+                href="/katalog"
                 className="text-xs font-bold text-primary hover:underline"
               >
                 Kelola &rarr;
@@ -589,7 +572,7 @@ export function SupplierDashboardView() {
 
           <div className="p-5 pt-0">
             <Button asChild variant="secondary" size="default" className="w-full font-bold text-xs min-h-[40px] rounded-xl">
-              <Link href="/supplier/katalog/tambah">
+              <Link href="/katalog/tambah">
                 <span>+ Tambah Komoditas Baru</span>
               </Link>
             </Button>

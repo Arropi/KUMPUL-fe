@@ -45,10 +45,13 @@ export async function GET(request: Request) {
       // Tukar user.id dengan Custom JWT KUMPUL dari Backend Express (Opsi A)
       let beToken = "";
       let beEntityId = "";
+      let beRoleId = "";
       let effectiveRole = role;
 
+      const beRole = role === "supplier" ? "SUPPLIER" : "UMKM";
       const beRes = await callBackendLogin({
         user_id: data.user.id,
+        role: beRole,
       });
 
       if (
@@ -57,12 +60,15 @@ export async function GET(request: Request) {
           beRes.errorCode === "BUSINESS_PROFILE_INCOMPLETE" ||
           beRes.errorCode === "ENTITY_NOT_FOUND")
       ) {
-        return NextResponse.redirect(`${origin}/register?step=business`);
+        return NextResponse.redirect(
+          `${origin}/register?step=business&role=${encodeURIComponent(role)}&email=${encodeURIComponent(email)}&userId=${encodeURIComponent(data.user.id)}`
+        );
       }
 
       if (beRes.success && beRes.data?.token) {
         beToken = beRes.data.token;
         beEntityId = beRes.data.entity_id;
+        beRoleId = beRes.data.active_role?.id || "";
         const beRoleType = beRes.data.active_role?.role_type;
         if (beRoleType) {
           effectiveRole = beRoleType === "SUPPLIER" ? "supplier" : "umkm";
@@ -91,7 +97,8 @@ export async function GET(request: Request) {
         JSON.stringify({
           email,
           name,
-          role,
+          role: effectiveRole,
+          roleId: beRoleId || undefined,
           picture,
           provider: "google",
           supabaseUserId: data.user.id,
