@@ -47,8 +47,10 @@ import {
   cancelProcurementOrderAction,
   confirmOrderPickupAction,
   getSellerWasteTransactionsAction,
+  getBuyerWasteTransactionsAction,
   confirmWastePickupAction,
 } from "@/actions/orders";
+
 import {
   createPaymentSnapTokenAction,
   checkPaymentStatusAction,
@@ -476,18 +478,28 @@ export function UmkmPesananView() {
   const loadPurchases = React.useCallback(async () => {
     setLoadingPurchases(true);
     try {
-      const res = await getUmkmAllOrdersAction();
-      if (res.success && res.data) {
-        setPurchases(res.data);
-      } else {
-        setPurchases([]);
-      }
+      const [ordersRes, wasteRes] = await Promise.all([
+        getUmkmAllOrdersAction(),
+        getBuyerWasteTransactionsAction(),
+      ]);
+
+      const rawOrders = ordersRes.success && ordersRes.data ? ordersRes.data : [];
+      const wasteOrders = wasteRes.success && wasteRes.data ? wasteRes.data : [];
+
+      const combined = [...rawOrders, ...wasteOrders].sort((a, b) => {
+        const timeA = a.orderDate ? new Date(a.orderDate).getTime() : 0;
+        const timeB = b.orderDate ? new Date(b.orderDate).getTime() : 0;
+        return timeB - timeA;
+      });
+
+      setPurchases(combined);
     } catch {
       setPurchases([]);
     } finally {
       setLoadingPurchases(false);
     }
   }, []);
+
 
   const loadSales = React.useCallback(async () => {
     setLoadingSales(true);
@@ -1230,79 +1242,131 @@ export function UmkmPesananView() {
                     onClick={() => {
                       const autoCode = selectedOrder.pickupCode || selectedOrder.hubPickupCode || "KMPL-889";
                       setPickupPinInput(autoCode);
-                      toast.info("Kode PIN berhasil disalin ke kolom konfirmasi", "PIN Siap Digunakan");
+                      toast.info("Kode PIN berhasil disalin", "PIN Siap Digunakan");
                     }}
-                    className="p-5 rounded-2xl bg-surface-subtle border-2 border-dashed border-primary/50 text-center space-y-2 cursor-pointer hover:bg-primary/5 transition-colors group"
-                    title="Klik untuk menyalin/mengisi otomatis ke formulir konfirmasi"
+                    className={cn(
+                      "p-5 rounded-2xl bg-surface-subtle border-2 border-dashed text-center space-y-2 cursor-pointer transition-colors group",
+                      selectedOrder.orderType === "CIRCULAR_WASTE"
+                        ? "border-circular-waste/50 hover:bg-circular-waste/5"
+                        : "border-primary/50 hover:bg-primary/5"
+                    )}
+                    title="Klik untuk menyalin"
                   >
                     <span className="text-xs font-semibold text-text-muted">
-                      Kode Verifikasi Serah-Terima Fisik Barang:
+                      {selectedOrder.orderType === "CIRCULAR_WASTE"
+                        ? "Kode Unik Pengambilan Residu (Serahkan ke Penjual):"
+                        : "Kode Verifikasi Serah-Terima Fisik Barang:"}
                     </span>
-                    <p className="font-mono text-3xl font-black text-primary tracking-widest tabular-nums group-hover:scale-105 transition-transform">
+                    <p
+                      className={cn(
+                        "font-mono text-3xl font-black tracking-widest tabular-nums group-hover:scale-105 transition-transform",
+                        selectedOrder.orderType === "CIRCULAR_WASTE"
+                          ? "text-circular-waste"
+                          : "text-primary"
+                      )}
+                    >
                       {selectedOrder.pickupCode || selectedOrder.hubPickupCode || "KMPL-889"}
                     </p>
                     <p className="text-[11px] text-text-muted">
-                      Tunjukkan kode ini kepada Host Hub / Kurir, atau klik kotak ini untuk mengisi otomatis.
+                      {selectedOrder.orderType === "CIRCULAR_WASTE"
+                        ? "Tunjukkan kode ini kepada UMKM penjual saat Anda mengambil barang untuk verifikasi dan pencairan saldo."
+                        : "Tunjukkan kode ini kepada Host Hub / Kurir, atau klik kotak ini untuk mengisi otomatis."}
                     </p>
                   </div>
 
-                  {/* Kontak Host Hub */}
+                  {/* Kontak Lokasi Pengambilan */}
                   <div className="p-3.5 rounded-xl bg-surface border border-border text-xs space-y-1.5">
                     <div className="flex items-center gap-1.5 font-bold text-text-primary">
-                      <Store className="size-4 text-emerald-700 shrink-0" />
-                      <span>Titik Pengambilan Host Hub:</span>
+                      {selectedOrder.orderType === "CIRCULAR_WASTE" ? (
+                        <>
+                          <Recycle className="size-4 text-circular-waste shrink-0" />
+                          <span>Lokasi Pengambilan Residu Dapur Penjual:</span>
+                        </>
+                      ) : (
+                        <>
+                          <Store className="size-4 text-emerald-700 shrink-0" />
+                          <span>Titik Pengambilan Host Hub:</span>
+                        </>
+                      )}
                     </div>
-                    <p className="font-semibold text-text-primary truncate" title={selectedOrder.hostContact?.name || selectedOrder.deliveryLocation || "Hub Konsolidasi Sentra"}>
-                      {selectedOrder.hostContact?.name || selectedOrder.deliveryLocation || "Hub Konsolidasi Sentra"}
+                    <p
+                      className="font-semibold text-text-primary truncate"
+                      title={
+                        selectedOrder.supplierOrSellerName ||
+                        selectedOrder.hostContact?.name ||
+                        selectedOrder.deliveryLocation ||
+                        "Hub Konsolidasi Sentra"
+                      }
+                    >
+                      {selectedOrder.supplierOrSellerName ||
+                        selectedOrder.hostContact?.name ||
+                        selectedOrder.deliveryLocation ||
+                        "Hub Konsolidasi Sentra"}
                     </p>
-                    {selectedOrder.hostContact?.address && (
-                      <p className="text-text-muted text-[11px] line-clamp-2" title={selectedOrder.hostContact.address}>{selectedOrder.hostContact.address}</p>
+                    {selectedOrder.deliveryLocation && (
+                      <p className="text-text-muted text-[11px] line-clamp-2" title={selectedOrder.deliveryLocation}>
+                        {selectedOrder.deliveryLocation}
+                      </p>
                     )}
-                    {selectedOrder.hostContact?.phone && (
+                    {selectedOrder.supplierContact?.phone && (
                       <p className="text-text-secondary flex items-center gap-1 pt-0.5">
-                        <Phone className="size-3 text-primary shrink-0" /> <span className="truncate">{selectedOrder.hostContact.phone}</span>
+                        <Phone className="size-3 text-primary shrink-0" />{" "}
+                        <span className="truncate">{selectedOrder.supplierContact.phone}</span>
                       </p>
                     )}
                   </div>
 
-                  {/* Form Konfirmasi Serah-Terima */}
-                  <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-emerald-950 block">
-                        Konfirmasi Terima Barang (Input Kode PIN):
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const autoCode = selectedOrder.pickupCode || selectedOrder.hubPickupCode || "KMPL-889";
-                          setPickupPinInput(autoCode);
-                        }}
-                        className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
-                      >
-                        Gunakan Kode Saya
-                      </button>
+                  {/* Form Konfirmasi Serah-Terima atau Panduan Limbah */}
+                  {selectedOrder.orderType === "CIRCULAR_WASTE" ? (
+                    <div className="p-3.5 rounded-xl bg-circular-waste-light border border-circular-waste/30 space-y-1.5 text-xs text-text-primary">
+                      <div className="flex items-center gap-1.5 font-bold text-circular-waste">
+                        <ShieldCheck className="size-4 shrink-0" />
+                        <span>Alur Serah-Terima Residu Limbah:</span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-text-secondary">
+                        Saat Anda tiba di dapur penjual dan mengecek fisik residu, sebutkan <strong>Kode Unik</strong> di atas kepada penjual. Penjual akan memasukkan kode tersebut pada tab <em>Penjualan Limbah</em> untuk mencairkan saldo escrow dan menandai transaksi ini selesai.
+                      </p>
                     </div>
-                    <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        value={pickupPinInput}
-                        onChange={(e) => setPickupPinInput(e.target.value)}
-                        placeholder="Masukkan kode PIN..."
-                        className="h-9 text-xs uppercase font-mono tracking-wider bg-white"
-                      />
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={handleConfirmPickup}
-                        disabled={isConfirmingPickup}
-                        className="font-bold text-xs shrink-0 cursor-pointer"
-                      >
-                        {isConfirmingPickup ? "Memverifikasi..." : "Konfirmasi Selesai"}
-                      </Button>
+                  ) : (
+                    <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-emerald-950 block">
+                          Konfirmasi Terima Barang (Input Kode PIN):
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const autoCode = selectedOrder.pickupCode || selectedOrder.hubPickupCode || "KMPL-889";
+                            setPickupPinInput(autoCode);
+                          }}
+                          className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                        >
+                          Gunakan Kode Saya
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          value={pickupPinInput}
+                          onChange={(e) => setPickupPinInput(e.target.value)}
+                          placeholder="Masukkan kode PIN..."
+                          className="h-9 text-xs uppercase font-mono tracking-wider bg-white"
+                        />
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={handleConfirmPickup}
+                          disabled={isConfirmingPickup}
+                          className="font-bold text-xs shrink-0 cursor-pointer"
+                        >
+                          {isConfirmingPickup ? "Memverifikasi..." : "Konfirmasi Selesai"}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
+
 
               {/* ────────────────────────────────────────── */}
               {/* KONDISI 5: STATUS COMPLETED (NOTA RESMI)    */}

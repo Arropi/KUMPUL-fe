@@ -81,11 +81,56 @@ export function BuyWasteDialog({
       );
 
       if (res.success) {
+        const snapToken = res.data?.snap_token;
+        const snapRedirectUrl = res.data?.snap_redirect_url;
+        const pickupCode = res.data?.pickup_code;
+
+        if (snapToken && typeof window !== "undefined" && (window as any).snap) {
+          (window as any).snap.pay(snapToken, {
+            onSuccess: () => {
+              toast.success(
+                "Pembayaran limbah berhasil diproses!",
+                pickupCode ? `Kode Pickup Anda: ${pickupCode}` : undefined
+              );
+              onSuccess();
+              onClose();
+            },
+            onPending: () => {
+              toast.info(
+                "Pembayaran menunggu penyelesaian. Silakan cek menu Pesanan.",
+                pickupCode ? `Kode Pickup: ${pickupCode}` : undefined
+              );
+              onSuccess();
+              onClose();
+            },
+            onError: () => {
+              toast.error("Pembayaran gagal diproses. Anda dapat mencoba lagi di menu Pesanan.");
+              onSuccess();
+              onClose();
+            },
+            onClose: () => {
+              toast.info(
+                "Jendela pembayaran ditutup. Pembayaran dapat dilanjutkan di menu Pesanan.",
+                pickupCode ? `Kode Pickup: ${pickupCode}` : undefined
+              );
+              onSuccess();
+              onClose();
+            },
+          });
+          return;
+        }
+
+        if (snapRedirectUrl) {
+          window.location.href = snapRedirectUrl;
+          return;
+        }
+
         toast.success(
           res.message || "Pesanan limbah sirkular berhasil diproses!",
-          res.data?.pickup_code ? `Kode Pickup: ${res.data.pickup_code}` : undefined
+          pickupCode ? `Kode Pickup Anda: ${pickupCode}` : undefined
         );
         onSuccess();
+        onClose();
       } else {
         toast.error(res.message || "Gagal melakukan pembelian residu limbah.");
       }
@@ -97,6 +142,7 @@ export function BuyWasteDialog({
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
