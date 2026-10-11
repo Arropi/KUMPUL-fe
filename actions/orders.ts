@@ -471,3 +471,84 @@ export async function confirmWastePickupAction(
     };
   }
 }
+
+/**
+ * Mengambil transaksi pembelian limbah oleh UMKM aktif (sebagai pembeli P2P)
+ */
+export async function getBuyerWasteTransactionsAction(): Promise<{
+  success: boolean;
+  data?: UMKMPurchaseHistory[];
+  message?: string;
+}> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await beFetch<any[]>("/waste-listings/transactions/purchases", {
+      headers,
+    });
+
+    if (!res.success) {
+      return {
+        success: false,
+        message: res.message || "Gagal memuat transaksi pembelian limbah",
+        data: [],
+      };
+    }
+
+    const formatted: UMKMPurchaseHistory[] = (res.data || []).map((t: any) => {
+      const isCompleted = t.fulfillment_status === "ACCEPTED_COMPLETED";
+      const isWaitingPayment = t.payment_status === "PENDING";
+      const isPaid = t.payment_status === "SETTLED" || t.fulfillment_status === "PAID_HELD_IN_ESCROW";
+
+      let status: UMKMPurchaseHistory["status"] = "PROCESSING";
+      if (isCompleted) {
+        status = "COMPLETED";
+      } else if (isWaitingPayment) {
+        status = "WAITING_PAYMENT";
+      } else if (isPaid) {
+        status = "READY_FOR_PICKUP";
+      }
+
+      return {
+        id: t.id,
+        orderNumber: t.midtrans_order_id || `WST-${t.id.slice(0, 8).toUpperCase()}`,
+        commodityName: t.listing_title || "Residu Dapur Sirkular",
+        volumeKg: parseFloat(t.purchased_weight || "0"),
+        unit: "kg",
+        totalWholesalePaid: parseFloat(t.total_amount || "0"),
+        marketPriceComparison: parseFloat(t.total_amount || "0"),
+        savingsAmount: 0,
+        status,
+        standardStatus: isCompleted ? "COMPLETED" : isWaitingPayment ? "WAITING_PAYMENT" : "READY_FOR_PICKUP",
+        deliveryMethod: "DIRECT_DELIVERY",
+        orderDate: t.created_at ? new Date(t.created_at).toISOString().slice(0, 10) : "",
+        pickupCode: t.pickup_code || undefined,
+        hubPickupCode: t.pickup_code || undefined,
+        orderType: "CIRCULAR_WASTE",
+        supplierOrSellerName: t.seller_name || "UMKM Penjual Residu",
+        deliveryLocation: t.seller_address || "Lokasi Dapur Penjual",
+        snapToken: t.snap_token || undefined,
+        snapRedirectUrl: t.snap_redirect_url || undefined,
+        rawMaterialSubtotal: parseFloat(t.total_amount || "0"),
+        shippingFee: 0,
+        targetDeliveryDate: t.pickup_date || undefined,
+        leadTimeDays: 1,
+        supplierContact: {
+          name: t.seller_name || "UMKM Penjual Residu",
+          phone: t.seller_phone || undefined,
+        },
+      };
+    });
+
+    return {
+      success: true,
+      data: formatted,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.message || "Gagal memuat transaksi pembelian limbah",
+      data: [],
+    };
+  }
+}
+
