@@ -14,6 +14,7 @@ import { getNavItemsForRole, NavItemDef } from "@/constants/navigation";
 import { logoutAction } from "@/actions/auth";
 import { toast } from "@/components/ui/toast";
 import { switchRoleAction } from "@/actions/switch-role";
+import { LogoutConfirmDialog } from "@/components/ui/logout-confirm-dialog";
 
 export interface NavbarProps {
   role: UserRole;
@@ -35,6 +36,8 @@ export function Navbar({
   const [isOpen, setIsOpen] = React.useState<boolean>(true);
   const [isSwitching, setIsSwitching] = React.useState(false);
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = React.useState<boolean>(false);
+  const [isLoggingOut, setIsLoggingOut] = React.useState<boolean>(false);
 
   const isSupplier = role === "supplier";
   const navItems = React.useMemo(() => getNavItemsForRole(role), [role]);
@@ -133,7 +136,9 @@ export function Navbar({
     }
   };
 
-  const handleLogout = async () => {
+  const handleConfirmLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
     try {
       const res = await logoutAction(role);
       window.location.href = res.redirectTo || "/login";
@@ -366,8 +371,8 @@ export function Navbar({
                 </button>
                 <button
                   type="button"
-                  onClick={handleLogout}
-                  className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger-light cursor-pointer transition-colors shrink-0"
+                  onClick={() => setIsLogoutDialogOpen(true)}
+                  className="p-1.5 rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50/80 cursor-pointer transition-colors shrink-0"
                   title="Keluar Akun"
                   aria-label="Keluar akun"
                 >
@@ -389,10 +394,10 @@ export function Navbar({
               </button>
               <button
                 type="button"
-                onClick={handleLogout}
-                className="p-2 rounded-xl text-text-muted hover:text-danger hover:bg-danger-light cursor-pointer transition-colors"
-                title="Keluar"
-                aria-label="Keluar"
+                onClick={() => setIsLogoutDialogOpen(true)}
+                className="p-2 rounded-xl text-text-muted hover:text-red-600 hover:bg-red-50/80 cursor-pointer transition-colors"
+                title="Keluar Akun"
+                aria-label="Keluar akun"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -489,8 +494,12 @@ export function Navbar({
                 </button>
                 <button
                   type="button"
-                  onClick={handleLogout}
-                  className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger-light"
+                  onClick={() => {
+                    onCloseMobile?.();
+                    setIsLogoutDialogOpen(true);
+                  }}
+                  className="p-1.5 rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50/80 cursor-pointer transition-colors"
+                  title="Keluar Akun"
                   aria-label="Keluar akun"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -500,6 +509,14 @@ export function Navbar({
           </div>
         </div>
       )}
+
+      {/* Modal Dialog Konfirmasi Logout */}
+      <LogoutConfirmDialog
+        open={isLogoutDialogOpen}
+        onOpenChange={setIsLogoutDialogOpen}
+        onConfirm={handleConfirmLogout}
+        isLoading={isLoggingOut}
+      />
     </>
   );
 }
