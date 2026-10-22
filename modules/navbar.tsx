@@ -179,7 +179,7 @@ export function Navbar({
             onMouseEnter={() => setHoveredIndex(index)}
             title={!expanded ? item.label : undefined}
             className={cn(
-              "relative cursor-pointer min-h-[42px] rounded-xl flex items-center transition-colors duration-150 active:scale-[0.98]",
+              "relative cursor-pointer min-h-[44px] rounded-xl flex items-center transition-colors duration-150 active:scale-[0.98]",
               expanded ? "px-3.5 py-2.5" : "justify-center px-2 py-2"
             )}
           >
@@ -497,7 +497,7 @@ export function Navbar({
                   type="button"
                   onClick={handleSwitchRole}
                   disabled={isSwitching}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold rounded-lg bg-surface text-text-secondary border border-border"
+                  className="flex-1 min-h-[44px] flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl bg-surface hover:bg-surface-subtle text-text-secondary border border-border transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
                 >
                   <ArrowLeftRight className={cn("w-3.5 h-3.5", isSwitching && "animate-spin")} />
                   <span>{isSupplier ? "Ke UMKM" : "Ke Supplier"}</span>
@@ -508,11 +508,11 @@ export function Navbar({
                     onCloseMobile?.();
                     setIsLogoutDialogOpen(true);
                   }}
-                  className="p-1.5 rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50/80 cursor-pointer transition-colors"
+                  className="size-11 min-h-[44px] min-w-[44px] rounded-xl text-text-muted hover:text-red-600 hover:bg-red-50/80 active:scale-95 flex items-center justify-center border border-border bg-surface cursor-pointer transition-all shrink-0"
                   title="Keluar Akun"
                   aria-label="Keluar akun"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             </div>

@@ -361,7 +361,7 @@ export function BankSampahMapSection({ onLoadedPoints }: BankSampahMapSectionPro
             <div ref={mapContainerRef} className="kumpul-leaflet-map w-full h-full z-0" />
 
             {/* Floating Top HUD: Status Wilayah & Radius Sesuai Titik Dapur */}
-            <div className="absolute top-3 left-3 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface/90 backdrop-blur-md border border-border shadow-elevation-1 pointer-events-none max-w-[85%]">
+            <div className="absolute top-3 left-3 z-[400] flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface/90 backdrop-blur-md border border-border shadow-elevation-1 pointer-events-none max-w-[calc(100%-3.5rem)] sm:max-w-[85%]">
               <span className="font-heading text-[11px] font-bold text-text-primary truncate">
                 {areaLabel}
               </span>
@@ -376,14 +376,14 @@ export function BankSampahMapSection({ onLoadedPoints }: BankSampahMapSectionPro
                 type="button"
                 onClick={handleRecenterUmkm}
                 title="Pusatkan ke Dapur Saya"
-                className="size-9 rounded-xl bg-surface/95 backdrop-blur-md border border-border shadow-elevation-1 text-primary hover:bg-surface hover:text-primary-hover flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+                className="size-10 rounded-xl bg-surface/95 backdrop-blur-md border border-border shadow-elevation-1 text-primary hover:bg-surface hover:text-primary-hover flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
               >
-                <Compass className="size-4.5" />
+                <Compass className="size-5" />
               </button>
             </div>
 
             {/* Floating Bottom-Left Legend: Natural Tone */}
-            <div className="absolute bottom-3 left-3 z-[400] flex items-center gap-3 p-2 px-3 rounded-xl bg-surface/90 backdrop-blur-md border border-border shadow-elevation-1 text-[11px] font-semibold text-text-primary pointer-events-none">
+            <div className="absolute bottom-3 left-3 z-[400] flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 px-2.5 sm:px-3 rounded-xl bg-surface/90 backdrop-blur-md border border-border shadow-elevation-1 text-[10px] sm:text-[11px] font-semibold text-text-primary pointer-events-none">
               <div className="flex items-center gap-1.5">
                 <span className="size-2.5 rounded-xs bg-[#0D3B2E]" />
                 <span>Dapur Saya</span>

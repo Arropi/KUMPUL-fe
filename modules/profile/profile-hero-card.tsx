@@ -152,13 +152,13 @@ export function ProfileHeroCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 sm:pt-0">
+          <div className="flex items-center gap-2 pt-1 sm:pt-0 w-full sm:w-auto">
             <Button
               type="button"
               variant="primary"
               size="sm"
               onClick={() => setIsEditModalOpen(true)}
-              className="text-xs h-9 font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="text-xs min-h-[40px] sm:min-h-[36px] w-full sm:w-auto font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5" />
               <span>Ubah Profil</span>

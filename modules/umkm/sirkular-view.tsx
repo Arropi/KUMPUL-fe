@@ -807,11 +807,11 @@ export function UmkmSirkularView() {
           </div>
 
           {/* Quick Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-surface-subtle p-1 rounded-xl border border-border/80 self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 bg-surface-subtle p-1 rounded-xl border border-border/80 self-start sm:self-auto overflow-x-auto max-w-full flex-nowrap sm:flex-wrap pb-1.5 sm:pb-1 custom-scrollbar">
             <button
               type="button"
               onClick={() => setActiveFilter("SEMUA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "SEMUA"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "SEMUA"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -821,7 +821,7 @@ export function UmkmSirkularView() {
             <button
               type="button"
               onClick={() => setActiveFilter("ADA_PEMBELI")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "ADA_PEMBELI"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "ADA_PEMBELI"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -831,7 +831,7 @@ export function UmkmSirkularView() {
             <button
               type="button"
               onClick={() => setActiveFilter("LEWAT_KADALUARSA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "LEWAT_KADALUARSA"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "LEWAT_KADALUARSA"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -841,7 +841,7 @@ export function UmkmSirkularView() {
             <button
               type="button"
               onClick={() => setActiveFilter("MENDEKATI_KADALUARSA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "MENDEKATI_KADALUARSA"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "MENDEKATI_KADALUARSA"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -851,7 +851,7 @@ export function UmkmSirkularView() {
             <button
               type="button"
               onClick={() => setActiveFilter("TERSEDIA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "TERSEDIA"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "TERSEDIA"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -861,7 +861,6 @@ export function UmkmSirkularView() {
           </div>
         </div>
 
-        {/* Grid Kartu Limbah */}
         {/* Grid Kartu Limbah */}
         {isLoadingListings ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

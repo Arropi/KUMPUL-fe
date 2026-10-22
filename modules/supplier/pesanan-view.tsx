@@ -501,7 +501,7 @@ export function SupplierPesananView() {
                         variant="primary"
                         size="sm"
                         onClick={() => handleOpenShipModal(po)}
-                        className="font-bold text-xs min-h-[42px] cursor-pointer"
+                        className="font-bold text-xs min-h-[44px] px-3.5 cursor-pointer"
                       >
                         <Truck className="w-3.5 h-3.5 mr-1" />
                         <span>Kirim</span>
@@ -514,7 +514,7 @@ export function SupplierPesananView() {
                         size="sm"
                         onClick={() => handleMarkDelivered(po.id)}
                         disabled={updatingPoId === po.id}
-                        className="font-bold text-xs min-h-[42px] bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                        className="font-bold text-xs min-h-[44px] px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                         <span>{updatingPoId === po.id ? "..." : "Tiba"}</span>
@@ -522,7 +522,7 @@ export function SupplierPesananView() {
                     )}
 
                     <Link href={`/pesanan/${po.id}`}>
-                      <Button variant="outline" size="sm" className="font-semibold text-xs min-h-[42px] cursor-pointer">
+                      <Button variant="outline" size="sm" className="font-semibold text-xs min-h-[44px] px-3.5 cursor-pointer">
                         Rincian
                       </Button>
                     </Link>
