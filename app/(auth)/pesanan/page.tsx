@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { UserRole, UserSession } from "@/constants/auth";
 import { UmkmPesananView } from "@/modules/umkm/pesanan-view";
 import { SupplierPesananView } from "@/modules/supplier/pesanan-view";
+import PesananLoading from "./loading";
 
 export const metadata: Metadata = {
   title: "Manajemen Pesanan | KUMPUL",
@@ -27,13 +28,7 @@ export default async function PesananPage() {
   }
 
   return (
-    <React.Suspense
-      fallback={
-        <div className="min-h-[50vh] flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        </div>
-      }
-    >
+    <React.Suspense fallback={<PesananLoading />}>
       {role === "supplier" ? (
         <SupplierPesananView />
       ) : (

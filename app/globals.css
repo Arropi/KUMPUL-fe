@@ -288,3 +288,23 @@ input:not(:placeholder-shown) ~ label {
   color: var(--color-text-primary) !important;
 }
 
+/* Smooth GPU-Accelerated Shimmer Wave Animation untuk Skeleton */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@utility animate-shimmer {
+  animation: shimmer 1.8s infinite ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer {
+    animation: none;
+  }
+}
+

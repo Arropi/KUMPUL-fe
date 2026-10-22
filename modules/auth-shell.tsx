@@ -4,6 +4,11 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { UserRole, UserSession } from "@/constants/auth";
 import { Navbar } from "./navbar";
+import {
+  NavigationLoadingProvider,
+  useNavigationLoading,
+} from "@/components/ui/navigation-progress";
+import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
 import Image from "next/image";
 
@@ -12,6 +17,30 @@ export interface AuthShellProps {
   role: UserRole;
   session?: UserSession | null;
 }
+function MainContent({
+  children,
+  mainRef,
+}: {
+  children: React.ReactNode;
+  mainRef: React.RefObject<HTMLElement | null>;
+}) {
+  const { isNavigating } = useNavigationLoading();
+
+  return (
+    <main
+      ref={mainRef}
+      className={cn(
+        "flex-1 overflow-y-auto overscroll-contain focus:outline-none transition-opacity duration-150",
+        isNavigating && "opacity-65"
+      )}
+    >
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        {children}
+      </div>
+    </main>
+  );
+}
+
 
 export function AuthShell({ children, role, session }: AuthShellProps) {
   const [isMobileNavOpen, setIsMobileNavOpen] = React.useState(false);
@@ -26,7 +55,8 @@ export function AuthShell({ children, role, session }: AuthShellProps) {
   }, [pathname]);
 
   return (
-    <div className="h-screen overflow-hidden bg-background text-text-primary flex flex-col md:flex-row font-sans selection:bg-primary-light selection:text-primary">
+    <NavigationLoadingProvider>
+      <div className="h-screen overflow-hidden bg-background text-text-primary flex flex-col md:flex-row font-sans selection:bg-primary-light selection:text-primary">
       {/* Unified Sidebar Navigation */}
       <React.Suspense fallback={<aside className="hidden md:flex w-[260px] h-full shrink-0 border-r border-border bg-surface" />}>
         <Navbar
@@ -63,15 +93,11 @@ export function AuthShell({ children, role, session }: AuthShellProps) {
         </header>
 
         {/* Page Content */}
-        <main
-          ref={mainRef}
-          className="flex-1 overflow-y-auto overscroll-contain focus:outline-none"
-        >
-          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+          <MainContent mainRef={mainRef}>
             {children}
-          </div>
-        </main>
+          </MainContent>
+        </div>
       </div>
-    </div>
+    </NavigationLoadingProvider>
   );
 }

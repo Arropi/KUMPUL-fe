@@ -15,6 +15,7 @@ import { logoutAction } from "@/actions/auth";
 import { toast } from "@/components/ui/toast";
 import { switchRoleAction } from "@/actions/switch-role";
 import { LogoutConfirmDialog } from "@/components/ui/logout-confirm-dialog";
+import { useNavigationLoading } from "@/components/ui/navigation-progress";
 
 export interface NavbarProps {
   role: UserRole;
@@ -38,6 +39,7 @@ export function Navbar({
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = React.useState<boolean>(false);
   const [isLoggingOut, setIsLoggingOut] = React.useState<boolean>(false);
+  const { isNavigating, targetHref } = useNavigationLoading();
 
   const isSupplier = role === "supplier";
   const navItems = React.useMemo(() => getNavItemsForRole(role), [role]);
@@ -161,8 +163,8 @@ export function Navbar({
       {navItems.map((item, index) => {
         const isSelected = isLinkActive(item);
         const isHovered = hoveredIndex === index && !isSelected;
+        const isPending = isNavigating && (targetHref === item.href || (item.href !== "/home" && targetHref?.startsWith(item.href)));
         const IconComponent = item.icon;
-
         return (
           <Link
             key={item.id}
@@ -227,7 +229,11 @@ export function Navbar({
                     : "text-text-muted group-hover:text-text-primary"
                 )}
               >
-                <IconComponent className="w-5 h-5 shrink-0" />
+                {isPending ? (
+                  <div className="size-4 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                ) : (
+                  <IconComponent className="w-5 h-5 shrink-0" />
+                )}
               </span>
 
               {expanded && (
@@ -243,11 +249,15 @@ export function Navbar({
                     {item.label}
                   </span>
 
-                  {item.badge && (
+                  {isPending ? (
+                    <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-md bg-primary-light text-primary border border-primary/20 shrink-0 animate-pulse">
+                      Memuat
+                    </span>
+                  ) : item.badge ? (
                     <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-accent text-text-inverse shrink-0 shadow-xs">
                       {item.badge}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               )}
             </div>

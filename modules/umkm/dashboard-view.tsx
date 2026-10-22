@@ -32,6 +32,7 @@ import { toast } from "@/components/ui/toast";
 import { cn, formatCurrency, formatNumber } from "@/lib/utils";
 import { beFetch } from "@/lib/api/be-client";
 import { Pagination15 } from "@/components/ui/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getUmkmDashboardDataAction,
   type UmkmDashboardData,
@@ -222,98 +223,122 @@ export function UmkmDashboardView() {
       </div>
 
       {/* 2. Empat Kartu Metrik Riil dari Backend (GET /api/dashboards/umkm) */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Card 1: Akumulasi Pengeluaran Belanja */}
-        <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-elevation-1 flex flex-col justify-between gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-text-secondary">Total Belanja Pengadaan</span>
-            <Badge variant="primary" className="text-[10px]">
-              Terselesaikan
-            </Badge>
-          </div>
-          <div>
-            <p className="font-heading text-xl sm:text-2xl font-bold text-text-primary tabular-nums">
-              {formatCurrency(dashboardData?.total_procurement_spent || 0)}
-            </p>
-            <p className="text-[11px] text-text-muted mt-0.5">
-              Belanja pasokan grosir terverifikasi
-            </p>
-          </div>
-          <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-text-secondary">
-            <span>Transaksi Settled</span>
-            <span className="font-bold text-primary">Sistem Escrow</span>
-          </div>
-        </div>
-
-        {/* Card 2: Estimasi Penghematan Belanja */}
-        <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-elevation-1 flex flex-col justify-between gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-text-secondary">Estimasi Hemat Belanja</span>
-            <Badge variant="waste" className="text-[10px]">
-              Pooling MOQ
-            </Badge>
-          </div>
-          <div>
-            <p className="font-heading text-xl sm:text-2xl font-bold text-circular-waste tabular-nums">
-              {formatCurrency(dashboardData?.estimated_procurement_savings || 0)}
-            </p>
-            <p className="text-[11px] text-text-muted mt-0.5">
-              Efisiensi modal belanja vs harga eceran pasar
-            </p>
-          </div>
-          <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-text-secondary">
-            <span>Diskon Grosir Kolektif</span>
-            <span className="font-bold text-circular-waste">~12% - 25%</span>
-          </div>
-        </div>
-
-        {/* Card 3: Patungan Kuota Aktif */}
-        <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-elevation-1 flex flex-col justify-between gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-text-secondary">Patungan Kuota Aktif</span>
-            <Badge variant="secondary" className="text-[10px]">
-              Bursa Berjalan
-            </Badge>
-          </div>
-          <div>
-            <div className="flex items-baseline gap-1">
-              <p className="font-heading text-xl sm:text-2xl font-bold text-text-primary tabular-nums">
-                {dashboardData?.active_participations_count ?? 0}
-              </p>
-              <span className="text-xs font-semibold text-text-muted">Pool</span>
+      {isLoading && !dashboardData ? (
+        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-elevation-1 flex flex-col justify-between gap-3 min-h-[148px]"
+            >
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-28 rounded-md" />
+                <Skeleton className="h-5 w-16 rounded-md" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton className="h-7 w-36 rounded-lg" />
+                <Skeleton className="h-3.5 w-44 rounded-md" />
+              </div>
+              <div className="pt-2 border-t border-border/70 flex items-center justify-between">
+                <Skeleton className="h-3 w-20 rounded-md" />
+                <Skeleton className="h-3 w-24 rounded-md" />
+              </div>
             </div>
-            <p className="text-[11px] text-text-muted mt-0.5">
-              Kamar pooling yang sedang berjalan
-            </p>
+          ))}
+        </section>
+      ) : (
+        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {/* Card 1: Akumulasi Pengeluaran Belanja */}
+          <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-elevation-1 flex flex-col justify-between gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-secondary">Total Belanja Pengadaan</span>
+              <Badge variant="primary" className="text-[10px]">
+                Terselesaikan
+              </Badge>
+            </div>
+            <div>
+              <p className="font-heading text-xl sm:text-2xl font-bold text-text-primary tabular-nums">
+                {formatCurrency(dashboardData?.total_procurement_spent || 0)}
+              </p>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                Belanja pasokan grosir terverifikasi
+              </p>
+            </div>
+            <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-text-secondary">
+              <span>Transaksi Settled</span>
+              <span className="font-bold text-primary">Sistem Escrow</span>
+            </div>
           </div>
-          <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-text-secondary">
-            <span>Amankan Kuota</span>
-            <span className="font-bold text-primary">Autonomous Aggregation</span>
-          </div>
-        </div>
 
-        {/* Card 4: Monetisasi Residu & Sirkular */}
-        <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-elevation-1 flex flex-col justify-between gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-text-secondary">Kas Limbah Sirkular</span>
-            <Badge variant="waste" className="text-[10px]">
-              Waste-to-Value
-            </Badge>
+          {/* Card 2: Estimasi Penghematan Belanja */}
+          <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-elevation-1 flex flex-col justify-between gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-secondary">Estimasi Hemat Belanja</span>
+              <Badge variant="waste" className="text-[10px]">
+                Pooling MOQ
+              </Badge>
+            </div>
+            <div>
+              <p className="font-heading text-xl sm:text-2xl font-bold text-circular-waste tabular-nums">
+                {formatCurrency(dashboardData?.estimated_procurement_savings || 0)}
+              </p>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                Efisiensi modal belanja vs harga eceran pasar
+              </p>
+            </div>
+            <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-text-secondary">
+              <span>Diskon Grosir Kolektif</span>
+              <span className="font-bold text-circular-waste">~12% - 25%</span>
+            </div>
           </div>
-          <div>
-            <p className="font-heading text-xl sm:text-2xl font-bold text-circular-waste tabular-nums">
-              +{formatCurrency(dashboardData?.waste_revenue_earned || 0)}
-            </p>
-            <p className="text-[11px] text-text-muted mt-0.5">
-              ~{dashboardData?.waste_diverted_kg || 0} kg residu dialihkan dari TPA
-            </p>
+
+          {/* Card 3: Patungan Kuota Aktif */}
+          <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-elevation-1 flex flex-col justify-between gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-secondary">Patungan Kuota Aktif</span>
+              <Badge variant="secondary" className="text-[10px]">
+                Bursa Berjalan
+              </Badge>
+            </div>
+            <div>
+              <div className="flex items-baseline gap-1">
+                <p className="font-heading text-xl sm:text-2xl font-bold text-text-primary tabular-nums">
+                  {dashboardData?.active_participations_count ?? 0}
+                </p>
+                <span className="text-xs font-semibold text-text-muted">Pool</span>
+              </div>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                Kamar pooling yang sedang berjalan
+              </p>
+            </div>
+            <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-text-secondary">
+              <span>Amankan Kuota</span>
+              <span className="font-bold text-primary">Autonomous Aggregation</span>
+            </div>
           </div>
-          <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-text-secondary">
-            <span>Dampak Lingkungan (ESG)</span>
-            <span className="font-bold text-circular-waste">Tersalurkan Offtaker</span>
+
+          {/* Card 4: Monetisasi Residu & Sirkular */}
+          <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-elevation-1 flex flex-col justify-between gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-text-secondary">Kas Limbah Sirkular</span>
+              <Badge variant="waste" className="text-[10px]">
+                Waste-to-Value
+              </Badge>
+            </div>
+            <div>
+              <p className="font-heading text-xl sm:text-2xl font-bold text-circular-waste tabular-nums">
+                +{formatCurrency(dashboardData?.waste_revenue_earned || 0)}
+              </p>
+              <p className="text-[11px] text-text-muted mt-0.5">
+                ~{dashboardData?.waste_diverted_kg || 0} kg residu dialihkan dari TPA
+              </p>
+            </div>
+            <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[11px] text-text-secondary">
+              <span>Dampak Lingkungan (ESG)</span>
+              <span className="font-bold text-circular-waste">Tersalurkan Offtaker</span>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 3. Radar Autonomous MOQ Pooling Aktif (Data dari /api/pre-orders/pools) */}
       <section className="space-y-4">
@@ -350,7 +375,43 @@ export function UmkmDashboardView() {
         </div>
 
         {/* Grid Kartu Pool Aktif */}
-        {filteredPools.length === 0 ? (
+        {isLoading && !dashboardData ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-border bg-surface shadow-elevation-1 p-5 sm:p-6 space-y-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-16 rounded-md" />
+                    <Skeleton className="h-5 w-44 rounded-md" />
+                    <Skeleton className="h-3 w-28 rounded-md" />
+                  </div>
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-24 rounded-md" />
+                    <Skeleton className="h-3 w-20 rounded-md" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
+                <div className="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-surface-subtle/80 border border-border/80">
+                  <div className="space-y-1">
+                    <Skeleton className="h-2.5 w-16 rounded-md" />
+                    <Skeleton className="h-4 w-24 rounded-md" />
+                  </div>
+                  <div className="space-y-1">
+                    <Skeleton className="h-2.5 w-16 rounded-md" />
+                    <Skeleton className="h-4 w-20 rounded-md" />
+                  </div>
+                </div>
+                <Skeleton className="h-10 w-full rounded-xl" />
+              </div>
+            ))}
+          </div>
+        ) : filteredPools.length === 0 ? (
           <Card className="rounded-2xl border border-dashed border-border py-10 text-center">
             <CardContent className="space-y-2">
               <p className="font-heading font-bold text-sm text-text-primary">
@@ -505,7 +566,26 @@ export function UmkmDashboardView() {
           </Button>
         </div>
 
-        {(!dashboardData?.kitchen_runout_alerts || dashboardData.kitchen_runout_alerts.length === 0) ? (
+        {isLoading && !dashboardData ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="p-4 rounded-2xl border border-border bg-surface shadow-elevation-1 space-y-4"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <Skeleton className="h-5 w-32 rounded-md" />
+                  <Skeleton className="h-5 w-20 rounded-md" />
+                </div>
+                <Skeleton className="h-4 w-40 rounded-md" />
+                <div className="pt-2 border-t border-border/70 flex items-center justify-between">
+                  <Skeleton className="h-4 w-28 rounded-md" />
+                  <Skeleton className="h-8 w-24 rounded-xl" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (!dashboardData?.kitchen_runout_alerts || dashboardData.kitchen_runout_alerts.length === 0) ? (
           <Card className="rounded-2xl border border-dashed border-border py-8 text-center">
             <p className="text-xs text-text-secondary">
               Belum ada bahan baku resep terdaftar. Tambahkan resep di halaman Produk untuk mengaktifkan pemantau stok dapur otomatis.
