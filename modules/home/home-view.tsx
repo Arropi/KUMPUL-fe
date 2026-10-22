@@ -276,7 +276,7 @@ export function HomeView({
               className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
                 selectedSource === "ALL"
                   ? "bg-text-primary text-white border-text-primary shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Semua Sumber
@@ -286,8 +286,8 @@ export function HomeView({
               onClick={() => setSelectedSource("SUPPLIER")}
               className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
                 selectedSource === "SUPPLIER"
-                  ? "bg-primary-dark text-white border-primary-dark shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  ? "bg-primary text-white border-primary shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Komoditas Pemasok
@@ -297,8 +297,8 @@ export function HomeView({
               onClick={() => setSelectedSource("WASTE")}
               className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
                 selectedSource === "WASTE"
-                  ? "bg-emerald-800 text-white border-emerald-800 shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  ? "bg-circular-waste text-white border-circular-waste shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Limbah Sirkular
@@ -312,7 +312,7 @@ export function HomeView({
               className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
                 onlyReadyStock
                   ? "bg-primary text-white border-primary shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Ready Stock
@@ -323,8 +323,8 @@ export function HomeView({
                 onClick={() => setOnlyOpenPools(!onlyOpenPools)}
                 className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
                   onlyOpenPools
-                    ? "bg-amber-600 text-white border-amber-600 shadow-xs"
-                    : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                    ? "bg-accent text-white border-accent shadow-xs"
+                    : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
                 }`}
               >
                 Pool Terbuka Saja
@@ -335,8 +335,8 @@ export function HomeView({
               onClick={() => setOnlyVerified(!onlyVerified)}
               className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
                 onlyVerified
-                  ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  ? "bg-emerald-700 text-white border-emerald-700 shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Terverifikasi Mutu
