@@ -57,6 +57,7 @@ export function CommodityCatalogCard({
 
   const primaryPrice = item.priceTiers[0]?.pricePerUnit || 0;
   const isHygienePassed = item.batchTag.hygieneStatus === "TERVERIFIKASI";
+  const isHygieneRejected = item.batchTag.hygieneStatus === "TIDAK_SESUAI";
   const isUmkm = role === "umkm";
 
   // Kondisional badges sesuai requirement:
@@ -153,9 +154,13 @@ export function CommodityCatalogCard({
                 <span className="inline-flex items-center rounded-full bg-emerald-600/95 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
                   Terverifikasi
                 </span>
+              ) : isHygieneRejected ? (
+                <span className="inline-flex items-center rounded-full bg-rose-600/95 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+                  Tidak Sesuai
+                </span>
               ) : (
                 <span className="inline-flex items-center rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                  Audit Higienis
+                  Menunggu Audit
                 </span>
               )}
             </div>

@@ -10,7 +10,9 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
     | "success"
     | "warning"
     | "info"
-    | "neutral";
+    | "neutral"
+    | "destructive"
+    | "error";
 }
 
 function Badge({
@@ -32,8 +34,9 @@ function Badge({
     warning: "bg-amber-50 text-amber-900 border-amber-200/80",
     info: "bg-blue-50 text-blue-800 border-blue-200/80",
     neutral: "bg-neutral-100 text-neutral-600 border-neutral-200",
+    destructive: "bg-rose-50 text-rose-800 border-rose-200/80",
+    error: "bg-rose-50 text-rose-800 border-rose-200/80",
   };
-
   return (
     <span
       data-slot="badge"

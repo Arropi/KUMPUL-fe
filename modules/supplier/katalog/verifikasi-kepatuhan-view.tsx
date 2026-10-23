@@ -169,12 +169,15 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
 
       if (res.success) {
         setIsSuccess(true);
+        const isVerified = Boolean(res.data?.is_verified);
         const aiSummary = res.data?.verification_notes;
         toast.success(
           aiSummary
             ? `Hasil Evaluasi AI: ${aiSummary}`
-            : `Kepatuhan mutu & cara penyimpanan ${commodity.name} berhasil disimpan!`,
-          res.data?.is_verified ? "Lulus Verifikasi Mutu" : "Dokumen Disimpan"
+            : isVerified
+            ? `Kepatuhan mutu & cara penyimpanan ${commodity.name} memenuhi standar!`
+            : `Hasil evaluasi AI: Dokumen tidak sesuai atau belum memenuhi standar mutu.`,
+          isVerified ? "Lulus Verifikasi Mutu" : "Hasil Evaluasi: Tidak Sesuai"
         );
         setTimeout(() => {
           router.push(`/katalog/${commodity.id}`);
@@ -309,23 +312,51 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
                 Memuat data dokumen verifikasi dari server...
               </div>
             ) : existingBatchTags.length > 0 && !uploadedFile ? (
-              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-3">
+              <div
+                className={`p-4 rounded-xl border space-y-3 ${
+                  existingBatchTags[0].is_verified
+                    ? "border-emerald-200 bg-emerald-50/50"
+                    : existingBatchTags[0].supporting_file_url || existingBatchTags[0].verification_notes
+                    ? "border-rose-200 bg-rose-50/50"
+                    : "border-amber-200 bg-amber-50/50"
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                        existingBatchTags[0].is_verified
+                          ? "bg-emerald-100 text-emerald-700"
+                          : existingBatchTags[0].supporting_file_url || existingBatchTags[0].verification_notes
+                          ? "bg-rose-100 text-rose-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
                       <FileText className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs font-bold text-text-primary truncate">
                           {existingBatchTags[0].supporting_file_url
                             ? decodeURIComponent(
-                                existingBatchTags[0].supporting_file_url.split("/").pop() || "Dokumen_Mutu_Terverifikasi.pdf"
+                                existingBatchTags[0].supporting_file_url.split("/").pop() || "Dokumen_Mutu_Terdaftar.pdf"
                               )
                             : "Dokumen Mutu Terdaftar"}
                         </p>
-                        <Badge variant={existingBatchTags[0].is_verified ? "success" : "warning"}>
-                          {existingBatchTags[0].is_verified ? "Lulus Verifikasi AI" : "Menunggu Audit"}
+                        <Badge
+                          variant={
+                            existingBatchTags[0].is_verified
+                              ? "success"
+                              : existingBatchTags[0].supporting_file_url || existingBatchTags[0].verification_notes
+                              ? "destructive"
+                              : "warning"
+                          }
+                        >
+                          {existingBatchTags[0].is_verified
+                            ? "Lulus Verifikasi AI"
+                            : existingBatchTags[0].supporting_file_url || existingBatchTags[0].verification_notes
+                            ? "Tidak Sesuai"
+                            : "Menunggu Audit"}
                         </Badge>
                       </div>
                       <p className="text-[11px] text-text-muted mt-0.5">
