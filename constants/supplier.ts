@@ -160,7 +160,7 @@ export interface CommodityBatchTag {
   expiryDate: string;
   storageTemperature: StorageTemperature;
   originLocation: string;
-  hygieneStatus: "TERVERIFIKASI" | "MENUNGGU_AUDIT" | "KADALUARSA";
+  hygieneStatus: "TERVERIFIKASI" | "TIDAK_SESUAI" | "MENUNGGU_AUDIT" | "KADALUARSA";
 }
 
 export interface SupplierCommodity {

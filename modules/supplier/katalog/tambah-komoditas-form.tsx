@@ -273,7 +273,7 @@ export function TambahKomoditasForm({
         autoActivateMarketplace: false,
         allowsUnderMoq: false,
         underMoqPricePerKg: null,
-        isMarketplaceActive: initialCommodity?.is_marketplace_active ?? true,
+        isMarketplaceActive: isEdit ? (initialCommodity?.is_marketplace_active ?? false) : false,
         priceTiers: formattedTiers,
       };
 
@@ -287,9 +287,9 @@ export function TambahKomoditasForm({
       if (res.success) {
         toast.success(
           `Komoditas ${name} berhasil ${
-            isEdit ? "diperbarui" : "disimpan ke katalog pasokan"
+            isEdit ? "diperbarui" : "disimpan ke katalog pasokan (Draft)"
           }.`,
-          isEdit ? "Perubahan Disimpan" : "Katalog Berhasil Ditambahkan",
+          isEdit ? "Perubahan Disimpan" : "Katalog Berhasil Disimpan",
         );
         router.push(
           isEdit && initialCommodity
@@ -486,10 +486,10 @@ export function TambahKomoditasForm({
               {isSubmitting
                 ? isEdit
                   ? "Menyimpan Perubahan..."
-                  : "Menyimpan Komoditas..."
+                  : "Menyimpan..."
                 : isEdit
                 ? "Simpan Perubahan"
-                : "Simpan & Publikasikan"}
+                : "Simpan"}
             </Button>
           )}
         </div>
