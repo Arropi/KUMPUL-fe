@@ -16,6 +16,7 @@ import { toast } from "@/components/ui/toast";
 import { switchRoleAction } from "@/actions/switch-role";
 import { LogoutConfirmDialog } from "@/components/ui/logout-confirm-dialog";
 import { useNavigationLoading } from "@/components/ui/navigation-progress";
+import { getSidebarBadgesAction, type SidebarBadges } from "@/actions/navigation";
 
 export interface NavbarProps {
   role: UserRole;
@@ -40,10 +41,22 @@ export function Navbar({
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = React.useState<boolean>(false);
   const [isLoggingOut, setIsLoggingOut] = React.useState<boolean>(false);
   const { isNavigating, targetHref } = useNavigationLoading();
+  const [badges, setBadges] = React.useState<SidebarBadges>({});
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getSidebarBadgesAction(role).then((res) => {
+      if (isMounted && res) {
+        setBadges(res);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [role, pathname]);
 
   const isSupplier = role === "supplier";
-  const navItems = React.useMemo(() => getNavItemsForRole(role), [role]);
-
+  const navItems = React.useMemo(() => getNavItemsForRole(role, badges), [role, badges]);
   // Reset status hover saat rute berpindah agar animasi tidak tertahan
   const [prevPathname, setPrevPathname] = React.useState(pathname);
   if (prevPathname !== pathname) {
@@ -223,7 +236,7 @@ export function Navbar({
             >
               <span
                 className={cn(
-                  "shrink-0 transition-colors duration-150 inline-flex items-center justify-center w-5 h-5",
+                  "relative shrink-0 transition-colors duration-150 inline-flex items-center justify-center w-5 h-5",
                   isSelected
                     ? "text-primary"
                     : "text-text-muted group-hover:text-text-primary"
@@ -232,7 +245,12 @@ export function Navbar({
                 {isPending ? (
                   <div className="size-4 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
                 ) : (
-                  <IconComponent className="w-5 h-5 shrink-0" />
+                  <>
+                    <IconComponent className="w-5 h-5 shrink-0" />
+                    {!expanded && item.badge && (
+                      <span className="absolute -top-1 -right-1 size-2 rounded-full bg-accent ring-2 ring-surface shadow-2xs" />
+                    )}
+                  </>
                 )}
               </span>
 

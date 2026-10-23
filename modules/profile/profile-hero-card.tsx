@@ -19,6 +19,7 @@ import {
 import { SECTOR_MEDIA_MAP, type UnifiedProfileState } from "./types";
 import { updateBusinessEntityProfileAction } from "@/actions/business-profile";
 import { MapPicker } from "@/components/ui/map-picker";
+import { extractCityFromAddress } from "@/lib/utils";
 
 interface ProfileHeroCardProps {
   role: "supplier" | "umkm";
@@ -62,6 +63,10 @@ export function ProfileHeroCard({
     SECTOR_MEDIA_MAP[sectorKey] ||
     (role === "supplier" ? SECTOR_MEDIA_MAP.PERTANIAN : SECTOR_MEDIA_MAP.FNB_PENGOLAHAN);
   const initials = (brandName || profile.legalName || "KP").substring(0, 2).toUpperCase();
+  const displayCity = React.useMemo(() => {
+    return profile.city || extractCityFromAddress(profile.address);
+  }, [profile.city, profile.address]);
+
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,10 +94,13 @@ export function ProfileHeroCard({
 
       if (entityRes.success) {
         // Prepare the update for the profile state
+        const newAddress = address.trim();
+        const newCity = extractCityFromAddress(newAddress);
         onProfileUpdated({
           legalName: legalName.trim(),
           npwpNib: npwpNib.trim(),
-          address: address.trim(),
+          address: newAddress,
+          city: newCity,
           contactPhone: phoneNumber.trim(),
         });
         setIsEditModalOpen(false);
@@ -134,7 +142,7 @@ export function ProfileHeroCard({
         <div className="absolute top-4 right-4 sm:top-5 sm:right-6 text-right z-10">
           <span className="px-3.5 py-1.5 rounded-full bg-surface/95 backdrop-blur-md text-text-primary text-[11px] sm:text-xs font-semibold border border-border/80 shadow-xs flex items-center gap-1.5">
             <MapPin className="size-3 text-primary shrink-0" />
-            <span>{profile.city || "Jawa Timur"}</span>
+            <span>{displayCity}</span>
             <span className="text-text-muted">&bull;</span>
             <span className="text-text-muted">Terdaftar {profile.registrationDate || "2025"}</span>
           </span>
@@ -142,23 +150,23 @@ export function ProfileHeroCard({
       </div>
 
       {/* Info Detail Profil Usaha */}
-      <div className="px-5 sm:px-8 pb-6 sm:pb-8 pt-3 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-10 sm:-mt-12 relative z-10">
-          <div className="flex items-end gap-3.5 sm:gap-4">
-            <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-2xl bg-primary text-text-inverse border-4 border-surface shadow-elevation-2 flex items-center justify-center font-heading font-extrabold text-2xl sm:text-3xl shrink-0">
+      <div className="px-5 sm:px-8 pb-6 sm:pb-8 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 relative z-10">
+          <div className="flex items-start gap-3.5 sm:gap-4">
+            <div className="-mt-9 sm:-mt-11 w-18 h-18 sm:w-22 sm:h-22 rounded-2xl bg-primary text-text-inverse border-4 border-surface shadow-elevation-2 flex items-center justify-center font-heading font-extrabold text-2xl sm:text-3xl shrink-0">
               {initials}
             </div>
-            <div className="pb-1 min-w-0">
+            <div className="pt-2 sm:pt-2.5 min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold font-heading text-text-primary tracking-tight line-clamp-1" title={brandName || profile.legalName}>
                 {brandName || profile.legalName}
               </h1>
-              <p className="text-xs sm:text-sm font-semibold text-text-secondary line-clamp-1" title={profile.legalName}>
+              <p className="text-xs sm:text-sm font-semibold text-text-secondary line-clamp-1 mt-0.5" title={profile.legalName}>
                 {profile.legalName}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 sm:pt-0 w-full sm:w-auto">
+          <div className="flex items-center gap-2 pt-1 sm:pt-2 w-full sm:w-auto">
             <Button
               type="button"
               variant="primary"
