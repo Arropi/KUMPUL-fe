@@ -2,7 +2,23 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Plus, Trash2, ArrowRightLeft, Check, AlertCircle, AlertTriangle } from "lucide-react";
+import {
+  ShieldCheck,
+  Plus,
+  Trash2,
+  ArrowRightLeft,
+  Check,
+  AlertCircle,
+  AlertTriangle,
+  ChevronDown,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -334,33 +350,86 @@ export function ProfileRolesCard({
           <form onSubmit={handleAddRole} className="space-y-4 pt-2">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-text-primary">Jenis Peran Bisnis</label>
-              <select
-                value={newRoleType}
-                onChange={(e) => {
-                  const val = e.target.value as "SUPPLIER" | "UMKM";
-                  setNewRoleType(val);
-                  setNewSector(val === "SUPPLIER" ? "PERTANIAN" : "FNB_PENGOLAHAN");
-                }}
-                className="w-full h-11 px-3.5 rounded-xl border border-border bg-surface text-xs sm:text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              >
-                {canAddSupplier && <option value="SUPPLIER">Mitra Supplier (Pemasok Bahan Baku)</option>}
-                {canAddUmkm && <option value="UMKM">Pelaku Usaha UMKM (Pengolah &amp; Kuliner)</option>}
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full h-11 px-3.5 py-2.5 rounded-xl border border-border bg-surface hover:bg-surface-subtle text-xs sm:text-sm font-medium text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all flex items-center justify-between cursor-pointer text-left"
+                  >
+                    <span>
+                      {newRoleType === "SUPPLIER"
+                        ? "Mitra Supplier (Pemasok Bahan Baku)"
+                        : "Pelaku Usaha UMKM (Pengolah & Kuliner)"}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-text-muted shrink-0 ml-2" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="w-[var(--radix-dropdown-menu-trigger-width)] p-1.5"
+                >
+                  <DropdownMenuRadioGroup
+                    value={newRoleType}
+                    onValueChange={(val) => {
+                      const roleVal = val as "SUPPLIER" | "UMKM";
+                      setNewRoleType(roleVal);
+                      setNewSector(roleVal === "SUPPLIER" ? "PERTANIAN" : "FNB_PENGOLAHAN");
+                    }}
+                  >
+                    {canAddSupplier && (
+                      <DropdownMenuRadioItem
+                        value="SUPPLIER"
+                        className="text-xs sm:text-sm font-medium cursor-pointer"
+                      >
+                        Mitra Supplier (Pemasok Bahan Baku)
+                      </DropdownMenuRadioItem>
+                    )}
+                    {canAddUmkm && (
+                      <DropdownMenuRadioItem
+                        value="UMKM"
+                        className="text-xs sm:text-sm font-medium cursor-pointer"
+                      >
+                        Pelaku Usaha UMKM (Pengolah &amp; Kuliner)
+                      </DropdownMenuRadioItem>
+                    )}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-text-primary">Sektor Industri Usaha</label>
-              <select
-                value={newSector}
-                onChange={(e) => setNewSector(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl border border-border bg-surface text-xs sm:text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              >
-                {SECTOR_OPTIONS.filter((s) => s.forRole === newRoleType).map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full h-11 px-3.5 py-2.5 rounded-xl border border-border bg-surface hover:bg-surface-subtle text-xs sm:text-sm font-medium text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all flex items-center justify-between cursor-pointer text-left"
+                  >
+                    <span>
+                      {SECTOR_OPTIONS.find((s) => s.value === newSector && s.forRole === newRoleType)?.label ||
+                        SECTOR_OPTIONS.find((s) => s.value === newSector)?.label ||
+                        "Pilih Sektor Industri"}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-text-muted shrink-0 ml-2" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-60 overflow-y-auto p-1.5"
+                >
+                  <DropdownMenuRadioGroup value={newSector} onValueChange={setNewSector}>
+                    {SECTOR_OPTIONS.filter((s) => s.forRole === newRoleType).map((opt) => (
+                      <DropdownMenuRadioItem
+                        key={opt.value}
+                        value={opt.value}
+                        className="text-xs sm:text-sm font-medium cursor-pointer"
+                      >
+                        {opt.label}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="space-y-1.5">

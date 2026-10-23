@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Trash2, CreditCard, Check, Star, AlertCircle } from "lucide-react";
+import { Plus, Trash2, CreditCard, Check, Star, AlertCircle, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -290,17 +297,33 @@ export function ProfileBankAccountsCard({
               <label className="text-xs font-bold text-text-primary block mb-1">
                 Pilih Bank *
               </label>
-              <select
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                className="w-full text-xs font-medium rounded-xl border border-border bg-surface px-3 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                {POPULAR_BANKS.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full h-11 px-3.5 py-2.5 rounded-xl border border-border bg-surface hover:bg-surface-subtle text-xs sm:text-sm font-medium text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all flex items-center justify-between cursor-pointer text-left"
+                  >
+                    <span>{bankName || "Pilih Bank"}</span>
+                    <ChevronDown className="w-4 h-4 text-text-muted shrink-0 ml-2" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-60 overflow-y-auto p-1.5"
+                >
+                  <DropdownMenuRadioGroup value={bankName} onValueChange={setBankName}>
+                    {POPULAR_BANKS.map((b) => (
+                      <DropdownMenuRadioItem
+                        key={b}
+                        value={b}
+                        className="text-xs sm:text-sm font-medium cursor-pointer"
+                      >
+                        {b}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div>

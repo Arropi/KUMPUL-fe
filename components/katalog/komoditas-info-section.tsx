@@ -3,6 +3,14 @@
 import * as React from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { KatalogFormErrors } from "../../modules/supplier/katalog/types";
 
@@ -249,18 +257,34 @@ export function KomoditasInfoSection({
           >
             Satuan Penjualan
           </label>
-          <select
-            id="commodity-unit"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            className="min-h-[44px] px-3.5 py-2.5 rounded-xl border border-border bg-surface text-xs sm:text-sm font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors cursor-pointer"
-          >
-            {UNIT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                id="commodity-unit"
+                type="button"
+                className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-border bg-surface hover:bg-surface-subtle text-xs sm:text-sm font-medium text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all flex items-center justify-between cursor-pointer text-left"
+              >
+                <span>{UNIT_OPTIONS.find((opt) => opt.value === unit)?.label || unit || "Pilih Satuan"}</span>
+                <ChevronDown className="w-4 h-4 text-text-muted shrink-0 ml-2" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-60 overflow-y-auto p-1.5"
+            >
+              <DropdownMenuRadioGroup value={unit} onValueChange={setUnit}>
+                {UNIT_OPTIONS.map((opt) => (
+                  <DropdownMenuRadioItem
+                    key={opt.value}
+                    value={opt.value}
+                    className="text-xs sm:text-sm font-medium cursor-pointer"
+                  >
+                    {opt.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
