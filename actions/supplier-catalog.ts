@@ -106,8 +106,9 @@ export async function getMySupplierCatalogsAction(): Promise<{
     }
 
     const endpoint = `/supplier-catalogs/entity-id/${session.entityId}`;
-    const res = await beFetch<BESupplierCommodity[]>(endpoint);
-
+    const res = await beFetch<BESupplierCommodity[]>(endpoint, {
+      next: { revalidate: 15, tags: ['supplier-catalog'] },
+    });
     if (!res.success) {
       return {
         success: false,
@@ -139,8 +140,9 @@ export async function getAllMarketplaceCatalogsAction(): Promise<{
   message?: string;
 }> {
   try {
-    const res = await beFetch<BESupplierCommodity[]>("/supplier-catalogs");
-    console.log("ini data", res.data)
+    const res = await beFetch<BESupplierCommodity[]>("/supplier-catalogs", {
+      next: { revalidate: 15, tags: ['supplier-catalog'] },
+    });
     return {
       success: res.success,
       data: res.data || [],

@@ -82,8 +82,11 @@ export async function getUmkmDashboardDataAction(): Promise<{
   const [dashboardRes, poolsRes] = await Promise.all([
     beFetch<Partial<UmkmDashboardData>>("/dashboards/umkm", {
       headers: authHeaders,
+      next: { revalidate: 15, tags: ['dashboard-umkm'] },
     }),
-    beFetch<ActivePoolRecord[]>("/pre-orders/pools?limit=20&offset=0"),
+    beFetch<ActivePoolRecord[]>("/pre-orders/pools?limit=20&offset=0", {
+      next: { revalidate: 15, tags: ['pools'] },
+    }),
   ]);
 
   const rawDashboard = dashboardRes.data;
@@ -244,16 +247,19 @@ export async function getSupplierDashboardDataAction(): Promise<{
   const [dashboardRes, posRes, catalogsRes] = await Promise.all([
     beFetch<Partial<SupplierDashboardData>>("/dashboards/supplier", {
       headers: authHeaders,
+      next: { revalidate: 15, tags: ['dashboard-supplier'] },
     }),
     beFetch<SupplierDashboardPOItem[]>(
       supplierRoleId
         ? `/orders/supplier/pos?supplier_role_id=${supplierRoleId}`
-        : "/orders/supplier/pos"
+        : "/orders/supplier/pos",
+      { next: { revalidate: 15, tags: ['pos'] } }
     ),
     beFetch<SupplierDashboardCommodityItem[]>(
       entityId
         ? `/supplier-catalogs/entity-id/${entityId}`
-        : "/supplier-catalogs"
+        : "/supplier-catalogs",
+      { next: { revalidate: 15, tags: ['catalogs'] } }
     ),
   ]);
 

@@ -39,32 +39,46 @@ export async function getBusinessProfileAction(): Promise<{
     let entityId = session?.entityId;
     const authHeaders: Record<string, string> = session?.token ? { Authorization: `Bearer ${session.token}` } : {};
 
-    // Jika entityId tidak ada pada sesi, cari entitas pertama yang tersedia
-    if (!entityId) {
-      // Use /profile endpoint to get list of profiles
-      const listRes = await beFetch<any[]>("/profile", { headers: authHeaders });
-      if (listRes.success && listRes.data && listRes.data.length > 0) {
-        entityId = listRes.data[0].id;
+    let profileRes: any = null;
+    if (entityId) {
+      profileRes = await beFetch<any>(`/profile/${entityId}`, {
+        headers: authHeaders,
+        next: { revalidate: 30, tags: ['profile'] },
+      });
+    } else if (session?.token) {
+      profileRes = await beFetch<any>("/profile/me", {
+        headers: authHeaders,
+        next: { revalidate: 30, tags: ['profile'] },
+      });
+      if (profileRes.success && profileRes.data?.entity?.id) {
+        entityId = profileRes.data.entity.id;
       }
     }
-    if (!entityId) {
+
+    // Fallback darurat HANYA jika profile/me gagal
+    if (!profileRes || !profileRes.success) {
+      const listRes = await beFetch<any>("/profile?limit=1", {
+        headers: authHeaders,
+        next: { revalidate: 60, tags: ['profile-list'] },
+      });
+      const firstId = listRes.data?.profiles?.[0]?.id || listRes.data?.[0]?.id;
+      if (firstId) {
+        entityId = firstId;
+        profileRes = await beFetch<any>(`/profile/${entityId}`, {
+          headers: authHeaders,
+          next: { revalidate: 30, tags: ['profile'] },
+        });
+      }
+    }
+
+    if (!profileRes?.success || !profileRes?.data) {
       return {
         success: false,
         session,
-        message: "Identitas entitas bisnis tidak ditemukan pada sesi.",
+        message: profileRes?.message || "Identitas entitas bisnis tidak ditemukan pada sesi.",
       };
     }
 
-    // Fetch single profile data
-    const profileRes = await beFetch<any>(`/profile/${entityId}`, { headers: authHeaders });
-
-    if (!profileRes.success || !profileRes.data) {
-      return {
-        success: false,
-        session,
-        message: profileRes.message || "Gagal mengambil data profil entitas bisnis",
-      };
-    }
 
     const data = profileRes.data;
 

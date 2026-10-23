@@ -16,9 +16,16 @@ export interface BEApiResponse<T> {
   error_details?: Array<{ issue?: string; message?: string }>;
 }
 
+export interface BEFetchOptions extends RequestInit {
+  next?: {
+    revalidate?: number | false;
+    tags?: string[];
+  };
+}
+
 export async function beFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: BEFetchOptions = {}
 ): Promise<{ success: boolean; data?: T; message?: string; errorCode?: string }> {
   let cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
 
@@ -68,11 +75,14 @@ export async function beFetch<T>(
           }
         }
       }
-      const res = await fetch(url, {
-        ...options,
+      const { cache, next, ...restOptions } = options;
+      const fetchOpts: RequestInit & { next?: any } = {
+        ...restOptions,
         headers,
-        cache: "no-store",
-      });
+        ...(next ? { next } : {}),
+        cache: cache ?? (next ? undefined : "no-store"),
+      };
+      const res = await fetch(url, fetchOpts);
 
       const json = (await res.json().catch(() => null)) as BEApiResponse<T> | null;
 

@@ -62,7 +62,7 @@ function extractSearchKeywords(name: string): string[] {
  */
 async function beFetchServer<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit & { next?: { revalidate?: number | false; tags?: string[] } } = {}
 ): Promise<{ success: boolean; data?: T; message?: string }> {
   let cookieHeader = '';
   let token: string | undefined = undefined;
@@ -99,8 +99,7 @@ async function beFetchServer<T>(
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
-    // Important: disable caching for mutable data or when auth is required
-    cache: 'no-store' as RequestCache,
+    cache: options.cache ?? (options.next ? undefined : ('no-store' as RequestCache)),
   };
 
   return beFetch<T>(endpoint, opts);
@@ -112,9 +111,9 @@ async function beFetchServer<T>(
 export async function fetchHomeData() {
   // Fetch catalog, recommendations, and circular waste in parallel
   const [catalogRes, recsRes, wasteRes] = await Promise.all([
-    beFetchServer<any[]>(`/api/marketplace?limit=50`),
-    beFetchServer<any>(`/api/marketplace/recommendations`),
-    beFetchServer<any[]>(`/waste-listings?limit=50`),
+    beFetchServer<any[]>(`/api/marketplace?limit=50`, { next: { revalidate: 20, tags: ['marketplace'] } }),
+    beFetchServer<any>(`/api/marketplace/recommendations`, { next: { revalidate: 20, tags: ['recommendations'] } }),
+    beFetchServer<any[]>(`/waste-listings?limit=50`, { next: { revalidate: 20, tags: ['waste'] } }),
   ]);
 
   const rawCatalog = catalogRes.success && Array.isArray(catalogRes.data) ? catalogRes.data : [];

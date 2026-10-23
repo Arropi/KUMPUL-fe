@@ -89,7 +89,9 @@ export async function getUmkmProductsAction(umkmRoleId?: string): Promise<{
       };
     }
 
-    const res = await beFetch<BEProduct[]>(endpoint);
+    const res = await beFetch<BEProduct[]>(endpoint, {
+      next: { revalidate: 15, tags: ['products'] },
+    });
     if (!res.success) {
       return {
         success: false,
