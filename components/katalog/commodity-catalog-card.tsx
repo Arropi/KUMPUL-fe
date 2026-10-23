@@ -93,9 +93,9 @@ export function CommodityCatalogCard({
     item.sellerCity || item.batchTag.originLocation || "Sentra Hub KUMPUL";
 
   return (
-    <Card className="group flex flex-col h-full w-full rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong p-3.5 sm:p-4">
+    <Card className="group flex flex-col h-full w-full rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong p-3.5 sm:p-4 min-w-0">
       {/* Gambar Komoditas & Overlay Badges */}
-      <div className="relative aspect-[4/3] w-full rounded-xl bg-neutral-50 border border-border/50">
+      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-neutral-50 border border-border/50">
         <div className="absolute inset-0 overflow-hidden rounded-xl">
           {item.imageUrl && !imgError ? (
             <Image
@@ -224,11 +224,11 @@ export function CommodityCatalogCard({
       </div>
 
       {/* Konten Card */}
-      <div className="flex flex-1 flex-col pt-3.5 space-y-3">
-        <div>
+      <div className="flex flex-1 flex-col pt-3.5 space-y-3 min-w-0 justify-between">
+        <div className="min-w-0">
           {/* Baris Meta: Tag Status/Kebutuhan & Lokasi Seller */}
-          <div className="flex items-center justify-between gap-2 mb-1.5 text-[11px] min-h-[22px]">
-            <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2 mb-1.5 text-[11px] h-[22px] min-h-[22px] min-w-0">
+            <div className="min-w-0 flex-1 truncate">
               {criticalStockNotice ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200/90 px-2 py-0.5 rounded-lg shadow-xs whitespace-nowrap">
                   <AlertTriangle className="size-3 text-red-600 shrink-0" />
@@ -253,13 +253,13 @@ export function CommodityCatalogCard({
             </div>
           </div>
 
-          <h2 className="font-heading font-bold text-base text-text-primary line-clamp-1 h-6 leading-6" title={item.name}>
+          <h2 className="font-heading font-bold text-base text-text-primary truncate h-6 leading-6 min-w-0" title={item.name}>
             {item.name}
           </h2>
         </div>
 
-        {/* Badges: Tiering Price & Pool Terbuka */}
-        <div className="min-h-[24px] flex flex-wrap items-center gap-1.5">
+        {/* Badges: Tiering Price & Pool Terbuka (Tinggi dikunci 24px agar kartu seragam) */}
+        <div className="h-6 min-h-[24px] max-h-[24px] flex items-center gap-1.5 overflow-hidden min-w-0">
           {!isWaste && (hasTieringPrice || hasOpenPools) ? (
             <>
               {hasTieringPrice && (
@@ -279,8 +279,8 @@ export function CommodityCatalogCard({
           ) : null}
         </div>
 
-        {/* Harga Satuan */}
-        <div className="rounded-xl bg-background p-3 border border-border/80 min-h-[86px] flex flex-col justify-center">
+        {/* Harga Satuan (Tinggi dikunci 86px agar kartu seragam) */}
+        <div className="rounded-xl bg-background p-3 border border-border/80 h-[86px] min-h-[86px] max-h-[86px] flex flex-col justify-center shrink-0">
           <span className="text-[11px] font-medium text-text-muted block">
             {isWaste ? "Harga Residu" : "Harga Satuan"}
           </span>
@@ -299,8 +299,8 @@ export function CommodityCatalogCard({
           ) : null}
         </div>
 
-        {/* Metadata: Batas Minimum (MOQ) & Stok Tersedia */}
-        <div className="grid grid-cols-2 gap-2 text-xs pt-0.5">
+        {/* Metadata: Batas Minimum (MOQ) & Stok Tersedia (Tinggi dikunci 58px) */}
+        <div className="grid grid-cols-2 gap-2 text-xs pt-0.5 h-[58px] shrink-0">
           <div className="rounded-lg bg-surface-subtle p-2 border border-border/50">
             <span className="text-[10px] text-text-muted block font-medium">
               {isWaste ? "Skema" : "Min. Pesanan (MOQ)"}
@@ -318,8 +318,8 @@ export function CommodityCatalogCard({
             </span>
           </div>
         </div>
-        {/* Revisi 1: Tombol Aksi - Supplier TIDAK ADA tombol beli */}
-        <div className="pt-2 mt-auto">
+        {/* Tombol Aksi */}
+        <div className="pt-2 mt-auto shrink-0">
           {!isUmkm ? (
             // Aksi Khusus Supplier: HANYA Detail Pasar / Pengelolaan (TIDAK ADA TOMBOL BELI)
             onToggleStatus ? (

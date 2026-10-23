@@ -540,7 +540,7 @@ export function HomeRecommendationSection({
                 return (
                   <div
                     key={`bench-${b.commodity_id}`}
-                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
+                    className="w-[300px] sm:w-[320px] md:w-[330px] max-w-[300px] sm:max-w-[320px] md:max-w-[330px] shrink-0 snap-start flex flex-col h-full min-w-0"
                   >
                     <CommodityCatalogCard
                       item={item}
@@ -697,7 +697,7 @@ export function HomeRecommendationSection({
                 return (
                   <div
                     key={`rec-stock-${commodity.id}`}
-                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
+                    className="w-[300px] sm:w-[320px] md:w-[330px] max-w-[300px] sm:max-w-[320px] md:max-w-[330px] shrink-0 snap-start flex flex-col h-full min-w-0"
                   >
                     <CommodityCatalogCard
                       item={commodity}
@@ -737,7 +737,7 @@ export function HomeRecommendationSection({
                 return (
                   <div
                     key={`healthy-${alt.commodity_id}`}
-                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
+                    className="w-[300px] sm:w-[320px] md:w-[330px] max-w-[300px] sm:max-w-[320px] md:max-w-[330px] shrink-0 snap-start flex flex-col h-full min-w-0"
                   >
                     <CommodityCatalogCard
                       item={item}
@@ -775,7 +775,7 @@ export function HomeRecommendationSection({
                 return (
                   <div
                     key={`near-${near.commodity_id}`}
-                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
+                    className="w-[300px] sm:w-[320px] md:w-[330px] max-w-[300px] sm:max-w-[320px] md:max-w-[330px] shrink-0 snap-start flex flex-col h-full min-w-0"
                   >
                     <CommodityCatalogCard
                       item={item}
@@ -811,7 +811,7 @@ export function HomeRecommendationSection({
                 return (
                   <div
                     key={`savings-${pool.pool_id}`}
-                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
+                    className="w-[300px] sm:w-[320px] md:w-[330px] max-w-[300px] sm:max-w-[320px] md:max-w-[330px] shrink-0 snap-start flex flex-col h-full min-w-0"
                   >
                     <CommodityCatalogCard
                       item={item}
