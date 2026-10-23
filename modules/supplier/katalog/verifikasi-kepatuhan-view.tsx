@@ -116,6 +116,16 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const maxBytes = 10 * 1024 * 1024; // 10 MB
+    if (file.size > maxBytes) {
+      toast.error(
+        `Ukuran berkas (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 10 MB. Silakan pilih berkas dokumen yang lebih kecil.`,
+        "Berkas Terlalu Besar"
+      );
+      e.target.value = "";
+      return;
+    }
+
     setRawFile(file);
     const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
     setUploadedFile({
@@ -182,8 +192,23 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
       } else {
         toast.error(res.message || "Gagal menyimpan verifikasi kepatuhan.");
       }
-    } catch {
-      toast.error("Terjadi kendala koneksi ke server.");
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "";
+      if (
+        errMsg.includes("Body exceeded") ||
+        errMsg.includes("limit") ||
+        errMsg.includes("413")
+      ) {
+        toast.error(
+          "Ukuran berkas melebihi batas maksimal server (10 MB). Silakan pilih berkas yang lebih kecil atau lakukan kompresi.",
+          "Ukuran Berkas Melebihi Batas"
+        );
+      } else {
+        toast.error(
+          errMsg || "Terjadi kendala saat memproses verifikasi mutu dokumen.",
+          "Gagal Verifikasi"
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
