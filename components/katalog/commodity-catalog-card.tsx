@@ -252,7 +252,7 @@ export function CommodityCatalogCard({
               <span className="truncate max-w-[110px] font-medium">{locationDisplay}</span>
             </div>
           </div>
-          <h2 className="font-heading font-bold text-sm sm:text-base text-text-primary line-clamp-2 h-11 sm:h-12 leading-snug min-w-0" title={item.name}>
+          <h2 className="font-heading font-bold text-sm sm:text-base text-text-primary truncate h-6 leading-6 min-w-0" title={item.name}>
             {item.name}
           </h2>
         </div>
