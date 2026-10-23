@@ -155,18 +155,18 @@ export function CommodityCatalogCard({
           {!isWaste && (
             <div className="pointer-events-auto">
               {isHygienePassed ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-xs backdrop-blur-md px-2.5 py-1 text-[11px] font-bold whitespace-nowrap">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold shadow-xs whitespace-nowrap">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                   <span>Terverifikasi</span>
                 </span>
               ) : isHygieneRejected ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 text-rose-800 border border-rose-300 shadow-xs backdrop-blur-md px-2.5 py-1 text-[11px] font-bold whitespace-nowrap">
-                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/15 text-rose-800 border border-rose-500/30 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold shadow-xs whitespace-nowrap">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-700 shrink-0" />
                   <span>Tidak Sesuai</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300 shadow-xs backdrop-blur-md px-2.5 py-1 text-[11px] font-bold whitespace-nowrap">
-                  <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-900 border border-amber-500/30 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold shadow-xs whitespace-nowrap">
+                  <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                   <span>Menunggu Audit</span>
                 </span>
               )}
@@ -252,8 +252,7 @@ export function CommodityCatalogCard({
               <span className="truncate max-w-[110px] font-medium">{locationDisplay}</span>
             </div>
           </div>
-
-          <h2 className="font-heading font-bold text-base text-text-primary truncate h-6 leading-6 min-w-0" title={item.name}>
+          <h2 className="font-heading font-bold text-sm sm:text-base text-text-primary line-clamp-2 h-11 sm:h-12 leading-snug min-w-0" title={item.name}>
             {item.name}
           </h2>
         </div>
