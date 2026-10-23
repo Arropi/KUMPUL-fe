@@ -14,6 +14,7 @@ import {
   deleteWasteListingAction,
   depositWasteToBankSampahAction,
   getNearestOfftakersAction,
+  getAiWastePriceRecommendationAction,
 } from "@/actions/waste";
 import type { BEWasteListing, BEWasteCategory, BEProduct } from "@/lib/api/types";
 import { getUmkmProductsAction } from "@/actions/products";
@@ -57,6 +58,7 @@ import {
   ExternalLink,
   Pencil,
   Trash2,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { cn, formatCurrency, formatNumber, formatDate } from "@/lib/utils";
@@ -449,7 +451,10 @@ export function UmkmSirkularView() {
     suggestedPrice: number;
     priceRange: string;
     reason: string;
+    targetIndustry?: string;
+    qualityGrade?: string;
   } | null>(null);
+  const [isCalculatingAiPrice, setIsCalculatingAiPrice] = React.useState(false);
 
   // Status kelengkapan form untuk mengaktifkan tombol Rekomendasi AI
   const isFormReadyForAi = Boolean(
@@ -460,64 +465,50 @@ export function UmkmSirkularView() {
   );
 
   // Handler 1-Click Rekomendasi Harga AI berdasarkan data form yang sudah diisi user
-  const handleOneClickAiPrice = () => {
-    if (!isFormReadyForAi) return;
+  // Handler 1-Click Rekomendasi Harga Gemini AI
+  const handleOneClickAiPrice = async () => {
+    if (!isFormReadyForAi || isCalculatingAiPrice) return;
 
-    const lowerText = `${newTitle} ${newDescription}`.toLowerCase();
+    setIsCalculatingAiPrice(true);
+    try {
+      const res = await getAiWastePriceRecommendationAction({
+        title: newTitle.trim(),
+        category: newCategory,
+        volume: newVolume,
+        unit: newUnit,
+        description: newDescription.trim(),
+        expiryDate: newExpiryDate,
+      });
 
-    // 1. Identifikasi komoditas limbah
-    let matchedBenchmark = AI_WASTE_BENCHMARKS[0]; // default: minyak jelantah
-    if (lowerText.includes("minyak") || lowerText.includes("jelantah") || lowerText.includes("uco") || lowerText.includes("goreng")) {
-      matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "jelantah") || AI_WASTE_BENCHMARKS[0];
-      setNewCategory("ORGANIK_KERING");
-    } else if (lowerText.includes("tahu") || lowerText.includes("kedelai") || lowerText.includes("ampas")) {
-      matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "ampas_tahu") || AI_WASTE_BENCHMARKS[1];
-      setNewCategory("ORGANIK_BASAH");
-    } else if (lowerText.includes("telur") || lowerText.includes("cangkang") || lowerText.includes("kulit telur")) {
-      matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "cangkang_telur") || AI_WASTE_BENCHMARKS[2];
-      setNewCategory("ORGANIK_KERING");
-    } else if (lowerText.includes("kopi") || lowerText.includes("teh") || lowerText.includes("coffee")) {
-      matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "ampas_kopi") || AI_WASTE_BENCHMARKS[3];
-      setNewCategory("ORGANIK_KERING");
-    } else if (lowerText.includes("sayur") || lowerText.includes("buah") || lowerText.includes("kulit") || lowerText.includes("daun")) {
-      matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "kulit_sayur") || AI_WASTE_BENCHMARKS[4];
-      setNewCategory("ORGANIK_BASAH");
-    } else if (lowerText.includes("tulang") || lowerText.includes("daging") || lowerText.includes("ayam") || lowerText.includes("sapi") || lowerText.includes("ikan")) {
-      matchedBenchmark = AI_WASTE_BENCHMARKS.find((b) => b.id === "tulang_hewani") || AI_WASTE_BENCHMARKS[5];
-      setNewCategory("ORGANIK_BASAH");
+      if (res.success && res.data) {
+        const data = res.data;
+        setNewPricePerUnit(data.suggested_price);
+
+        if (data.recommended_category && data.recommended_category !== newCategory) {
+          setNewCategory(data.recommended_category as BEWasteCategory);
+        }
+
+        setAiPriceInsight({
+          suggestedPrice: data.suggested_price,
+          priceRange: data.price_range,
+          reason: data.reasoning,
+          targetIndustry: data.target_industry,
+          qualityGrade: data.quality_grade,
+        });
+
+        toast.success(
+          `Saran harga Gemini AI ${formatCurrency(data.suggested_price)}/${newUnit} berhasil diterapkan!`,
+          "Rekomendasi Gemini AI"
+        );
+      } else {
+        toast.error(res.message || "Gagal memperoleh rekomendasi harga AI.");
+      }
+    } catch {
+      toast.error("Terjadi kendala saat menghubungi AI bursa limbah.");
+    } finally {
+      setIsCalculatingAiPrice(false);
     }
-    // 2. Deteksi indikator kualitas & penanganan
-    const isPremiumQuality =
-      lowerText.includes("jernih") ||
-      lowerText.includes("saring") ||
-      lowerText.includes("kering") ||
-      lowerText.includes("bersih") ||
-      lowerText.includes("segar") ||
-      lowerText.includes("frozen") ||
-      lowerText.includes("beku") ||
-      lowerText.includes("rapat");
-
-    const conditionKey = isPremiumQuality ? "terbaik" : "standar";
-    const conditionData = matchedBenchmark.conditionAdjustments[conditionKey];
-
-    // 3. Terapkan harga rekomendasi langsung ke input form
-    setNewPricePerUnit(conditionData.price);
-
-    // Sinkronkan satuan jika komoditas cair tapi satuan bukan liter
-    if (matchedBenchmark.unit === "Liter" && newUnit !== "Liter" && newUnit !== "Jeriken") {
-      setNewUnit("Liter");
-    }
-
-    // Simpan insight ringkas
-    setAiPriceInsight({
-      suggestedPrice: conditionData.price,
-      priceRange: conditionData.priceRange,
-      reason: `Dihitung untuk ${newVolume} ${newUnit} ${matchedBenchmark.name} (${conditionData.label}). Target: ${matchedBenchmark.targetBuyer}.`,
-    });
-
-    toast.success(`Saran harga AI ${formatCurrency(conditionData.price)}/${newUnit} berhasil diterapkan!`, "Rekomendasi AI");
   };
-
   // Load listing limbah dari Backend Express
   const loadListings = React.useCallback(async () => {
     setIsLoadingListings(true);
@@ -1410,16 +1401,18 @@ export function UmkmSirkularView() {
                     type="button"
                     variant={isFormReadyForAi ? "primary" : "secondary"}
                     size="sm"
-                    disabled={!isFormReadyForAi}
+                    disabled={!isFormReadyForAi || isCalculatingAiPrice}
+                    isLoading={isCalculatingAiPrice}
                     onClick={handleOneClickAiPrice}
-                    className="text-xs font-bold h-8 px-3 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
+                    className="text-xs font-bold h-8 px-3 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs gap-1.5"
                     title={
                       isFormReadyForAi
-                        ? "Klik 1x untuk mendapatkan saran harga AI otomatis berdasarkan data limbahmu"
+                        ? "Klik 1x untuk mendapatkan saran harga wajar otomatis dari Gemini AI"
                         : "Lengkapi nama limbah, volume, dan tanggal kadaluwarsa terlebih dahulu"
                     }
                   >
-                    Rekomendasi Harga AI
+                    <Sparkles className="size-3.5" />
+                    <span>{isCalculatingAiPrice ? "Menghitung AI..." : "Rekomendasi Harga AI"}</span>
                   </Button>
                 </div>
 
@@ -1439,14 +1432,27 @@ export function UmkmSirkularView() {
 
                 {/* Insight Saran Harga AI setelah 1x klik */}
                 {aiPriceInsight ? (
-                  <div className="p-2.5 rounded-xl bg-accent-light/60 border border-accent/40 text-[11px] space-y-0.5 animate-in fade-in duration-150">
-                    <div className="flex items-center justify-between font-bold text-text-primary">
-                      <span>Saran AI Diterapkan: {formatCurrency(aiPriceInsight.suggestedPrice)}/{newUnit}</span>
-                      <span className="text-[10px] text-text-secondary font-normal">Pasar: {aiPriceInsight.priceRange}</span>
+                  <div className="p-3 rounded-xl bg-primary-light/60 border border-primary/20 text-[11px] space-y-1.5 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between font-bold text-text-primary gap-2">
+                      <span className="flex items-center gap-1.5 text-primary">
+                        <Sparkles className="size-3.5" />
+                        <span>Saran Gemini AI: {formatCurrency(aiPriceInsight.suggestedPrice)}/{newUnit}</span>
+                      </span>
+                      <span className="text-[10px] text-text-secondary font-medium px-2 py-0.5 rounded-full bg-surface border border-border">
+                        Pasar: {aiPriceInsight.priceRange}
+                      </span>
                     </div>
-                    <p className="text-text-secondary text-[10px] leading-snug">
+                    <p className="text-text-secondary text-[11px] leading-relaxed">
                       {aiPriceInsight.reason}
                     </p>
+                    {aiPriceInsight.targetIndustry && (
+                      <div className="pt-1 border-t border-primary/15 flex items-center justify-between text-[10px] text-text-muted">
+                        <span>Target Pembeli: <strong className="text-text-primary">{aiPriceInsight.targetIndustry}</strong></span>
+                        {aiPriceInsight.qualityGrade && (
+                          <span className="font-bold text-primary">Grade: {aiPriceInsight.qualityGrade}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : !isFormReadyForAi ? (
                   <p className="text-[10px] text-text-muted">

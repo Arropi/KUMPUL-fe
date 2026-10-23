@@ -509,3 +509,75 @@ export async function buyWasteListingAction(
     };
   }
 }
+
+export interface AiWastePriceInput {
+  title: string;
+  category?: string;
+  volume?: number;
+  unit?: string;
+  description?: string;
+  expiryDate?: string;
+}
+
+export interface AiWastePriceResult {
+  suggested_price: number;
+  price_range: string;
+  min_price: number;
+  max_price: number;
+  target_industry: string;
+  recommended_category: string;
+  quality_grade: "PREMIUM" | "STANDAR" | "EKONOMI";
+  reasoning: string;
+  carbon_offset_kg_estimate?: number;
+}
+
+/**
+ * Server Action: Estimasi harga pasar wajar dan valuasi ekonomi sirkular berbasis Gemini AI
+ */
+export async function getAiWastePriceRecommendationAction(
+  payload: AiWastePriceInput
+): Promise<{
+  success: boolean;
+  data?: AiWastePriceResult;
+  message?: string;
+}> {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const res = await beFetch<AiWastePriceResult>(
+      "/waste-listings/ai/price-recommendation",
+      {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          title: payload.title,
+          category: payload.category,
+          volume: payload.volume,
+          unit: payload.unit,
+          description: payload.description,
+          expiry_date: payload.expiryDate,
+        }),
+      }
+    );
+
+    if (res.success && res.data) {
+      return {
+        success: true,
+        data: res.data,
+        message: res.message || "Rekomendasi harga wajar AI berhasil dihitung",
+      };
+    }
+
+    return {
+      success: false,
+      message: res.message || "Gagal memperoleh rekomendasi harga AI",
+    };
+  } catch (err: unknown) {
+    return {
+      success: false,
+      message:
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan saat memproses rekomendasi harga AI",
+    };
+  }
+}

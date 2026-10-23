@@ -44,6 +44,7 @@ import {
 } from "@/actions/dashboard";
 import type { POStatus } from "@/constants/supplier";
 import { useDashboardRealtime, useMoqRealtime } from "@/lib/supabase/realtime-hooks";
+import { getBusinessProfileAction } from "@/actions/business-profile";
 
 function useGreeting(companyName: string) {
   return React.useMemo(() => {
@@ -62,29 +63,47 @@ export function SupplierDashboardView() {
   const [dashboardData, setDashboardData] = React.useState<SupplierDashboardData | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
 
-  const isStoragePending = React.useSyncExternalStore(
-    (callback) => {
-      window.addEventListener("storage", callback);
-      return () => window.removeEventListener("storage", callback);
-    },
-    () => {
-      const savedComplete = localStorage.getItem("kumpul_supplier_profile_complete");
-      const pendingOnboarding = localStorage.getItem("kumpul_pending_onboarding");
-      return Boolean(pendingOnboarding) && savedComplete !== "true";
-    },
-    () => false
-  );
-
-  const isProfilePending = searchParams.get("onboarding") === "pending" || isStoragePending;
+  const [isProfilePending, setIsProfilePending] = React.useState<boolean>(false);
 
   const loadDashboard = React.useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const res = await getSupplierDashboardDataAction();
+      const [res, profileRes] = await Promise.all([
+        getSupplierDashboardDataAction(),
+        getBusinessProfileAction(),
+      ]);
+
       if (res.success && res.data) {
         setDashboardData(res.data);
       } else if (!silent) {
         toast.error("Gagal memuat analitik dashboard supplier.");
+      }
+
+      if (profileRes.success && profileRes.entity) {
+        const bank = profileRes.entity.bank_account_info || {};
+        const hasBank = Boolean(
+          (Array.isArray(bank.accounts) &&
+            bank.accounts.some(
+              (a) => Boolean(a.account_number && a.account_number !== "0000000000")
+            )) ||
+            (bank.account_number && bank.account_number !== "0000000000")
+        );
+        const supplierRole = profileRes.roles?.find((r) => r.role_type.toUpperCase() === "SUPPLIER") || profileRes.roles?.[0];
+        const hasStorage = Boolean(
+          (supplierRole?.storage_capacity && supplierRole.storage_capacity > 0) ||
+          Number(bank.storage_value) > 0
+        );
+        const hasSector = Boolean(supplierRole?.sector_type);
+
+        const isComplete = hasBank && hasStorage && hasSector;
+        setIsProfilePending(!isComplete);
+
+        if (isComplete) {
+          try {
+            localStorage.removeItem("kumpul_pending_onboarding");
+            localStorage.setItem("kumpul_supplier_profile_complete", "true");
+          } catch {}
+        }
       }
     } catch {
       if (!silent) toast.error("Terjadi kendala saat menghubungkan dashboard ke server backend.");
@@ -172,7 +191,7 @@ export function SupplierDashboardView() {
           </div>
 
           <Button asChild variant="accent" size="sm" className="font-bold shrink-0 self-start sm:self-auto min-h-[40px] rounded-xl text-xs">
-            <Link href="/profil?onboarding=pending">
+            <Link href="/profil">
               <span>Lengkapi Profil Sekarang &rarr;</span>
             </Link>
           </Button>
