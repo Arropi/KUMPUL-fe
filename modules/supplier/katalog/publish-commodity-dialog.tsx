@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
-import { Calendar, Globe2, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
+import { Calendar, Globe2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { publishSupplierCommodityAction } from "@/actions/supplier-catalog";
 
 interface PublishCommodityDialogProps {
@@ -188,9 +188,6 @@ export function PublishCommodityDialog({
               className="h-10 text-xs font-semibold tabular-nums"
               required
             />
-            <p className="text-[11px] text-text-muted">
-              Diambil dari tanggal perkiraan panen/olahan saat pendaftaran komoditas.
-            </p>
           </div>
 
           {/* Tanggal Kadaluarsa / Expired */}
@@ -208,16 +205,6 @@ export function PublishCommodityDialog({
               className="h-10 text-xs font-semibold tabular-nums"
               required
             />
-            <p className="text-[11px] text-text-muted">
-              Batas akhir ketahanan bahan pangan yang menjamin kesegaran dan higienitas bagi UMKM.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-900 flex items-start gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            <span>
-              Setelah dipublikasikan, status komoditas akan langsung berubah menjadi <strong>Aktif di Bursa</strong> dan dapat ditemukan oleh mitra UMKM.
-            </span>
           </div>
 
           {/* Action Buttons */}

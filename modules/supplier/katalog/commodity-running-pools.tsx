@@ -345,13 +345,15 @@ export function CommodityRunningPools({
   const isSelectedPoolMoqReached =
     joinPoolAccumulated >= joinPoolTargetMoq ||
     selectedPoolForJoin?.pool_status === "LOCKED";
+  const isSingleOrderMoqReached = joinQty >= (commodity.baseMoq || 1);
+  const isMoqReachedForJoin = isSelectedPoolMoqReached || isSingleOrderMoqReached;
 
-  // Jika pool sudah mencapai MOQ, paksa metode ke Direct Door to Door
+  // Jika pool atau kuantitas pesanan sudah mencapai MOQ, paksa metode ke Direct Door to Door
   React.useEffect(() => {
-    if (isSelectedPoolMoqReached && joinMethod === "HEMAT_HUB") {
+    if (isMoqReachedForJoin && joinMethod === "HEMAT_HUB") {
       setJoinMethod("DIRECT_DOOR_TO_DOOR");
     }
-  }, [isSelectedPoolMoqReached, joinMethod]);
+  }, [isMoqReachedForJoin, joinMethod]);
 
   return (
     <Card className="p-5 sm:p-6 bg-surface border-border shadow-elevation-1 rounded-2xl space-y-4">
@@ -947,9 +949,9 @@ export function CommodityRunningPools({
                     <button
                       type="button"
                       onClick={() => setJoinMethod("HEMAT_HUB")}
-                      disabled={isSelectedPoolMoqReached || isSubmittingJoin}
+                      disabled={isMoqReachedForJoin || isSubmittingJoin}
                       className={`p-3 rounded-xl border text-left transition-all ${
-                        isSelectedPoolMoqReached
+                        isMoqReachedForJoin
                           ? "border-border bg-neutral-100/80 opacity-60 cursor-not-allowed"
                           : joinMethod === "HEMAT_HUB"
                           ? "border-primary bg-primary/5 ring-1 ring-primary cursor-pointer"
@@ -960,9 +962,9 @@ export function CommodityRunningPools({
                         <span className="font-bold text-xs text-text-primary">Hemat Hub</span>
                         <Truck className="size-3.5 text-primary" />
                       </div>
-                      {isSelectedPoolMoqReached ? (
+                      {isMoqReachedForJoin ? (
                         <span className="text-[10px] text-neutral-500 font-medium block mt-1 leading-snug">
-                          🔒 Kuota MOQ pool telah terpenuhi. Pengiriman via Direct to Door.
+                          🔒 Tidak tersedia untuk pesanan yang telah mencapai batas MOQ ({commodity.baseMoq || 1} {commodity.wholesaleUnit}). Gunakan Direct to Door.
                         </span>
                       ) : (
                         <>
