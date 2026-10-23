@@ -111,7 +111,7 @@ export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommo
       baseMoq: moq,
       availableStock: availableStock,
       leadTimeDays: be.lead_time_days || 1,
-      isActive: be.is_marketplace_active ?? true,
+      isActive: be.is_marketplace_active ?? false,
       priceTiers: tiers,
       batchTag: (() => {
         const tag = be.batch_tag || (be.batch_tags && be.batch_tags[0]) || null;
