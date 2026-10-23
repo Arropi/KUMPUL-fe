@@ -115,7 +115,7 @@ export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommo
       priceTiers: tiers,
       batchTag: (() => {
         const tag = be.batch_tag || (be.batch_tags && be.batch_tags[0]) || null;
-        const isVerified = Boolean(tag?.is_verified);
+        const isVerified = Boolean(tag ? tag.is_verified : be.is_verified);
         const hasAuditedDoc = Boolean(tag?.supporting_file_url || tag?.verification_notes);
         const hygieneStatus: "TERVERIFIKASI" | "TIDAK_SESUAI" | "MENUNGGU_AUDIT" = isVerified
           ? "TERVERIFIKASI"

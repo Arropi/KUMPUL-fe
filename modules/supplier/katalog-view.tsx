@@ -29,6 +29,9 @@ const STATUS_OPTIONS = [
   { value: "ALL", label: "Semua Status" },
   { value: "ACTIVE", label: "Aktif di Bursa" },
   { value: "INACTIVE", label: "Nonaktif (Draft)" },
+  { value: "VERIFIED", label: "Mutu Terverifikasi" },
+  { value: "AUDIT_FAILED", label: "Mutu Tidak Sesuai" },
+  { value: "UNAUDITED", label: "Menunggu Audit" },
 ] as const;
 
 export function SupplierKatalogView() {
@@ -104,8 +107,10 @@ export function SupplierKatalogView() {
     const matchStatus =
       selectedStatus === "ALL" ||
       (selectedStatus === "ACTIVE" && item.isActive) ||
-      (selectedStatus === "INACTIVE" && !item.isActive);
-
+      (selectedStatus === "INACTIVE" && !item.isActive) ||
+      (selectedStatus === "VERIFIED" && item.batchTag.hygieneStatus === "TERVERIFIKASI") ||
+      (selectedStatus === "AUDIT_FAILED" && item.batchTag.hygieneStatus === "TIDAK_SESUAI") ||
+      (selectedStatus === "UNAUDITED" && item.batchTag.hygieneStatus === "MENUNGGU_AUDIT");
     return matchSearch && matchStatus;
   });
 
@@ -181,6 +186,15 @@ export function SupplierKatalogView() {
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                         )}
                         {opt.value === "INACTIVE" && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 shrink-0" />
+                        )}
+                        {opt.value === "VERIFIED" && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                        )}
+                        {opt.value === "AUDIT_FAILED" && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                        )}
+                        {opt.value === "UNAUDITED" && (
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                         )}
                         {opt.value === "ALL" && (
