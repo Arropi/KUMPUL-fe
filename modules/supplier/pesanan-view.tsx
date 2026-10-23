@@ -15,7 +15,18 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, Truck, CheckCircle2 } from "lucide-react";
+import {
+  Search,
+  Truck,
+  CheckCircle2,
+  Package,
+  SearchX,
+  Store,
+  LayoutDashboard,
+  Sparkles,
+  RotateCcw,
+  AlertCircle,
+} from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -214,7 +225,7 @@ export function SupplierPesananView() {
             <button
               type="button"
               onClick={() => setActiveTab("ALL")}
-              className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
                 activeTab === "ALL"
                   ? "bg-surface text-primary shadow-[inset_0_1px_0_#FFFFFF,inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.06)] font-bold border border-border"
                   : "text-text-secondary hover:text-text-primary hover:bg-surface-subtle hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-[0.5px]"
@@ -225,7 +236,7 @@ export function SupplierPesananView() {
             <button
               type="button"
               onClick={() => setActiveTab("ACTION_NEEDED")}
-              className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
                 activeTab === "ACTION_NEEDED"
                   ? "bg-surface text-primary shadow-[inset_0_1px_0_#FFFFFF,inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.06)] font-bold border border-border"
                   : "text-text-secondary hover:text-text-primary hover:bg-surface-subtle hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-[0.5px]"
@@ -236,7 +247,7 @@ export function SupplierPesananView() {
             <button
               type="button"
               onClick={() => setActiveTab("IN_TRANSIT")}
-              className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
                 activeTab === "IN_TRANSIT"
                   ? "bg-surface text-primary shadow-[inset_0_1px_0_#FFFFFF,inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.06)] font-bold border border-border"
                   : "text-text-secondary hover:text-text-primary hover:bg-surface-subtle hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-[0.5px]"
@@ -247,7 +258,7 @@ export function SupplierPesananView() {
             <button
               type="button"
               onClick={() => setActiveTab("DELIVERED")}
-              className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-150 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ${
                 activeTab === "DELIVERED"
                   ? "bg-surface text-primary shadow-[inset_0_1px_0_#FFFFFF,inset_0_-1px_0_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.06)] font-bold border border-border"
                   : "text-text-secondary hover:text-text-primary hover:bg-surface-subtle hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-[0.5px]"
@@ -326,15 +337,115 @@ export function SupplierPesananView() {
           </div>
         </div>
       ) : errorOrders ? (
-        <div className="bg-surface rounded-2xl border border-dashed border-border p-12 text-center space-y-2 shadow-elevation-1">
-          <p className="font-heading text-sm font-bold text-text-primary">
-            {errorOrders}
-          </p>
-        </div>
+        <Card className="rounded-2xl border border-dashed border-border bg-surface p-12 text-center space-y-4 shadow-elevation-1">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-accent flex items-center justify-center mx-auto">
+            <AlertCircle className="w-7 h-7" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-heading font-bold text-base text-text-primary">
+              Gagal Memuat Pesanan
+            </h2>
+            <p className="font-body text-xs text-text-secondary max-w-sm mx-auto">
+              {errorOrders}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={loadOrders}
+            className="rounded-xl font-semibold cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+            <span>Muat Ulang</span>
+          </Button>
+        </Card>
+      ) : filteredOrders.length === 0 ? (
+        <Card className="rounded-2xl border border-border bg-surface p-8 sm:p-14 text-center shadow-elevation-1">
+          <div className="max-w-md mx-auto space-y-5">
+            <div className="w-16 h-16 rounded-2xl bg-primary-light border border-primary/20 text-primary flex items-center justify-center mx-auto shadow-xs">
+              {orders.length === 0 ? (
+                <Package className="w-8 h-8" />
+              ) : (
+                <SearchX className="w-8 h-8 text-text-muted" />
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
+                {orders.length === 0
+                  ? "Belum Ada Pesanan Terpadu"
+                  : "Tidak Ada Pesanan yang Sesuai"}
+              </h2>
+              <p className="font-body text-xs sm:text-sm text-text-secondary leading-relaxed">
+                {orders.length === 0
+                  ? "Pesanan grosir terkonsolidasi (PO) akan terbentuk secara otomatis setelah kelompok UMKM menyelesaikan patungan kuota pooling komoditas Anda."
+                  : searchQuery
+                  ? `Tidak ditemukan pesanan dengan kata kunci "${searchQuery}". Silakan periksa ejaan atau bersihkan filter.`
+                  : `Tidak ada pesanan dalam tab filter "${
+                      activeTab === "ACTION_NEEDED"
+                        ? "Perlu Dikemas / Kirim"
+                        : activeTab === "IN_TRANSIT"
+                        ? "Dalam Pengiriman"
+                        : "Selesai / Tiba"
+                    }".`}
+              </p>
+            </div>
+
+            {orders.length === 0 && (
+              <div className="p-4 rounded-xl bg-surface-subtle/80 border border-border text-left text-xs text-text-secondary flex items-start gap-3">
+                <div className="w-7 h-7 rounded-lg bg-accent-light text-accent flex items-center justify-center shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div className="space-y-0.5">
+                  <span className="font-bold text-text-primary block text-xs">
+                    Tips Mitra Pemasok KUMPUL
+                  </span>
+                  <p className="leading-relaxed text-[11px] sm:text-xs">
+                    Pastikan katalog pasokan dan tier harga grosir MOQ Anda selalu aktif agar UMKM dapat membuka atau bergabung ke kamar pooling pengadaan bahan baku.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {orders.length === 0 ? (
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button asChild variant="primary" size="md" className="rounded-xl font-bold cursor-pointer w-full sm:w-auto">
+                  <Link href="/katalog" className="flex items-center justify-center gap-2">
+                    <Store className="w-4 h-4" />
+                    <span>Kelola Katalog Komoditas</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="md" className="rounded-xl font-semibold cursor-pointer w-full sm:w-auto">
+                  <Link href="/dashboard" className="flex items-center justify-center gap-2">
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>Lihat Radar Pooling</span>
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="pt-2 flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => {
+                    setActiveTab("ALL");
+                    setSearchQuery("");
+                  }}
+                  className="rounded-xl font-semibold cursor-pointer gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Filter &amp; Pencarian</span>
+                </Button>
+              </div>
+            )}
+          </div>
+        </Card>
       ) : (
         <>
           {/* Desktop Table View (Watermelon UI Table-10) */}
-          <div className="hidden lg:block">
+          <div className="hidden lg:block bg-surface rounded-2xl border border-border shadow-elevation-1 overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

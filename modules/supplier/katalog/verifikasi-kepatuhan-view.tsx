@@ -27,6 +27,7 @@ import {
 } from "@/actions/supplier-catalog";
 import { uploadFileAction } from "@/actions/upload";
 import type { BECommodityBatchTag } from "@/lib/api/types";
+import { AiAuditLoadingDialog } from "./ai-audit-loading-dialog";
 
 interface VerifikasiKepatuhanViewProps {
   commodity: SupplierCommodity;
@@ -85,7 +86,10 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
   const [isLoadingExisting, setIsLoadingExisting] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
-
+  const [isAuditModalOpen, setIsAuditModalOpen] = React.useState(false);
+  const [isAuditCompleted, setIsAuditCompleted] = React.useState(false);
+  const [aiNotesResult, setAiNotesResult] = React.useState<string | null>(null);
+  const [isAiVerifiedResult, setIsAiVerifiedResult] = React.useState<boolean>(true);
   // Ambil riwayat berkas dari endpoint BE: GET /commodity-batch-tags/commodity/{commodity_id}
   React.useEffect(() => {
     let isMounted = true;
@@ -116,6 +120,16 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const maxBytes = 10 * 1024 * 1024; // 10 MB
+    if (file.size > maxBytes) {
+      toast.error(
+        `Ukuran berkas (${(file.size / (1024 * 1024)).toFixed(1)} MB) melebihi batas maksimal 10 MB. Silakan pilih berkas dokumen yang lebih kecil.`,
+        "Berkas Terlalu Besar"
+      );
+      e.target.value = "";
+      return;
+    }
+
     setRawFile(file);
     const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
     setUploadedFile({
@@ -141,7 +155,9 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
     }
 
     setIsSubmitting(true);
-
+    setIsAuditModalOpen(true);
+    setIsAuditCompleted(false);
+    setAiNotesResult(null);
     try {
       let fileUrlToSubmit = existingBatchTags[0]?.supporting_file_url || null;
 
@@ -155,6 +171,7 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
         if (!uploadRes.success || !uploadRes.url) {
           toast.error(uploadRes.message || "Gagal mengunggah berkas dokumen ke Supabase Storage.");
           setIsSubmitting(false);
+          setIsAuditModalOpen(false);
           return;
         }
         fileUrlToSubmit = uploadRes.url;
@@ -168,23 +185,48 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
       });
 
       if (res.success) {
-        setIsSuccess(true);
-        const aiSummary = res.data?.verification_notes;
+        setIsAuditCompleted(true);
+        const aiSummary = res.data?.verification_notes || null;
+        const verifiedStatus = res.data?.is_verified ?? true;
+        setAiNotesResult(aiSummary);
+        setIsAiVerifiedResult(verifiedStatus);
+
         toast.success(
           aiSummary
             ? `Hasil Evaluasi AI: ${aiSummary}`
             : `Kepatuhan mutu & cara penyimpanan ${commodity.name} berhasil disimpan!`,
-          res.data?.is_verified ? "Lulus Verifikasi Mutu" : "Dokumen Disimpan"
+          verifiedStatus ? "Lulus Verifikasi Mutu" : "Dokumen Disimpan"
         );
+
         setTimeout(() => {
+          setIsAuditModalOpen(false);
+          setIsSubmitting(false);
+          setIsSuccess(true);
           router.push(`/katalog/${commodity.id}`);
-        }, 1500);
+        }, 2400);
       } else {
+        setIsAuditModalOpen(false);
+        setIsSubmitting(false);
         toast.error(res.message || "Gagal menyimpan verifikasi kepatuhan.");
       }
-    } catch {
-      toast.error("Terjadi kendala koneksi ke server.");
-    } finally {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "";
+      if (
+        errMsg.includes("Body exceeded") ||
+        errMsg.includes("limit") ||
+        errMsg.includes("413")
+      ) {
+        toast.error(
+          "Ukuran berkas melebihi batas maksimal server (10 MB). Silakan pilih berkas yang lebih kecil atau lakukan kompresi.",
+          "Ukuran Berkas Melebihi Batas"
+        );
+      } else {
+        toast.error(
+          errMsg || "Terjadi kendala saat memproses verifikasi mutu dokumen.",
+          "Gagal Verifikasi"
+        );
+      }
+      setIsAuditModalOpen(false);
       setIsSubmitting(false);
     }
   };
@@ -447,6 +489,26 @@ export function VerifikasiKepatuhanView({ commodity }: VerifikasiKepatuhanViewPr
           </div>
         </form>
       )}
+
+      {/* Dialog Animasi Loading Audit AI untuk Dokumen */}
+      <AiAuditLoadingDialog
+        open={isAuditModalOpen}
+        fileName={
+          uploadedFile?.name ||
+          rawFile?.name ||
+          (existingBatchTags[0]?.supporting_file_url
+            ? decodeURIComponent(
+                existingBatchTags[0].supporting_file_url.split("/").pop() || "Dokumen_Mutu_Terdaftar.pdf"
+              )
+            : "Dokumen_Mutu_Komoditas.pdf")
+        }
+        fileSize={uploadedFile?.size}
+        commodityName={commodity.name}
+        storageTemp={storageTemp}
+        isCompleted={isAuditCompleted}
+        isVerified={isAiVerifiedResult}
+        verificationNotes={aiNotesResult}
+      />
     </div>
   );
 }

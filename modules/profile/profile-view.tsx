@@ -145,6 +145,17 @@ export function ProfileView({ initialRole = "umkm" }: ProfileViewProps) {
   const hasValidStorage = React.useMemo(() => {
     return (profileState.storageValue || activeRole?.storage_capacity || 0) > 0;
   }, [profileState.storageValue, activeRole]);
+  React.useEffect(() => {
+    if (hasValidBank && hasValidStorage) {
+      try {
+        localStorage.removeItem("kumpul_pending_onboarding");
+        localStorage.setItem("kumpul_supplier_profile_complete", "true");
+      } catch {
+        // ignore in SSR
+      }
+    }
+  }, [hasValidBank, hasValidStorage]);
+
 
   const handleFocusBank = () => {
     bankSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
