@@ -707,12 +707,8 @@ export function HomeRecommendationSection({
               <HorizontalScrollContainer>
                 {filteredRecommendations.map(({ commodity, recipeTag, benchmarkTag, criticalStockNotice }) => {
                   const reason = criticalStockNotice
-                    ? `Stok bahan baku ${criticalStockNotice.linkedMenu} di dapur Anda tersisa ${criticalStockNotice.daysRemaining} hari (${criticalStockNotice.currentStock ?? 0} ${criticalStockNotice.unit || commodity.wholesaleUnit}). Segera lakukan pengadaan ${
-                        criticalStockNotice.suggestedQty
-                          ? `${criticalStockNotice.suggestedQty} ${criticalStockNotice.unit || commodity.wholesaleUnit}`
-                          : ""
-                      } untuk mencegah hambatan operasional produksi.`
-                    : `Bahan baku ini sering digunakan dalam resep Anda (${recipeTag || commodity.name}) dan dianjurkan untuk selalu dipantau ketersediaannya di inventaris dapur.`;
+                    ? `Sisa stok dapur ${criticalStockNotice.linkedMenu}: ${criticalStockNotice.currentStock ?? 0} ${criticalStockNotice.unit || commodity.wholesaleUnit} (~${criticalStockNotice.daysRemaining} hari). Disarankan restock ${criticalStockNotice.suggestedQty || 10} ${criticalStockNotice.unit || commodity.wholesaleUnit}.`
+                    : `Bahan baku pendukung resep ${commodity.name}.`;
 
                   return (
                     <div

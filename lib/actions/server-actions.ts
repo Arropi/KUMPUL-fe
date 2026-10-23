@@ -219,7 +219,6 @@ export async function fetchHomeData() {
         if (!recommendations.some((r) => r.commodity.id === commodity.id)) {
           recommendations.push({
             commodity,
-            recipeTag: `Kebutuhan Dapur: ${ls.ingredient_name}`,
             criticalStockNotice: {
               daysRemaining: daysLeft,
               linkedMenu: ls.ingredient_name,

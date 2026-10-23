@@ -221,41 +221,30 @@ export function CommodityCatalogCard({
       {/* Konten Card */}
       <div className="flex flex-1 flex-col pt-3.5 space-y-3">
         <div>
-          {criticalStockNotice ? (
-            <div className="mb-2">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-red-700 bg-red-50 border border-red-200/90 px-2.5 py-0.5 rounded-lg shadow-xs">
-                <AlertTriangle className="size-3 text-red-600 shrink-0" />
-                <span className="truncate">
-                  Stok Menipis &bull; Sisa {criticalStockNotice.daysRemaining} Hari
-                  {criticalStockNotice.currentStock != null ? ` (${criticalStockNotice.currentStock} ${criticalStockNotice.unit || item.wholesaleUnit})` : ""}
+          {/* Baris Meta: Tag Status/Kebutuhan & Lokasi Seller */}
+          <div className="flex items-center justify-between gap-2 mb-1.5 text-[11px]">
+            <div className="min-w-0 flex-1">
+              {criticalStockNotice ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200/90 px-2 py-0.5 rounded-lg shadow-xs">
+                  <AlertTriangle className="size-3 text-red-600 shrink-0" />
+                  <span className="truncate">
+                    Sisa {criticalStockNotice.daysRemaining} Hari ({criticalStockNotice.currentStock ?? 0} {criticalStockNotice.unit || item.wholesaleUnit})
+                  </span>
                 </span>
-              </span>
+              ) : recipeTag ? (
+                <span className="inline-flex items-center text-[10px] font-semibold text-text-secondary bg-surface-subtle/80 border border-border/80 px-2 py-0.5 rounded-lg truncate">
+                  <span className="truncate">{recipeTag}</span>
+                </span>
+              ) : benchmarkTag ? (
+                <span className="inline-flex items-center text-[10px] font-bold text-primary bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-lg shadow-xs truncate">
+                  <span className="truncate">{benchmarkTag}</span>
+                </span>
+              ) : null}
             </div>
-          ) : recipeTag ? (
-            <div className="mb-2">
-              <span className="inline-flex items-center text-[11px] font-semibold text-text-secondary bg-surface-subtle/80 border border-border/80 px-2.5 py-0.5 rounded-lg">
-                <span className="truncate">{recipeTag}</span>
-              </span>
-            </div>
-          ) : null}
 
-          {/* Benchmark Tag for Supplier */}
-          {benchmarkTag && (
-            <div className="mb-2">
-              <span className="inline-flex items-center text-[11px] font-bold text-primary bg-primary/10 border border-primary/25 px-2.5 py-0.5 rounded-lg shadow-xs">
-                <span className="truncate">{benchmarkTag}</span>
-              </span>
-            </div>
-          )}
-
-          {/* Metadata Lokasi */}
-          <div className="flex items-center justify-end text-[11px] text-text-muted mb-1 gap-2">
-            <div className="inline-flex items-center gap-1 text-[11px] text-text-secondary shrink-0 max-w-full" title={locationDisplay}>
+            <div className="inline-flex items-center gap-1 text-[11px] text-text-secondary shrink-0" title={locationDisplay}>
               <MapPin className="size-3 text-primary shrink-0" />
-              <span className="truncate font-medium">{locationDisplay}</span>
-              {item.distanceKm != null && (
-                <span className="text-[10px] text-text-muted shrink-0">({item.distanceKm} km)</span>
-              )}
+              <span className="truncate max-w-[110px] font-medium">{locationDisplay}</span>
             </div>
           </div>
 
@@ -264,38 +253,29 @@ export function CommodityCatalogCard({
           </h2>
         </div>
 
-        {/* Badges Kondisional: Tiering Price & Pool Terbuka (atau Residu Sirkular untuk Limbah) */}
-        {isWaste ? (
+        {/* Badges: Tiering Price & Pool Terbuka */}
+        {!isWaste && (hasTieringPrice || hasOpenPools) ? (
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/90 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
-              <Recycle className="w-3 h-3 text-emerald-600" />
-              <span>Sisa Produksi &bull; Transaksi Langsung P2P</span>
-            </span>
-          </div>
-        ) : (hasTieringPrice || hasOpenPools) ? (
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            {/* Penanda Tiering Price: HANYA jika > 1 tier */}
             {hasTieringPrice && (
               <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-[10px] font-bold text-blue-800">
                 <span>Diskon Bertingkat ({item.priceTiers.length} Tier)</span>
               </span>
             )}
 
-            {/* Penanda Terbuka Pool: HANYA jika sudah terdapat pool terbuka */}
             {hasOpenPools && (
               <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
                 <span>
-                  Pool Terbuka {openPoolsCount > 1 ? `(${openPoolsCount} Pool)` : ""}
+                  Pool Terbuka {openPoolsCount > 1 ? `(${openPoolsCount})` : ""}
                 </span>
               </span>
             )}
           </div>
         ) : null}
 
-        {/* Harga Patokan Utama per Satuan */}
+        {/* Harga Satuan */}
         <div className="rounded-xl bg-background p-3 border border-border/80">
-          <span className="text-[11px] font-medium text-text-secondary block">
-            {isWaste ? "Harga Residu Sirkular (Beli per Kg)" : "Harga Patokan Utama"}
+          <span className="text-[11px] font-medium text-text-muted block">
+            {isWaste ? "Harga Residu" : "Harga Satuan"}
           </span>
           <div className="flex items-baseline gap-1.5 mt-0.5">
             <span className="font-heading font-extrabold text-lg sm:text-xl text-primary tabular-nums">
@@ -305,37 +285,32 @@ export function CommodityCatalogCard({
               / {item.wholesaleUnit}
             </span>
           </div>
-          {isWaste ? (
-            <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5">
-              Simbiosis Sirkular P2P &bull; Tanpa Batas MOQ
-            </span>
-          ) : item.unitWeightKg > 0 ? (
+          {!isWaste && item.wholesaleUnit !== "KG" && item.unitWeightKg > 0 ? (
             <span className="text-[11px] text-text-muted tabular-nums block mt-0.5">
               Setara Rp {formatNumber(Math.round(primaryPrice / item.unitWeightKg))} / kg
             </span>
           ) : null}
         </div>
 
-        {/* Metadata Wajib: Batas Minimum (MOQ) & Stok Tersedia */}
+        {/* Metadata: Batas Minimum (MOQ) & Stok Tersedia */}
         <div className="grid grid-cols-2 gap-2 text-xs pt-0.5">
           <div className="rounded-lg bg-surface-subtle p-2 border border-border/50">
             <span className="text-[10px] text-text-muted block font-medium">
-              {isWaste ? "Skema Pengadaan" : "Batas Minimum (MOQ)"}
+              {isWaste ? "Skema" : "Min. Pesanan (MOQ)"}
             </span>
-            <span className={`font-bold tabular-nums truncate ${isWaste ? "text-emerald-800" : "text-text-primary"}`}>
-              {isWaste ? "Tanpa Batas MOQ" : `${item.baseMoq} ${item.wholesaleUnit}`}
+            <span className={`font-bold tabular-nums truncate block ${isWaste ? "text-emerald-800" : "text-text-primary"}`}>
+              {isWaste ? "Bebas MOQ" : `${item.baseMoq} ${item.wholesaleUnit}`}
             </span>
           </div>
           <div className="rounded-lg bg-surface-subtle p-2 border border-border/50">
             <span className="text-[10px] text-text-muted block font-medium">
-              {isWaste ? "Bobot Tersedia" : "Stok Tersedia"}
+              Stok Tersedia
             </span>
-            <span className="font-bold text-text-primary tabular-nums">
+            <span className="font-bold text-text-primary tabular-nums truncate block">
               {item.availableStock} {item.wholesaleUnit}
             </span>
           </div>
         </div>
-
         {/* Revisi 1: Tombol Aksi - Supplier TIDAK ADA tombol beli */}
         <div className="pt-2 mt-auto">
           {!isUmkm ? (
