@@ -15,6 +15,7 @@ import {
   Store,
   Recycle,
   Info,
+  AlertTriangle,
 } from "lucide-react";
 
 export interface CriticalStockNotice {
@@ -22,6 +23,7 @@ export interface CriticalStockNotice {
   linkedMenu: string;
   suggestedQty?: number;
   unit?: string;
+  currentStock?: number;
 }
 
 interface CommodityCatalogCardProps {
@@ -219,7 +221,17 @@ export function CommodityCatalogCard({
       {/* Konten Card */}
       <div className="flex flex-1 flex-col pt-3.5 space-y-3">
         <div>
-          {recipeTag ? (
+          {criticalStockNotice ? (
+            <div className="mb-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-red-700 bg-red-50 border border-red-200/90 px-2.5 py-0.5 rounded-lg shadow-xs">
+                <AlertTriangle className="size-3 text-red-600 shrink-0" />
+                <span className="truncate">
+                  Stok Menipis &bull; Sisa {criticalStockNotice.daysRemaining} Hari
+                  {criticalStockNotice.currentStock != null ? ` (${criticalStockNotice.currentStock} ${criticalStockNotice.unit || item.wholesaleUnit})` : ""}
+                </span>
+              </span>
+            </div>
+          ) : recipeTag ? (
             <div className="mb-2">
               <span className="inline-flex items-center text-[11px] font-semibold text-text-secondary bg-surface-subtle/80 border border-border/80 px-2.5 py-0.5 rounded-lg">
                 <span className="truncate">{recipeTag}</span>
