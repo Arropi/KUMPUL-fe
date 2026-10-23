@@ -17,8 +17,14 @@ export interface NavItemDef {
   badge?: string;
   icon: React.ComponentType<{ className?: string }>;
 }
+export interface NavItemBadges {
+  [navId: string]: string | undefined;
+}
 
-export function getNavItemsForRole(role: UserRole): NavItemDef[] {
+export function getNavItemsForRole(
+  role: UserRole,
+  badges?: NavItemBadges
+): NavItemDef[] {
   const commonHome: NavItemDef = {
     id: "home",
     label: "Beranda",
@@ -36,19 +42,19 @@ export function getNavItemsForRole(role: UserRole): NavItemDef[] {
   if (role === "supplier") {
     return [
       commonHome,
-      { id: "katalog", label: "Katalog", href: "/katalog", icon: Package },
-      { id: "pesanan", label: "Pesanan PO", href: "/pesanan", badge: "1 Baru", icon: ClipboardList },
-      { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { id: "katalog", label: "Katalog", href: "/katalog", badge: badges?.katalog, icon: Package },
+      { id: "pesanan", label: "Pesanan PO", href: "/pesanan", badge: badges?.pesanan, icon: ClipboardList },
+      { id: "dashboard", label: "Dashboard", href: "/dashboard", badge: badges?.dashboard, icon: LayoutDashboard },
       commonProfile,
     ];
   }
 
   return [
     commonHome,
-    { id: "produk", label: "Produk", href: "/produk", icon: Package },
-    { id: "pesanan", label: "Pesanan Saya", href: "/pesanan", badge: "1 Siap", icon: ClipboardList },
-    { id: "dashboard", label: "Dashboard", href: "/dashboard", badge: "4 Aktif", icon: LayoutDashboard },
-    { id: "limbah", label: "Limbah", href: "/limbah", icon: Recycle },
+    { id: "produk", label: "Produk", href: "/produk", badge: badges?.produk, icon: Package },
+    { id: "pesanan", label: "Pesanan Saya", href: "/pesanan", badge: badges?.pesanan, icon: ClipboardList },
+    { id: "dashboard", label: "Dashboard", href: "/dashboard", badge: badges?.dashboard, icon: LayoutDashboard },
+    { id: "limbah", label: "Limbah", href: "/limbah", badge: badges?.limbah, icon: Recycle },
     commonProfile,
   ];
 }
