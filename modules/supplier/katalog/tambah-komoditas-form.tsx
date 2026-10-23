@@ -101,6 +101,16 @@ export function TambahKomoditasForm({
   const [imagePreviewUrl, setImagePreviewUrl] = React.useState<string | null>(
     initialCommodity?.image_url || null
   );
+  // Opsi Pembelian di Bawah MOQ (Eceran Darurat) State
+  const [allowsUnderMoq, setAllowsUnderMoq] = React.useState<boolean>(
+    Boolean(initialCommodity?.allows_under_moq)
+  );
+  const [underMoqPricePerKg, setUnderMoqPricePerKg] = React.useState<string>(
+    initialCommodity?.under_moq_price_per_kg
+      ? String(initialCommodity.under_moq_price_per_kg)
+      : ""
+  );
+
 
   // Skema Harga Bertingkat State
   const [enablePriceTiers, setEnablePriceTiers] = React.useState<boolean>(
@@ -169,6 +179,9 @@ export function TambahKomoditasForm({
           }
         }
       }
+    }
+    if (allowsUnderMoq && (!underMoqPricePerKg || Number(underMoqPricePerKg) <= 0)) {
+      err.underMoqPrice = "Harga satuan di bawah MOQ wajib diisi angka lebih besar dari 0.";
     }
 
     setErrors(err);
@@ -271,8 +284,8 @@ export function TambahKomoditasForm({
         description: description.trim() || undefined,
         productionDate: undefined,
         autoActivateMarketplace: false,
-        allowsUnderMoq: false,
-        underMoqPricePerKg: null,
+        allowsUnderMoq: Boolean(allowsUnderMoq),
+        underMoqPricePerKg: allowsUnderMoq && underMoqPricePerKg ? Number(underMoqPricePerKg) : null,
         isMarketplaceActive: isEdit ? (initialCommodity?.is_marketplace_active ?? false) : false,
         priceTiers: formattedTiers,
       };
@@ -448,6 +461,10 @@ export function TambahKomoditasForm({
           setEnablePriceTiers={setEnablePriceTiers}
           priceTiers={priceTiers}
           setPriceTiers={setPriceTiers}
+          allowsUnderMoq={allowsUnderMoq}
+          setAllowsUnderMoq={setAllowsUnderMoq}
+          underMoqPricePerKg={underMoqPricePerKg}
+          setUnderMoqPricePerKg={setUnderMoqPricePerKg}
           errors={errors}
         />
 

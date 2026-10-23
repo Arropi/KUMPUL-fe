@@ -16,8 +16,10 @@ import {
   Recycle,
   Info,
   AlertTriangle,
+  ShieldCheck,
+  ShieldAlert,
+  Clock,
 } from "lucide-react";
-
 export interface CriticalStockNotice {
   daysRemaining: number;
   linkedMenu: string;
@@ -91,7 +93,7 @@ export function CommodityCatalogCard({
     item.sellerCity || item.batchTag.originLocation || "Sentra Hub KUMPUL";
 
   return (
-    <Card className="group flex flex-col rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong p-3.5 sm:p-4">
+    <Card className="group flex flex-col h-full w-full rounded-2xl border-border bg-surface shadow-elevation-1 transition-all duration-200 hover:shadow-elevation-2 hover:border-border-strong p-3.5 sm:p-4">
       {/* Gambar Komoditas & Overlay Badges */}
       <div className="relative aspect-[4/3] w-full rounded-xl bg-neutral-50 border border-border/50">
         <div className="absolute inset-0 overflow-hidden rounded-xl">
@@ -126,23 +128,23 @@ export function CommodityCatalogCard({
           <div className="pointer-events-auto">
             {isKatalogContext ? (
               item.isActive ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600/95 text-white backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold shadow-xs">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600/95 text-white backdrop-blur-xs px-2.5 py-1 text-[11px] font-bold shadow-xs whitespace-nowrap">
                   <span className="size-1.5 rounded-full bg-white" />
                   <span>Published</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-600/95 text-white backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold shadow-xs">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-600/95 text-white backdrop-blur-xs px-2.5 py-1 text-[11px] font-bold shadow-xs whitespace-nowrap">
                   <span className="size-1.5 rounded-full bg-neutral-300" />
                   <span>Nonaktif (Draft)</span>
                 </span>
               )
             ) : isWaste ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-800 text-white backdrop-blur-md px-3 py-1 text-xs font-bold shadow-sm border border-emerald-400/40">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-800 text-white backdrop-blur-md px-2.5 py-1 text-[11px] font-bold shadow-sm border border-emerald-400/40 whitespace-nowrap">
                 <Recycle className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
                 <span>Limbah Sirkular</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/90 backdrop-blur-md px-3 py-1 text-xs font-bold shadow-xs border border-border/80 text-text-primary">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/90 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold shadow-xs border border-border/80 text-text-primary whitespace-nowrap">
                 <Store className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span>Komoditas Pemasok</span>
               </span>
@@ -153,16 +155,19 @@ export function CommodityCatalogCard({
           {!isWaste && (
             <div className="pointer-events-auto">
               {isHygienePassed ? (
-                <span className="inline-flex items-center rounded-full bg-emerald-600/95 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                  Terverifikasi
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-xs backdrop-blur-md px-2.5 py-1 text-[11px] font-bold whitespace-nowrap">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Terverifikasi</span>
                 </span>
               ) : isHygieneRejected ? (
-                <span className="inline-flex items-center rounded-full bg-rose-600/95 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                  Tidak Sesuai
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 text-rose-800 border border-rose-300 shadow-xs backdrop-blur-md px-2.5 py-1 text-[11px] font-bold whitespace-nowrap">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span>Tidak Sesuai</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                  Menunggu Audit
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300 shadow-xs backdrop-blur-md px-2.5 py-1 text-[11px] font-bold whitespace-nowrap">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Menunggu Audit</span>
                 </span>
               )}
             </div>
@@ -222,21 +227,21 @@ export function CommodityCatalogCard({
       <div className="flex flex-1 flex-col pt-3.5 space-y-3">
         <div>
           {/* Baris Meta: Tag Status/Kebutuhan & Lokasi Seller */}
-          <div className="flex items-center justify-between gap-2 mb-1.5 text-[11px]">
+          <div className="flex items-center justify-between gap-2 mb-1.5 text-[11px] min-h-[22px]">
             <div className="min-w-0 flex-1">
               {criticalStockNotice ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200/90 px-2 py-0.5 rounded-lg shadow-xs">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200/90 px-2 py-0.5 rounded-lg shadow-xs whitespace-nowrap">
                   <AlertTriangle className="size-3 text-red-600 shrink-0" />
                   <span className="truncate">
                     Sisa {criticalStockNotice.daysRemaining} Hari ({criticalStockNotice.currentStock ?? 0} {criticalStockNotice.unit || item.wholesaleUnit})
                   </span>
                 </span>
               ) : recipeTag ? (
-                <span className="inline-flex items-center text-[10px] font-semibold text-text-secondary bg-surface-subtle/80 border border-border/80 px-2 py-0.5 rounded-lg truncate">
+                <span className="inline-flex items-center text-[10px] font-semibold text-text-secondary bg-surface-subtle/80 border border-border/80 px-2 py-0.5 rounded-lg truncate whitespace-nowrap">
                   <span className="truncate">{recipeTag}</span>
                 </span>
               ) : benchmarkTag ? (
-                <span className="inline-flex items-center text-[10px] font-bold text-primary bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-lg shadow-xs truncate">
+                <span className="inline-flex items-center text-[10px] font-bold text-primary bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-lg shadow-xs truncate whitespace-nowrap">
                   <span className="truncate">{benchmarkTag}</span>
                 </span>
               ) : null}
@@ -248,32 +253,34 @@ export function CommodityCatalogCard({
             </div>
           </div>
 
-          <h2 className="font-heading font-bold text-base text-text-primary line-clamp-1" title={item.name}>
+          <h2 className="font-heading font-bold text-base text-text-primary line-clamp-1 h-6 leading-6" title={item.name}>
             {item.name}
           </h2>
         </div>
 
         {/* Badges: Tiering Price & Pool Terbuka */}
-        {!isWaste && (hasTieringPrice || hasOpenPools) ? (
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            {hasTieringPrice && (
-              <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-[10px] font-bold text-blue-800">
-                <span>Diskon Bertingkat ({item.priceTiers.length} Tier)</span>
-              </span>
-            )}
-
-            {hasOpenPools && (
-              <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
-                <span>
-                  Pool Terbuka {openPoolsCount > 1 ? `(${openPoolsCount})` : ""}
+        <div className="min-h-[24px] flex flex-wrap items-center gap-1.5">
+          {!isWaste && (hasTieringPrice || hasOpenPools) ? (
+            <>
+              {hasTieringPrice && (
+                <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-[10px] font-bold text-blue-800 whitespace-nowrap">
+                  <span>Diskon Bertingkat ({item.priceTiers.length} Tier)</span>
                 </span>
-              </span>
-            )}
-          </div>
-        ) : null}
+              )}
+
+              {hasOpenPools && (
+                <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-bold text-amber-800 whitespace-nowrap">
+                  <span>
+                    Pool Terbuka {openPoolsCount > 1 ? `(${openPoolsCount})` : ""}
+                  </span>
+                </span>
+              )}
+            </>
+          ) : null}
+        </div>
 
         {/* Harga Satuan */}
-        <div className="rounded-xl bg-background p-3 border border-border/80">
+        <div className="rounded-xl bg-background p-3 border border-border/80 min-h-[86px] flex flex-col justify-center">
           <span className="text-[11px] font-medium text-text-muted block">
             {isWaste ? "Harga Residu" : "Harga Satuan"}
           </span>

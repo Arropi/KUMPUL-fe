@@ -540,7 +540,7 @@ export function HomeRecommendationSection({
                 return (
                   <div
                     key={`bench-${b.commodity_id}`}
-                    className="w-[280px] sm:w-[310px] md:w-[325px] shrink-0 snap-start flex flex-col"
+                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
                   >
                     <CommodityCatalogCard
                       item={item}
@@ -688,48 +688,31 @@ export function HomeRecommendationSection({
               </p>
             </Card>
           ) : (
-            <>
-              {/* Banner Ringkasan Kebutuhan Bahan Dapur Menipis */}
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs">
-                <div className="p-1 rounded-lg bg-amber-500/20 text-accent shrink-0 mt-0.5">
-                  <AlertTriangle className="size-4" />
-                </div>
-                <div className="space-y-0.5 flex-1 min-w-0">
-                  <p className="font-bold text-text-primary">
-                    Deteksi Otomatis Kebutuhan Bahan Baku yang Menipis
-                  </p>
-                  <p className="text-text-secondary leading-relaxed text-[11px] sm:text-xs">
-                    Sistem AI KUMPUL mendeteksi stok bahan baku dapur berikut berada di batas minimum pemakaian. Segera lakukan pengadaan langsung ke pemasok grosir agar ritme produksi tidak terhambat.
-                  </p>
-                </div>
-              </div>
+            <HorizontalScrollContainer>
+              {filteredRecommendations.map(({ commodity, recipeTag, benchmarkTag, criticalStockNotice }) => {
+                const reason = criticalStockNotice
+                  ? `Sisa stok dapur ${criticalStockNotice.linkedMenu}: ${criticalStockNotice.currentStock ?? 0} ${criticalStockNotice.unit || commodity.wholesaleUnit} (~${criticalStockNotice.daysRemaining} hari). Disarankan restock ${criticalStockNotice.suggestedQty || 10} ${criticalStockNotice.unit || commodity.wholesaleUnit}.`
+                  : `Bahan baku pendukung resep ${commodity.name}.`;
 
-              <HorizontalScrollContainer>
-                {filteredRecommendations.map(({ commodity, recipeTag, benchmarkTag, criticalStockNotice }) => {
-                  const reason = criticalStockNotice
-                    ? `Sisa stok dapur ${criticalStockNotice.linkedMenu}: ${criticalStockNotice.currentStock ?? 0} ${criticalStockNotice.unit || commodity.wholesaleUnit} (~${criticalStockNotice.daysRemaining} hari). Disarankan restock ${criticalStockNotice.suggestedQty || 10} ${criticalStockNotice.unit || commodity.wholesaleUnit}.`
-                    : `Bahan baku pendukung resep ${commodity.name}.`;
-
-                  return (
-                    <div
-                      key={`rec-stock-${commodity.id}`}
-                      className="w-[280px] sm:w-[310px] md:w-[325px] shrink-0 snap-start flex flex-col"
-                    >
-                      <CommodityCatalogCard
-                        item={commodity}
-                        role={role}
-                        pageContext="home"
-                        recipeTag={recipeTag}
-                        benchmarkTag={benchmarkTag}
-                        criticalStockNotice={criticalStockNotice}
-                        recommendationReason={reason}
-                        onPurchase={onPurchase}
-                      />
-                    </div>
-                  );
-                })}
-              </HorizontalScrollContainer>
-            </>
+                return (
+                  <div
+                    key={`rec-stock-${commodity.id}`}
+                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
+                  >
+                    <CommodityCatalogCard
+                      item={commodity}
+                      role={role}
+                      pageContext="home"
+                      recipeTag={recipeTag}
+                      benchmarkTag={benchmarkTag}
+                      criticalStockNotice={criticalStockNotice}
+                      recommendationReason={reason}
+                      onPurchase={onPurchase}
+                    />
+                  </div>
+                );
+              })}
+            </HorizontalScrollContainer>
           )}
         </div>
       )}
@@ -754,7 +737,7 @@ export function HomeRecommendationSection({
                 return (
                   <div
                     key={`healthy-${alt.commodity_id}`}
-                    className="w-[280px] sm:w-[310px] md:w-[325px] shrink-0 snap-start flex flex-col"
+                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
                   >
                     <CommodityCatalogCard
                       item={item}
@@ -792,7 +775,7 @@ export function HomeRecommendationSection({
                 return (
                   <div
                     key={`near-${near.commodity_id}`}
-                    className="w-[280px] sm:w-[310px] md:w-[325px] shrink-0 snap-start flex flex-col"
+                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
                   >
                     <CommodityCatalogCard
                       item={item}
@@ -828,7 +811,7 @@ export function HomeRecommendationSection({
                 return (
                   <div
                     key={`savings-${pool.pool_id}`}
-                    className="w-[280px] sm:w-[310px] md:w-[325px] shrink-0 snap-start flex flex-col"
+                    className="w-[300px] sm:w-[320px] md:w-[330px] shrink-0 snap-start flex flex-col h-full"
                   >
                     <CommodityCatalogCard
                       item={item}
