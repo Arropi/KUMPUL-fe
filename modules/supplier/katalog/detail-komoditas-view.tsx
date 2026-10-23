@@ -102,7 +102,7 @@ export function DetailKomoditasView({
 
   const primaryPrice = commodity.priceTiers[0]?.pricePerUnit || 0;
   const isHygienePassed = commodity.batchTag.hygieneStatus === "TERVERIFIKASI";
-
+  const isHygieneRejected = commodity.batchTag.hygieneStatus === "TIDAK_SESUAI";
   const handleScrollToPurchase = () => {
     purchaseSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -389,6 +389,8 @@ export function DetailKomoditasView({
               <div className="flex items-center gap-2">
                 {isHygienePassed ? (
                   <Badge variant="success">Terverifikasi Mutu</Badge>
+                ) : isHygieneRejected ? (
+                  <Badge variant="destructive">Tidak Sesuai</Badge>
                 ) : (
                   <Badge variant="warning">Menunggu Audit</Badge>
                 )}
@@ -397,10 +399,14 @@ export function DetailKomoditasView({
                     asChild
                     variant="soft"
                     size="sm"
-                    className="text-xs font-semibold h-8 rounded-xl px-3"
+                    className="text-xs font-semibold h-8 rounded-xl px-3 cursor-pointer"
                   >
                     <Link href={`/katalog/${commodity.id}/verifikasi`}>
-                      {isHygienePassed ? "Perbarui Mutu \u2192" : "Verifikasi Mutu \u2192"}
+                      {isHygienePassed
+                        ? "Perbarui Mutu \u2192"
+                        : isHygieneRejected
+                        ? "Unggah Ulang Dokumen \u2192"
+                        : "Verifikasi Mutu \u2192"}
                     </Link>
                   </Button>
                 )}
@@ -416,6 +422,8 @@ export function DetailKomoditasView({
                   {commodity.batchTag.verificationNotes ||
                     (isHygienePassed
                       ? "Dokumen mutu pangan terverifikasi sah dan memenuhi standar oleh sistem AI KUMPUL."
+                      : isHygieneRejected
+                      ? "Hasil evaluasi AI KUMPUL: Dokumen tidak memenuhi standar mutu, kebersihan, atau legalitas yang ditentukan."
                       : "Belum diaudit oleh AI. Silakan ajukan verifikasi kesehatan berkas dokumen untuk diaudit secara otomatis oleh AI.")}
                 </p>
               </div>

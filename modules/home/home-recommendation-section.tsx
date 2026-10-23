@@ -10,7 +10,7 @@ import {
   MapPin,
   TrendingDown,
 } from "lucide-react";
-import { SupplierCommodity, WholesaleUnit } from "@/constants/supplier";
+import { SupplierCommodity, WholesaleUnit, type StorageTemperature } from "@/constants/supplier";
 import {
   CommodityCatalogCard,
   type CriticalStockNotice,
@@ -219,13 +219,16 @@ function getCommodityForHealthy(
     ],
     batchTag: {
       id: `batch-${alt.commodity_id}`,
-      licenseNumber: "VERIFIED-MUI-BPOM",
+      licenseNumber: alt.is_verified ? "VERIFIED-MUI-BPOM" : "AUDIT-TIDAK-SESUAI",
       verificationNotes: alt.verification_notes,
       productionDate: new Date().toISOString().slice(0, 10),
       expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-      storageTemperature: (alt.storage_temp as any) || "AMBIENT",
+      storageTemperature:
+        alt.storage_temp === "CHILLED" || alt.storage_temp === "FROZEN"
+          ? (alt.storage_temp as StorageTemperature)
+          : "AMBIENT",
       originLocation: alt.seller_city || "D.I. Yogyakarta",
-      hygieneStatus: "TERVERIFIKASI",
+      hygieneStatus: alt.is_verified ? "TERVERIFIKASI" : "TIDAK_SESUAI",
     },
     imageUrl: alt.image_url || undefined,
     createdAt: new Date().toISOString(),
@@ -681,39 +684,52 @@ export function HomeRecommendationSection({
           {filteredRecommendations.length === 0 ? (
             <Card className="p-8 text-center bg-surface border-border rounded-2xl">
               <p className="text-xs font-semibold text-text-muted">
-                Saat ini tidak ada yang tepat untuk direkomendasikan pada Anda.
+                Saat ini seluruh stok bahan dapur Anda berada dalam batas aman.
               </p>
             </Card>
           ) : (
-            <HorizontalScrollContainer>
-              {filteredRecommendations.map(({ commodity, recipeTag, benchmarkTag, criticalStockNotice }) => {
-                const reason = criticalStockNotice
-                  ? `Stok bahan baku ini di dapur Anda tersisa ${criticalStockNotice.daysRemaining} hari untuk menu "${criticalStockNotice.linkedMenu}". Segera lakukan pengadaan ${
-                      criticalStockNotice.suggestedQty
-                        ? `${criticalStockNotice.suggestedQty} ${criticalStockNotice.unit || commodity.wholesaleUnit}`
-                        : ""
-                    } untuk mencegah hambatan operasional produksi.`
-                  : `Bahan baku ini sering digunakan dalam resep Anda (${recipeTag || commodity.name}) dan dianjurkan untuk selalu dipantau ketersediaannya di inventaris dapur.`;
+            <>
+              {/* Banner Ringkasan Kebutuhan Bahan Dapur Menipis */}
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs">
+                <div className="p-1 rounded-lg bg-amber-500/20 text-accent shrink-0 mt-0.5">
+                  <AlertTriangle className="size-4" />
+                </div>
+                <div className="space-y-0.5 flex-1 min-w-0">
+                  <p className="font-bold text-text-primary">
+                    Deteksi Otomatis Kebutuhan Bahan Baku yang Menipis
+                  </p>
+                  <p className="text-text-secondary leading-relaxed text-[11px] sm:text-xs">
+                    Sistem AI KUMPUL mendeteksi stok bahan baku dapur berikut berada di batas minimum pemakaian. Segera lakukan pengadaan langsung ke pemasok grosir agar ritme produksi tidak terhambat.
+                  </p>
+                </div>
+              </div>
 
-                return (
-                  <div
-                    key={`rec-stock-${commodity.id}`}
-                    className="w-[280px] sm:w-[310px] md:w-[325px] shrink-0 snap-start flex flex-col"
-                  >
-                    <CommodityCatalogCard
-                      item={commodity}
-                      role={role}
-                      pageContext="home"
-                      recipeTag={recipeTag}
-                      benchmarkTag={benchmarkTag}
-                      criticalStockNotice={criticalStockNotice}
-                      recommendationReason={reason}
-                      onPurchase={onPurchase}
-                    />
-                  </div>
-                );
-              })}
-            </HorizontalScrollContainer>
+              <HorizontalScrollContainer>
+                {filteredRecommendations.map(({ commodity, recipeTag, benchmarkTag, criticalStockNotice }) => {
+                  const reason = criticalStockNotice
+                    ? `Sisa stok dapur ${criticalStockNotice.linkedMenu}: ${criticalStockNotice.currentStock ?? 0} ${criticalStockNotice.unit || commodity.wholesaleUnit} (~${criticalStockNotice.daysRemaining} hari). Disarankan restock ${criticalStockNotice.suggestedQty || 10} ${criticalStockNotice.unit || commodity.wholesaleUnit}.`
+                    : `Bahan baku pendukung resep ${commodity.name}.`;
+
+                  return (
+                    <div
+                      key={`rec-stock-${commodity.id}`}
+                      className="w-[280px] sm:w-[310px] md:w-[325px] shrink-0 snap-start flex flex-col"
+                    >
+                      <CommodityCatalogCard
+                        item={commodity}
+                        role={role}
+                        pageContext="home"
+                        recipeTag={recipeTag}
+                        benchmarkTag={benchmarkTag}
+                        criticalStockNotice={criticalStockNotice}
+                        recommendationReason={reason}
+                        onPurchase={onPurchase}
+                      />
+                    </div>
+                  );
+                })}
+              </HorizontalScrollContainer>
+            </>
           )}
         </div>
       )}

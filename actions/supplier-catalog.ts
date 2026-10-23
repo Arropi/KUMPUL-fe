@@ -245,7 +245,7 @@ export async function createSupplierCommodityAction(payload: CreateCommodityInpu
         auto_activate_marketplace: Boolean(payload.autoActivateMarketplace),
         allows_under_moq: Boolean(payload.allowsUnderMoq),
         under_moq_price_per_kg: payload.allowsUnderMoq && payload.underMoqPricePerKg ? Number(payload.underMoqPricePerKg) : null,
-        is_marketplace_active: payload.isMarketplaceActive !== undefined ? payload.isMarketplaceActive : true,
+        is_marketplace_active: payload.isMarketplaceActive !== undefined ? payload.isMarketplaceActive : false,
         price_tiers: payload.priceTiers || [],
       }),
     });

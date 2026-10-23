@@ -1,7 +1,61 @@
 import { cookies } from 'next/headers';
 import { beFetch } from '@/lib/api/be-client';
 import { mapBEToSupplierCommodity, mapBEWasteToSupplierCommodity } from '@/modules/supplier/helpers';
+import type { SupplierCommodity } from '@/constants/supplier';
+import type { MatchedCommodity } from '@/modules/home/home-recommendation-section';
 
+function extractSearchKeywords(name: string): string[] {
+  const synonyms: Record<string, string[]> = {
+    cabe: ["cabe", "cabai", "rawit"],
+    cabai: ["cabe", "cabai", "rawit"],
+    rawit: ["cabe", "cabai", "rawit"],
+    ayam: ["ayam", "unggas"],
+    minyak: ["minyak", "goreng"],
+    beras: ["beras", "padi"],
+    bawang: ["bawang"],
+    kopi: ["kopi"],
+    kedelai: ["kedelai", "soya"],
+    bebek: ["bebek"],
+    telur: ["telur", "telor"],
+    gula: ["gula"],
+    tepung: ["tepung"],
+    ikan: ["ikan"],
+    susu: ["susu"],
+    daging: ["daging"],
+    garam: ["garam"],
+  };
+  const ignored = new Set([
+    "fillet",
+    "mentah",
+    "segar",
+    "super",
+    "grade",
+    "pack",
+    "biji",
+    "curah",
+    "pilihan",
+    "kering",
+    "halus",
+    "bubuk",
+    "potong",
+  ]);
+
+  const words = name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !ignored.has(w));
+
+  const keywords = new Set<string>();
+  for (const w of words) {
+    if (synonyms[w]) {
+      synonyms[w].forEach((s) => keywords.add(s));
+    } else {
+      keywords.add(w);
+    }
+  }
+  return Array.from(keywords);
+}
 /**
  * Server-side beFetch that forwards cookies from the request.
  * This ensures the backend receives the same authentication context as the client.
@@ -111,42 +165,83 @@ export async function fetchHomeData() {
 
   const rawRecs = recsRes.success && recsRes.data ? recsRes.data : null;
 
-  // Bangun rekomendasi MatchedCommodity untuk UMKM dari data rekomendasi jika ada
-  let recommendations: any[] = [];
-  if (rawRecs && Array.isArray(rawRecs.low_stock_recommendations)) {
-    rawRecs.low_stock_recommendations.forEach((ls: any) => {
-      if (Array.isArray(ls.matching_commodities)) {
-        ls.matching_commodities.forEach((mc: any) => {
+  // Bangun rekomendasi MatchedCommodity untuk UMKM dari data kebutuhan stok yang menipis
+  const recommendations: MatchedCommodity[] = [];
+  interface RawLowStockItem {
+    ingredient_name: string;
+    current_stock: number | string;
+    unit: string;
+    matching_commodities?: Array<{
+      commodity_id: string;
+      commodity_name: string;
+      base_price: number;
+      supplier_name: string;
+      stock: number;
+    }>;
+  }
+
+  const rawLowStocks: RawLowStockItem[] =
+    rawRecs && Array.isArray(rawRecs.low_stock_recommendations)
+      ? (rawRecs.low_stock_recommendations as RawLowStockItem[])
+      : [];
+
+  if (rawLowStocks.length > 0) {
+    for (const ls of rawLowStocks) {
+      const stockNum = typeof ls.current_stock === "number" ? ls.current_stock : parseFloat(String(ls.current_stock)) || 0;
+      const daysLeft = stockNum <= 2 ? 1 : stockNum <= 5 ? 2 : stockNum <= 10 ? 3 : 5;
+      const suggestedQty = Math.max(10, Math.round(50 - stockNum));
+
+      // 1. Cek matching_commodities dari response API
+      const matchedItems: SupplierCommodity[] = [];
+      if (Array.isArray(ls.matching_commodities) && ls.matching_commodities.length > 0) {
+        for (const mc of ls.matching_commodities) {
           const found = filteredCatalog.find((c) => c.id === mc.commodity_id);
-          if (found && !recommendations.some((r) => r.commodity.id === found.id)) {
-            recommendations.push({
-              commodity: found,
-              recipeTag: `Kebutuhan Dapur: ${ls.ingredient_name}`,
-              criticalStockNotice:
-                Number(ls.current_stock) <= 10
-                  ? {
-                      daysRemaining: Number(ls.current_stock) <= 5 ? 1 : 3,
-                      linkedMenu: ls.ingredient_name,
-                      suggestedQty: 25,
-                      unit: ls.unit,
-                    }
-                  : undefined,
-            });
+          if (found && !matchedItems.some((item) => item.id === found.id)) {
+            matchedItems.push(found);
           }
-        });
+        }
       }
-    });
+
+      // 2. Jika matching_commodities kosong atau belum ada yang cocok di filteredCatalog, cari via keyword matching di katalog
+      if (matchedItems.length === 0) {
+        const keywords = extractSearchKeywords(ls.ingredient_name || "");
+        if (keywords.length > 0) {
+          const found = filteredCatalog.filter((c) => {
+            const cName = c.name.toLowerCase();
+            return keywords.some((kw) => cName.includes(kw));
+          });
+          matchedItems.push(...found);
+        }
+      }
+
+      // 3. Tambahkan ke recommendations dengan criticalStockNotice yang jelas
+      for (const commodity of matchedItems) {
+        if (!recommendations.some((r) => r.commodity.id === commodity.id)) {
+          recommendations.push({
+            commodity,
+            criticalStockNotice: {
+              daysRemaining: daysLeft,
+              linkedMenu: ls.ingredient_name,
+              suggestedQty,
+              unit: ls.unit || commodity.wholesaleUnit || "KG",
+              currentStock: stockNum,
+            },
+          });
+        }
+      }
+    }
   }
 
-  // Jika recommendations masih kosong, fallback ke 3 komoditas bursa terverifikasi pertama (HANYA DARI NON-OWN CATALOG)
+  // Jika recommendations masih kosong, fallback ke 3 komoditas bursa terverifikasi pertama
   if (recommendations.length === 0 && filteredCatalog.length > 0) {
-    recommendations = filteredCatalog.slice(0, 3).map((c) => ({
-      commodity: c,
-      recipeTag:
-        c.batchTag.hygieneStatus === "TERVERIFIKASI" ? "Rekomendasi Mutu AI" : undefined,
-    }));
+    recommendations.push(
+      ...filteredCatalog.slice(0, 3).map((c) => ({
+        commodity: c,
+        recipeTag:
+          c.batchTag.hygieneStatus === "TERVERIFIKASI" ? "Rekomendasi Mutu AI" : undefined,
+      }))
+    );
   }
-
   return {
     catalog: filteredCatalog,
     recommendations,
