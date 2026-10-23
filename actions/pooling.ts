@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { beFetch } from "@/lib/api/be-client";
 import { getAuthSession } from "@/lib/auth-cookies";
 import type { BEProcurementPool, BEBusinessRole } from "@/lib/api/types";
@@ -155,6 +155,9 @@ export async function joinPoolAction(payload: JoinPoolInput): Promise<{
     revalidatePath("/katalog");
     revalidatePath("/home");
     revalidatePath("/pesanan");
+    revalidateTag("pools", "default");
+    revalidateTag("marketplace", "default");
+    revalidateTag("dashboard", "default");
 
     return {
       success: res.success,
@@ -208,6 +211,9 @@ export async function createPoolOrDirectOrderAction(
     revalidatePath("/katalog");
     revalidatePath("/home");
     revalidatePath("/pesanan");
+    revalidateTag("pools", "default");
+    revalidateTag("marketplace", "default");
+    revalidateTag("dashboard", "default");
 
     return {
       success: res.success,

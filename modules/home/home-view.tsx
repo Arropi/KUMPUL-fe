@@ -29,6 +29,7 @@ import { BuyWasteDialog } from "./buy-waste-dialog";
 import { beFetch } from "@/lib/api/be-client";
 import type { BEBusinessEntity } from "@/lib/api/types";
 import type { MatchedCommodity, RawRecommendationsData } from "./home-recommendation-section";
+import { useMarketplaceRealtime } from "@/lib/supabase/realtime-hooks";
 
 const SECTOR_OPTIONS = [
   { value: "ALL", label: "Semua Sektor" },
@@ -95,6 +96,20 @@ export function HomeView({
       setCommodities(catalog);
     }
   }, [catalog]);
+
+  const refreshCatalog = React.useCallback(async () => {
+    try {
+      const res = await getAllMarketplaceCatalogsAction();
+      if (res.success && res.data) {
+        const mapped = res.data.map(mapBEToSupplierCommodity);
+        setCommodities(mapped);
+      }
+    } catch {
+      // silent refresh on realtime event
+    }
+  }, []);
+
+  useMarketplaceRealtime(refreshCatalog);
 
   const role: UserRole = initialSession?.role || "umkm";
   const isSupplier = role === "supplier";

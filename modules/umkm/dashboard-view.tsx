@@ -40,6 +40,11 @@ import {
   type RecentOrderSummary,
   type RecentWasteSummary,
 } from "@/actions/dashboard";
+import {
+  useAlertRealtime,
+  useDashboardRealtime,
+  useMoqRealtime,
+} from "@/lib/supabase/realtime-hooks";
 
 export interface MappedActivePool {
   id: string;
@@ -67,25 +72,29 @@ export function UmkmDashboardView() {
   const [deliveryMethod, setDeliveryMethod] = React.useState<"HEMAT_HUB" | "DIRECT_DELIVERY">("HEMAT_HUB");
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
 
-  const loadDashboard = React.useCallback(async () => {
-    setIsLoading(true);
+  const loadDashboard = React.useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const res = await getUmkmDashboardDataAction();
       if (res.success && res.data) {
         setDashboardData(res.data);
-      } else {
+      } else if (!silent) {
         toast.error("Gagal memuat data analitik dashboard dari backend.");
       }
     } catch {
-      toast.error("Terjadi kendala saat menghubungkan dashboard ke backend.");
+      if (!silent) toast.error("Terjadi kendala saat menghubungkan dashboard ke backend.");
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, []);
 
   React.useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  useAlertRealtime(dashboardData?.session?.roleId, () => loadDashboard(true));
+  useDashboardRealtime(() => loadDashboard(true));
+  useMoqRealtime(undefined, () => loadDashboard(true));
 
   // Greeting berdasar jam saat ini
   const greeting = React.useMemo(() => {
@@ -205,7 +214,9 @@ export function UmkmDashboardView() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={loadDashboard}
+            onClick={() => {
+              loadDashboard(false);
+            }}
             disabled={isLoading}
             className="rounded-xl font-bold gap-1.5 cursor-pointer text-xs min-h-[40px] flex-1 sm:flex-initial justify-center"
           >

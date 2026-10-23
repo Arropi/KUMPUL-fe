@@ -43,6 +43,7 @@ import {
   type SupplierDashboardCommodityItem,
 } from "@/actions/dashboard";
 import type { POStatus } from "@/constants/supplier";
+import { useDashboardRealtime, useMoqRealtime } from "@/lib/supabase/realtime-hooks";
 
 function useGreeting(companyName: string) {
   return React.useMemo(() => {
@@ -76,25 +77,29 @@ export function SupplierDashboardView() {
 
   const isProfilePending = searchParams.get("onboarding") === "pending" || isStoragePending;
 
-  const loadDashboard = React.useCallback(async () => {
-    setIsLoading(true);
+  const loadDashboard = React.useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const res = await getSupplierDashboardDataAction();
       if (res.success && res.data) {
         setDashboardData(res.data);
-      } else {
+      } else if (!silent) {
         toast.error("Gagal memuat analitik dashboard supplier.");
       }
     } catch {
-      toast.error("Terjadi kendala saat menghubungkan dashboard ke server backend.");
+      if (!silent) toast.error("Terjadi kendala saat menghubungkan dashboard ke server backend.");
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, []);
 
   React.useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  useDashboardRealtime(() => loadDashboard(true));
+  useMoqRealtime(undefined, () => loadDashboard(true));
+
 
   const companyName = dashboardData?.session?.name || "Mitra Supplier Agribisnis";
   const greeting = useGreeting(companyName);
@@ -125,7 +130,9 @@ export function SupplierDashboardView() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={loadDashboard}
+            onClick={() => {
+              loadDashboard(false);
+            }}
             disabled={isLoading}
             className="rounded-xl font-bold gap-1.5 cursor-pointer text-xs min-h-[40px] flex-1 sm:flex-initial justify-center"
           >
