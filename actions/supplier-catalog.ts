@@ -292,7 +292,12 @@ export async function updateSupplierCommodityAction(
         closed_date: payload.closedDate !== undefined ? (payload.closedDate || null) : undefined,
         auto_activate_marketplace: payload.autoActivateMarketplace,
         allows_under_moq: payload.allowsUnderMoq !== undefined ? Boolean(payload.allowsUnderMoq) : undefined,
-        under_moq_price_per_kg: payload.allowsUnderMoq && payload.underMoqPricePerKg ? Number(payload.underMoqPricePerKg) : null,
+        under_moq_price_per_kg:
+          payload.underMoqPricePerKg !== undefined
+            ? (payload.underMoqPricePerKg ? Number(payload.underMoqPricePerKg) : null)
+            : payload.allowsUnderMoq === false
+            ? null
+            : undefined,
         is_marketplace_active: payload.isMarketplaceActive,
         price_tiers: payload.priceTiers,
       }),
@@ -427,15 +432,12 @@ export async function publishSupplierCommodityAction(
   data?: any;
 }> {
   try {
-    if (dates?.productionDate || dates?.closedDate) {
-      await updateSupplierCommodityAction(commodityId, {
-        productionDate: dates.productionDate,
-        closedDate: dates.closedDate,
-      });
-    }
-
     const res = await beFetch(`/supplier-catalogs/${commodityId}/publish`, {
       method: "POST",
+      body: JSON.stringify({
+        production_date: dates?.productionDate || undefined,
+        closed_date: dates?.closedDate || undefined,
+      }),
     });
 
     revalidatePath("/katalog");
