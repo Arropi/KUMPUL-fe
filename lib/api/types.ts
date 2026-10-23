@@ -98,6 +98,7 @@ export interface BESupplierCommodity {
   has_tiering_price?: boolean;
   has_open_pools?: boolean;
   open_pools_count?: number;
+  is_verified?: boolean;
   source_type?: 'SUPPLIER' | 'WASTE';
   seller_city?: string;
   distance_km?: number | null;
