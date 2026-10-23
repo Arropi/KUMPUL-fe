@@ -19,6 +19,7 @@ import {
 import { SECTOR_MEDIA_MAP, type UnifiedProfileState } from "./types";
 import { updateBusinessEntityProfileAction } from "@/actions/business-profile";
 import { MapPicker } from "@/components/ui/map-picker";
+import { extractCityFromAddress } from "@/lib/utils";
 
 interface ProfileHeroCardProps {
   role: "supplier" | "umkm";
@@ -62,6 +63,10 @@ export function ProfileHeroCard({
     SECTOR_MEDIA_MAP[sectorKey] ||
     (role === "supplier" ? SECTOR_MEDIA_MAP.PERTANIAN : SECTOR_MEDIA_MAP.FNB_PENGOLAHAN);
   const initials = (brandName || profile.legalName || "KP").substring(0, 2).toUpperCase();
+  const displayCity = React.useMemo(() => {
+    return profile.city || extractCityFromAddress(profile.address);
+  }, [profile.city, profile.address]);
+
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,10 +94,13 @@ export function ProfileHeroCard({
 
       if (entityRes.success) {
         // Prepare the update for the profile state
+        const newAddress = address.trim();
+        const newCity = extractCityFromAddress(newAddress);
         onProfileUpdated({
           legalName: legalName.trim(),
           npwpNib: npwpNib.trim(),
-          address: address.trim(),
+          address: newAddress,
+          city: newCity,
           contactPhone: phoneNumber.trim(),
         });
         setIsEditModalOpen(false);
@@ -134,7 +142,7 @@ export function ProfileHeroCard({
         <div className="absolute top-4 right-4 sm:top-5 sm:right-6 text-right z-10">
           <span className="px-3.5 py-1.5 rounded-full bg-surface/95 backdrop-blur-md text-text-primary text-[11px] sm:text-xs font-semibold border border-border/80 shadow-xs flex items-center gap-1.5">
             <MapPin className="size-3 text-primary shrink-0" />
-            <span>{profile.city || "Jawa Timur"}</span>
+            <span>{displayCity}</span>
             <span className="text-text-muted">&bull;</span>
             <span className="text-text-muted">Terdaftar {profile.registrationDate || "2025"}</span>
           </span>

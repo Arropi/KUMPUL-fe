@@ -65,12 +65,10 @@ export function ProfileStorageCard({
     }
   };
 
-  const isStorageIncomplete = capacity <= 0;
-
   return (
     <Card id="section-storage" className="rounded-2xl border-border bg-surface shadow-elevation-1 h-full flex flex-col justify-between">
       <div>
-        <CardHeader className="pb-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <CardHeader className="pb-3 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between">
           <div>
             <CardTitle className="text-base font-bold text-text-primary">
               Kapasitas Ruang Penyimpanan
@@ -78,19 +76,6 @@ export function ProfileStorageCard({
             <CardDescription className="text-xs text-text-secondary mt-0.5">
               Daya tampung komoditas usaha Anda ({currentRole?.role_type || "UMKM"}).
             </CardDescription>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isStorageIncomplete ? (
-              <Badge variant="warning" className="text-[10px] font-bold py-0.5">
-                Belum Diatur
-              </Badge>
-            ) : (
-              <Badge variant="success" className="text-[10px] font-bold py-0.5">
-                <Check className="w-3 h-3 mr-1" />
-                {capacity.toLocaleString("id-ID")} Unit
-              </Badge>
-            )}
           </div>
         </CardHeader>
 
