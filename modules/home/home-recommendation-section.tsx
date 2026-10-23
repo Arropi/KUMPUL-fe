@@ -10,7 +10,7 @@ import {
   MapPin,
   TrendingDown,
 } from "lucide-react";
-import { SupplierCommodity, WholesaleUnit } from "@/constants/supplier";
+import { SupplierCommodity, WholesaleUnit, type StorageTemperature } from "@/constants/supplier";
 import {
   CommodityCatalogCard,
   type CriticalStockNotice,
@@ -219,13 +219,16 @@ function getCommodityForHealthy(
     ],
     batchTag: {
       id: `batch-${alt.commodity_id}`,
-      licenseNumber: "VERIFIED-MUI-BPOM",
+      licenseNumber: alt.is_verified ? "VERIFIED-MUI-BPOM" : "AUDIT-TIDAK-SESUAI",
       verificationNotes: alt.verification_notes,
       productionDate: new Date().toISOString().slice(0, 10),
       expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-      storageTemperature: (alt.storage_temp as any) || "AMBIENT",
+      storageTemperature:
+        alt.storage_temp === "CHILLED" || alt.storage_temp === "FROZEN"
+          ? (alt.storage_temp as StorageTemperature)
+          : "AMBIENT",
       originLocation: alt.seller_city || "D.I. Yogyakarta",
-      hygieneStatus: "TERVERIFIKASI",
+      hygieneStatus: alt.is_verified ? "TERVERIFIKASI" : "TIDAK_SESUAI",
     },
     imageUrl: alt.image_url || undefined,
     createdAt: new Date().toISOString(),

@@ -113,32 +113,33 @@ export function mapBEToSupplierCommodity(be: BESupplierCommodity): SupplierCommo
       leadTimeDays: be.lead_time_days || 1,
       isActive: be.is_marketplace_active ?? true,
       priceTiers: tiers,
-      batchTag: {
-        id: (be.batch_tag?.id || (be.batch_tags && be.batch_tags[0]?.id)) || `bt-${be.id}`,
-        licenseNumber:
-          be.batch_tag?.is_verified || be.batch_tags?.[0]?.is_verified
+      batchTag: (() => {
+        const tag = be.batch_tag || (be.batch_tags && be.batch_tags[0]) || null;
+        const isVerified = Boolean(tag?.is_verified);
+        const hasAuditedDoc = Boolean(tag?.supporting_file_url || tag?.verification_notes);
+        const hygieneStatus: "TERVERIFIKASI" | "TIDAK_SESUAI" | "MENUNGGU_AUDIT" = isVerified
+          ? "TERVERIFIKASI"
+          : hasAuditedDoc
+          ? "TIDAK_SESUAI"
+          : "MENUNGGU_AUDIT";
+
+        return {
+          id: tag?.id || `bt-${be.id}`,
+          licenseNumber: isVerified
             ? `BATCH-${be.sku || be.id.slice(0, 8)}`
+            : hasAuditedDoc
+            ? "Audit AI: Tidak Sesuai"
             : "Menunggu Berkas Audit",
-        verificationNotes:
-          be.batch_tag?.verification_notes ||
-          be.batch_tags?.[0]?.verification_notes ||
-          null,
-        supportingFileUrl:
-          be.batch_tag?.supporting_file_url ||
-          be.batch_tags?.[0]?.supporting_file_url ||
-          null,
-        productionDate: be.production_date || "-",
-        expiryDate: be.closed_date || "-",
-        storageTemperature:
-          (be.batch_tag?.storage_temperature_type as StorageTemperature) ||
-          (be.batch_tags?.[0]?.storage_temperature_type as StorageTemperature) ||
-          "AMBIENT",
-        originLocation: "Indonesia",
-        hygieneStatus:
-          be.batch_tag?.is_verified || be.batch_tags?.[0]?.is_verified
-            ? "TERVERIFIKASI"
-            : "MENUNGGU_AUDIT",
-      },
+          verificationNotes: tag?.verification_notes || null,
+          supportingFileUrl: tag?.supporting_file_url || null,
+          productionDate: be.production_date || "-",
+          expiryDate: be.closed_date || "-",
+          storageTemperature:
+            (tag?.storage_temperature_type as StorageTemperature) || "AMBIENT",
+          originLocation: "Indonesia",
+          hygieneStatus,
+        };
+      })(),
       imageUrl: be.image_url || undefined,
       createdAt: be.created_at || new Date().toISOString(),
       allowsUnderMoq: be.allows_under_moq ?? false,
