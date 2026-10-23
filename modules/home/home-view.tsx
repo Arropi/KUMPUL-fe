@@ -268,15 +268,15 @@ export function HomeView({
           </div>
 
           {/* Filter Pills Tambahan */}
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
-            <span className="text-xs font-semibold text-text-muted mr-1">Sumber:</span>
+          <div className="flex items-center gap-2 pt-1 border-t border-border/50 overflow-x-auto max-w-full flex-nowrap sm:flex-wrap pb-1.5 sm:pb-0 custom-scrollbar">
+            <span className="text-xs font-semibold text-text-muted mr-1 whitespace-nowrap shrink-0">Sumber:</span>
             <button
               type="button"
               onClick={() => setSelectedSource("ALL")}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 selectedSource === "ALL"
                   ? "bg-text-primary text-white border-text-primary shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Semua Sumber
@@ -284,10 +284,10 @@ export function HomeView({
             <button
               type="button"
               onClick={() => setSelectedSource("SUPPLIER")}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 selectedSource === "SUPPLIER"
-                  ? "bg-primary-dark text-white border-primary-dark shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  ? "bg-primary text-white border-primary shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Komoditas Pemasok
@@ -295,24 +295,24 @@ export function HomeView({
             <button
               type="button"
               onClick={() => setSelectedSource("WASTE")}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 selectedSource === "WASTE"
-                  ? "bg-emerald-800 text-white border-emerald-800 shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  ? "bg-circular-waste text-white border-circular-waste shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Limbah Sirkular
             </button>
 
-            <span className="text-xs font-semibold text-text-muted mx-1 hidden sm:inline">&bull;</span>
-            <span className="text-xs font-semibold text-text-muted mr-1">Filter Cepat:</span>
+            <span className="text-xs font-semibold text-text-muted mx-1 hidden sm:inline shrink-0">&bull;</span>
+            <span className="text-xs font-semibold text-text-muted mr-1 whitespace-nowrap shrink-0">Filter Cepat:</span>
             <button
               type="button"
               onClick={() => setOnlyReadyStock(!onlyReadyStock)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 onlyReadyStock
                   ? "bg-primary text-white border-primary shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Ready Stock
@@ -321,10 +321,10 @@ export function HomeView({
               <button
                 type="button"
                 onClick={() => setOnlyOpenPools(!onlyOpenPools)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                   onlyOpenPools
-                    ? "bg-amber-600 text-white border-amber-600 shadow-xs"
-                    : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                    ? "bg-accent text-white border-accent shadow-xs"
+                    : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
                 }`}
               >
                 Pool Terbuka Saja
@@ -333,10 +333,10 @@ export function HomeView({
             <button
               type="button"
               onClick={() => setOnlyVerified(!onlyVerified)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 onlyVerified
-                  ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                  : "bg-surface-subtle text-text-secondary border-border hover:bg-neutral-200"
+                  ? "bg-emerald-700 text-white border-emerald-700 shadow-xs"
+                  : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
               }`}
             >
               Terverifikasi Mutu

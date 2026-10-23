@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { HomeView } from "@/modules/home/home-view";
 import { UserRole, UserSession } from "@/constants/auth";
+import HomeLoading from "./loading";
 import { fetchHomeData } from "@/lib/actions/server-actions";
 import { getBusinessProfileAction } from "@/actions/business-profile";
 
@@ -64,13 +65,7 @@ export default async function HomePage() {
   const userProfile = profileRes.success && profileRes.entity ? profileRes.entity : null;
 
   return (
-    <React.Suspense
-      fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        </div>
-      }
-    >
+    <React.Suspense fallback={<HomeLoading />}>
       <HomeView
         initialSession={session}
         catalog={catalog}

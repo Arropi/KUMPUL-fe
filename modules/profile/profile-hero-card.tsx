@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Edit3 } from "lucide-react";
+import { Edit3, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -108,9 +108,9 @@ export function ProfileHeroCard({
   };
 
   return (
-    <Card className="rounded-3xl border border-border bg-surface shadow-elevation-1 overflow-hidden">
+    <div className="rounded-3xl border border-border bg-surface shadow-elevation-1 overflow-hidden">
       {/* Cover Gambar Visual Sektor */}
-      <div className="relative w-full h-48 sm:h-56 md:h-64 bg-surface-subtle overflow-hidden">
+      <div className="relative w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-surface-subtle overflow-hidden">
         <Image
           src={sectorMeta.image}
           alt={sectorMeta.label}
@@ -119,18 +119,24 @@ export function ProfileHeroCard({
           sizes="(max-width: 1280px) 100vw, 1200px"
           className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-black/5 pointer-events-none" />
+        {/* Soft natural gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-black/30 pointer-events-none" />
 
-        {/* Badge Sektor di Atas Cover */}
-        <div className="absolute top-4 left-4 sm:top-5 sm:left-5 flex flex-wrap items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-surface/95 backdrop-blur-md text-text-primary text-[11px] font-bold border border-border/80 shadow-xs">
-            {sectorMeta.label}
+        {/* Badge Sektor di Kiri Atas Cover */}
+        <div className="absolute top-4 left-4 sm:top-5 sm:left-6 flex flex-wrap items-center gap-2 z-10">
+          <span className="px-3.5 py-1.5 rounded-full bg-surface/95 backdrop-blur-md text-text-primary text-[11px] sm:text-xs font-bold border border-border/80 shadow-xs flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-primary shrink-0" />
+            <span>{sectorMeta.label}</span>
           </span>
         </div>
 
-        <div className="absolute bottom-3 right-4 sm:bottom-4 sm:right-6 text-right">
-          <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md text-white/95 text-[11px] font-medium border border-white/20">
-            {profile.city || "Jawa Timur"} &bull; Terdaftar sejak {profile.registrationDate || "2025"}
+        {/* Badge Lokasi & Terdaftar di Kanan Atas Cover */}
+        <div className="absolute top-4 right-4 sm:top-5 sm:right-6 text-right z-10">
+          <span className="px-3.5 py-1.5 rounded-full bg-surface/95 backdrop-blur-md text-text-primary text-[11px] sm:text-xs font-semibold border border-border/80 shadow-xs flex items-center gap-1.5">
+            <MapPin className="size-3 text-primary shrink-0" />
+            <span>{profile.city || "Jawa Timur"}</span>
+            <span className="text-text-muted">&bull;</span>
+            <span className="text-text-muted">Terdaftar {profile.registrationDate || "2025"}</span>
           </span>
         </div>
       </div>
@@ -152,13 +158,13 @@ export function ProfileHeroCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 sm:pt-0">
+          <div className="flex items-center gap-2 pt-1 sm:pt-0 w-full sm:w-auto">
             <Button
               type="button"
               variant="primary"
               size="sm"
               onClick={() => setIsEditModalOpen(true)}
-              className="text-xs h-9 font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="text-xs min-h-[40px] sm:min-h-[36px] w-full sm:w-auto font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5" />
               <span>Ubah Profil</span>
@@ -312,6 +318,6 @@ export function ProfileHeroCard({
           </DialogContent>
         </Dialog>
       </div>
-    </Card>
+    </div>
   );
 }

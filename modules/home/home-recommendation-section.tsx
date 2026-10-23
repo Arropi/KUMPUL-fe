@@ -6,6 +6,9 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  ShieldCheck,
+  MapPin,
+  TrendingDown,
 } from "lucide-react";
 import { SupplierCommodity, WholesaleUnit } from "@/constants/supplier";
 import {
@@ -558,7 +561,7 @@ export function HomeRecommendationSection({
     <div className="space-y-4 pt-2">
       {/* Header Rekomendasi UMKM */}
       <div className="flex flex-col items-start gap-3 pb-3 border-b border-border/70">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <h2 className="font-heading font-bold text-lg sm:text-xl text-text-primary">
             Mesin Rekomendasi Cerdas
           </h2>
@@ -570,52 +573,105 @@ export function HomeRecommendationSection({
           )}
         </div>
 
-        {/* Tab Sub-kategori UMKM - Posisi di bawah text judul, tidak scroll */}
-        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-surface-subtle border border-border rounded-xl">
-          <button
-            type="button"
-            onClick={() => setUmkmTab("LOW_STOCK")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              umkmTab === "LOW_STOCK"
-                ? "bg-primary text-white shadow-xs"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            Deteksi Stok Kritis {criticalCount > 0 ? `(${criticalCount})` : ""}
-          </button>
-          <button
-            type="button"
-            onClick={() => setUmkmTab("HEALTHY")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              umkmTab === "HEALTHY"
-                ? "bg-primary text-white shadow-xs"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            Alternatif Bersertifikasi Sehat {healthyAlternatives.length > 0 ? `(${healthyAlternatives.length})` : ""}
-          </button>
-          <button
-            type="button"
-            onClick={() => setUmkmTab("NEAREST")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              umkmTab === "NEAREST"
-                ? "bg-primary text-white shadow-xs"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            Pemasok Terdekat {nearestSuppliers.length > 0 ? `(${nearestSuppliers.length})` : ""}
-          </button>
-          <button
-            type="button"
-            onClick={() => setUmkmTab("SAVINGS")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              umkmTab === "SAVINGS"
-                ? "bg-primary text-white shadow-xs"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            Peluang Hemat Patungan {costSavingPools.length > 0 ? `(${costSavingPools.length})` : ""}
-          </button>
+        {/* Tab Sub-kategori UMKM - Horizontal scrollable di mobile, rapi & terstruktur */}
+        <div className="w-full overflow-x-auto pb-1 custom-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0">
+          <div className="inline-flex items-center gap-1.5 p-1 bg-surface-subtle border border-border rounded-xl min-w-max">
+            <button
+              type="button"
+              onClick={() => setUmkmTab("LOW_STOCK")}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-h-[38px] select-none active:scale-[0.98] ${
+                umkmTab === "LOW_STOCK"
+                  ? "bg-primary text-white shadow-xs"
+                  : "text-text-secondary hover:text-text-primary hover:bg-surface/60"
+              }`}
+            >
+              <AlertTriangle className="size-3.5 shrink-0" />
+              <span>Deteksi Stok Kritis</span>
+              {criticalCount > 0 && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                    umkmTab === "LOW_STOCK"
+                      ? "bg-white/20 text-white"
+                      : "bg-border text-text-muted"
+                  }`}
+                >
+                  {criticalCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setUmkmTab("HEALTHY")}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-h-[38px] select-none active:scale-[0.98] ${
+                umkmTab === "HEALTHY"
+                  ? "bg-primary text-white shadow-xs"
+                  : "text-text-secondary hover:text-text-primary hover:bg-surface/60"
+              }`}
+            >
+              <ShieldCheck className="size-3.5 shrink-0" />
+              <span>Alternatif Bersertifikasi Sehat</span>
+              {healthyAlternatives.length > 0 && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                    umkmTab === "HEALTHY"
+                      ? "bg-white/20 text-white"
+                      : "bg-border text-text-muted"
+                  }`}
+                >
+                  {healthyAlternatives.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setUmkmTab("NEAREST")}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-h-[38px] select-none active:scale-[0.98] ${
+                umkmTab === "NEAREST"
+                  ? "bg-primary text-white shadow-xs"
+                  : "text-text-secondary hover:text-text-primary hover:bg-surface/60"
+              }`}
+            >
+              <MapPin className="size-3.5 shrink-0" />
+              <span>Pemasok Terdekat</span>
+              {nearestSuppliers.length > 0 && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                    umkmTab === "NEAREST"
+                      ? "bg-white/20 text-white"
+                      : "bg-border text-text-muted"
+                  }`}
+                >
+                  {nearestSuppliers.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setUmkmTab("SAVINGS")}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap min-h-[38px] select-none active:scale-[0.98] ${
+                umkmTab === "SAVINGS"
+                  ? "bg-primary text-white shadow-xs"
+                  : "text-text-secondary hover:text-text-primary hover:bg-surface/60"
+              }`}
+            >
+              <TrendingDown className="size-3.5 shrink-0" />
+              <span>Peluang Hemat Patungan</span>
+              {costSavingPools.length > 0 && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                    umkmTab === "SAVINGS"
+                      ? "bg-white/20 text-white"
+                      : "bg-border text-text-muted"
+                  }`}
+                >
+                  {costSavingPools.length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

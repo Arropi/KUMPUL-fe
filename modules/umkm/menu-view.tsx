@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Search, ShoppingCart, ArrowUpDown, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 import {
@@ -286,11 +287,27 @@ export function UmkmMenuView() {
 
       {/* 3. Product Cards Grid (3 cards per row on desktop) */}
       {isLoading ? (
-        <div className="min-h-[250px] flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <span className="text-xs text-text-muted font-medium">
-            Memuat daftar produk dari backend KUMPUL...
-          </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-border bg-surface shadow-elevation-1 overflow-hidden flex flex-col justify-between"
+            >
+              <Skeleton className="h-44 w-full rounded-none" />
+              <div className="p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-4 w-24 rounded-md" />
+                  <Skeleton className="h-5 w-16 rounded-md" />
+                </div>
+                <Skeleton className="h-5 w-3/4 rounded-md" />
+                <Skeleton className="h-3.5 w-full rounded-md" />
+                <div className="pt-2 border-t border-border/70 flex justify-between items-center">
+                  <Skeleton className="h-5 w-28 rounded-md" />
+                  <Skeleton className="h-8 w-20 rounded-xl" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : processedProducts.length === 0 ? (
         <Card className="rounded-2xl border border-dashed border-border py-12 text-center">

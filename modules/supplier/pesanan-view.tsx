@@ -24,6 +24,7 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getOrderStatusBadge } from "./helpers";
 import {
@@ -272,10 +273,57 @@ export function SupplierPesananView() {
 
       {/* Konten Daftar Pesanan: Table View untuk Desktop & Card View untuk Mobile */}
       {loadingOrders ? (
-        <div className="bg-surface rounded-2xl border border-dashed border-border p-12 text-center space-y-2 shadow-elevation-1">
-          <p className="font-heading text-sm font-bold text-text-primary">
-            Memuat daftar pesanan...
-          </p>
+        <div className="space-y-4">
+          {/* Desktop Table Skeleton */}
+          <div className="hidden lg:block bg-surface rounded-2xl border border-border shadow-elevation-1 overflow-hidden p-5">
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center justify-between py-3 border-b border-border/70 last:border-b-0 gap-4">
+                  <div className="space-y-1.5 w-[160px]">
+                    <Skeleton className="h-4 w-28 rounded-md" />
+                    <Skeleton className="h-5 w-20 rounded-md" />
+                  </div>
+                  <div className="space-y-1.5 flex-1 max-w-[200px]">
+                    <Skeleton className="h-4 w-36 rounded-md" />
+                    <Skeleton className="h-3.5 w-24 rounded-md" />
+                  </div>
+                  <div className="space-y-1.5 flex-1">
+                    <Skeleton className="h-4 w-40 rounded-md" />
+                    <Skeleton className="h-3 w-28 rounded-md" />
+                  </div>
+                  <div className="space-y-1 w-[120px] text-right">
+                    <Skeleton className="h-4 w-20 rounded-md ml-auto" />
+                  </div>
+                  <div className="space-y-1 w-[120px] text-right">
+                    <Skeleton className="h-4 w-24 rounded-md ml-auto" />
+                  </div>
+                  <div className="w-[120px] flex justify-end">
+                    <Skeleton className="h-8 w-24 rounded-xl" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Mobile Card Skeleton */}
+          <div className="lg:hidden space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-surface rounded-2xl border border-border shadow-elevation-1 p-4 space-y-3">
+                <div className="flex justify-between items-start gap-2">
+                  <Skeleton className="h-4 w-28 rounded-md" />
+                  <Skeleton className="h-5 w-20 rounded-md" />
+                </div>
+                <div className="space-y-1">
+                  <Skeleton className="h-5 w-40 rounded-md" />
+                  <Skeleton className="h-3.5 w-24 rounded-md" />
+                </div>
+                <div className="p-3 rounded-xl bg-surface-subtle/80 border border-border/80 flex justify-between">
+                  <Skeleton className="h-4 w-20 rounded-md" />
+                  <Skeleton className="h-4 w-28 rounded-md" />
+                </div>
+                <Skeleton className="h-9 w-full rounded-xl" />
+              </div>
+            ))}
+          </div>
         </div>
       ) : errorOrders ? (
         <div className="bg-surface rounded-2xl border border-dashed border-border p-12 text-center space-y-2 shadow-elevation-1">
@@ -453,7 +501,7 @@ export function SupplierPesananView() {
                         variant="primary"
                         size="sm"
                         onClick={() => handleOpenShipModal(po)}
-                        className="font-bold text-xs min-h-[42px] cursor-pointer"
+                        className="font-bold text-xs min-h-[44px] px-3.5 cursor-pointer"
                       >
                         <Truck className="w-3.5 h-3.5 mr-1" />
                         <span>Kirim</span>
@@ -466,7 +514,7 @@ export function SupplierPesananView() {
                         size="sm"
                         onClick={() => handleMarkDelivered(po.id)}
                         disabled={updatingPoId === po.id}
-                        className="font-bold text-xs min-h-[42px] bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                        className="font-bold text-xs min-h-[44px] px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                         <span>{updatingPoId === po.id ? "..." : "Tiba"}</span>
@@ -474,7 +522,7 @@ export function SupplierPesananView() {
                     )}
 
                     <Link href={`/pesanan/${po.id}`}>
-                      <Button variant="outline" size="sm" className="font-semibold text-xs min-h-[42px] cursor-pointer">
+                      <Button variant="outline" size="sm" className="font-semibold text-xs min-h-[44px] px-3.5 cursor-pointer">
                         Rincian
                       </Button>
                     </Link>

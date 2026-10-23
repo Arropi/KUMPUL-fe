@@ -28,6 +28,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -806,11 +807,11 @@ export function UmkmSirkularView() {
           </div>
 
           {/* Quick Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-surface-subtle p-1 rounded-xl border border-border/80 self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 bg-surface-subtle p-1 rounded-xl border border-border/80 self-start sm:self-auto overflow-x-auto max-w-full flex-nowrap sm:flex-wrap pb-1.5 sm:pb-1 custom-scrollbar">
             <button
               type="button"
               onClick={() => setActiveFilter("SEMUA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "SEMUA"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "SEMUA"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -820,7 +821,7 @@ export function UmkmSirkularView() {
             <button
               type="button"
               onClick={() => setActiveFilter("ADA_PEMBELI")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "ADA_PEMBELI"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "ADA_PEMBELI"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -830,7 +831,7 @@ export function UmkmSirkularView() {
             <button
               type="button"
               onClick={() => setActiveFilter("LEWAT_KADALUARSA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "LEWAT_KADALUARSA"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "LEWAT_KADALUARSA"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -840,7 +841,7 @@ export function UmkmSirkularView() {
             <button
               type="button"
               onClick={() => setActiveFilter("MENDEKATI_KADALUARSA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "MENDEKATI_KADALUARSA"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "MENDEKATI_KADALUARSA"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -850,7 +851,7 @@ export function UmkmSirkularView() {
             <button
               type="button"
               onClick={() => setActiveFilter("TERSEDIA")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeFilter === "TERSEDIA"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[36px] ${activeFilter === "TERSEDIA"
                 ? "bg-surface text-text-primary shadow-xs border border-border/60"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
@@ -862,11 +863,27 @@ export function UmkmSirkularView() {
 
         {/* Grid Kartu Limbah */}
         {isLoadingListings ? (
-          <div className="p-12 text-center rounded-2xl border border-border bg-surface space-y-3">
-            <div className="size-8 mx-auto rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            <p className="font-heading text-sm font-bold text-text-primary">
-              Memuat listing residu limbah dapur...
-            </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="flex flex-col justify-between rounded-2xl border border-border bg-surface shadow-elevation-1 overflow-hidden"
+              >
+                <Skeleton className="h-44 w-full rounded-none" />
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-20 rounded-md" />
+                    <Skeleton className="h-4 w-16 rounded-md" />
+                  </div>
+                  <Skeleton className="h-5 w-3/4 rounded-md" />
+                  <Skeleton className="h-3.5 w-full rounded-md" />
+                  <div className="pt-2 border-t border-border/70 flex justify-between items-center">
+                    <Skeleton className="h-5 w-24 rounded-md" />
+                    <Skeleton className="h-8 w-20 rounded-xl" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredListings.length === 0 ? (
           <div className="p-8 text-center rounded-2xl border border-dashed border-border bg-surface-subtle space-y-2">

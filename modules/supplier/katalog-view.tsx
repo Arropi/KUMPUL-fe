@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SupplierCommodity } from "@/constants/supplier";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 import {
@@ -215,8 +216,32 @@ export function SupplierKatalogView() {
       {/* Grid Kartu Komoditas */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="p-6 rounded-2xl border-border bg-surface animate-pulse h-72" />
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-border bg-surface shadow-elevation-1 overflow-hidden flex flex-col justify-between"
+            >
+              <Skeleton className="h-44 w-full rounded-none" />
+              <div className="p-5 space-y-3">
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-4 w-20 rounded-md" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-5 w-3/4 rounded-md" />
+                <Skeleton className="h-3.5 w-1/2 rounded-md" />
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-16 rounded-md" />
+                    <Skeleton className="h-3 w-20 rounded-md" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
+                <div className="pt-3 border-t border-border/70 flex justify-between items-center">
+                  <Skeleton className="h-5 w-28 rounded-md" />
+                  <Skeleton className="h-8 w-24 rounded-xl" />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       ) : filteredCommodities.length === 0 ? (

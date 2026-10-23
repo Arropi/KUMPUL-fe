@@ -8,6 +8,7 @@ import {
 } from "@/constants/umkm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -149,12 +150,11 @@ function DeptTab({
       onClick={onClick}
       aria-pressed={isActive}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all duration-200 outline-none cursor-pointer select-none",
+        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all duration-200 outline-none cursor-pointer select-none whitespace-nowrap shrink-0 min-h-[36px]",
         isActive
           ? "bg-primary text-white shadow-xs"
           : "bg-surface-subtle text-text-secondary hover:bg-surface hover:text-text-primary border border-transparent hover:border-border"
-      )}
-    >
+      )}>
       <span>{label}</span>
       <span
         className={cn(
@@ -758,7 +758,7 @@ export function UmkmPesananView() {
 
           {/* Sub-filter Pills */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
-            <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
+            <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1.5 custom-scrollbar flex-nowrap sm:flex-wrap">
               <DeptTab
                 label="Semua"
                 isActive={purchaseFilter === "SEMUA"}
@@ -818,14 +818,33 @@ export function UmkmPesananView() {
           {/* Table Container */}
           <div className="rounded-2xl border border-border bg-surface shadow-elevation-1 px-4 sm:px-6">
             {loadingPurchases ? (
-              <div className="flex flex-col items-center gap-3 py-14 text-center">
-                <span className="flex size-11 items-center justify-center rounded-full bg-surface-subtle border border-border text-text-muted">
-                  <ShoppingBag className="size-5" />
-                </span>
-                <p className="font-heading text-sm font-bold text-text-primary">
-                  Memuat daftar pesanan...
-                </p>
-              </div>
+              <ul role="list">
+                {[1, 2, 3, 4].map((i) => (
+                  <li key={i} className="border-b border-border/70 last:border-b-0">
+                    <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-5 -mx-4 sm:-mx-6 px-4 sm:px-6">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-3.5 w-28 rounded-md" />
+                          <Skeleton className="h-3 w-16 rounded-md" />
+                          <Skeleton className="h-4 w-20 rounded-full" />
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <Skeleton className="h-5 w-44 rounded-md" />
+                          <Skeleton className="h-3.5 w-14 rounded-md" />
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-3.5 w-32 rounded-md" />
+                          <Skeleton className="h-3.5 w-24 rounded-md" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                        <Skeleton className="h-6 w-24 rounded-full" />
+                        <Skeleton className="h-9 w-24 rounded-xl" />
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : filteredPurchases.length > 0 ? (
               <ul role="list">
                 {filteredPurchases.map((order) => (
@@ -881,7 +900,7 @@ export function UmkmPesananView() {
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
-            <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
+            <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1.5 custom-scrollbar flex-nowrap sm:flex-wrap">
               <DeptTab
                 label="Semua Penjualan"
                 isActive={saleFilter === "SEMUA"}
@@ -916,14 +935,34 @@ export function UmkmPesananView() {
 
           <div className="rounded-2xl border border-border bg-surface shadow-elevation-1 px-4 sm:px-6">
             {loadingSales ? (
-              <div className="flex flex-col items-center gap-3 py-14 text-center">
-                <span className="flex size-11 items-center justify-center rounded-full bg-surface-subtle border border-border text-text-muted">
-                  <Recycle className="size-5" />
-                </span>
-                <p className="font-heading text-sm font-bold text-text-primary">
-                  Memuat daftar penjualan limbah...
-                </p>
-              </div>
+              <ul role="list">
+                {[1, 2, 3].map((i) => (
+                  <li key={i} className="border-b border-border/70 last:border-b-0">
+                    <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-5 -mx-4 sm:-mx-6 px-4 sm:px-6">
+                      <Skeleton className="size-12 sm:size-14 rounded-xl shrink-0" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-3.5 w-28 rounded-md" />
+                          <Skeleton className="h-3 w-16 rounded-md" />
+                          <Skeleton className="h-4 w-24 rounded-full" />
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <Skeleton className="h-5 w-48 rounded-md" />
+                          <Skeleton className="h-3.5 w-14 rounded-md" />
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-3.5 w-28 rounded-md" />
+                          <Skeleton className="h-3.5 w-32 rounded-md" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                        <Skeleton className="h-6 w-28 rounded-full" />
+                        <Skeleton className="h-9 w-24 rounded-xl" />
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : filteredSales.length > 0 ? (
               <ul role="list">
                 {filteredSales.map((order) => (
