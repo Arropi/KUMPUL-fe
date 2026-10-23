@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { UserSession } from "@/constants/auth";
 
@@ -43,7 +44,7 @@ export async function clearAuthCookies() {
 /**
  * Membaca sesi pengguna aktif dari cookie server
  */
-export async function getAuthSession(): Promise<UserSession | null> {
+export const getAuthSession = cache(async (): Promise<UserSession | null> => {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("kumpul_session");
   const tokenCookie = cookieStore.get("kumpul_token");
@@ -59,5 +60,5 @@ export async function getAuthSession(): Promise<UserSession | null> {
   } catch {
     return null;
   }
-}
+});
 

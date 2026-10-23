@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { beFetch } from "@/lib/api/be-client";
 import { getAuthSession } from "@/lib/auth-cookies";
 import type { UMKMPurchaseHistory, WasteSaleOrder } from "@/constants/umkm";
@@ -73,6 +73,8 @@ export async function cancelProcurementOrderAction(orderId: string): Promise<{
 
     if (res.success) {
       revalidatePath("/pesanan");
+      revalidateTag("orders", "default");
+      revalidateTag("dashboard", "default");
       return { success: true, message: "Pesanan berhasil dibatalkan" };
     }
 
@@ -109,6 +111,8 @@ export async function confirmOrderPickupAction(
 
     if (res.success) {
       revalidatePath("/pesanan");
+      revalidateTag("orders", "default");
+      revalidateTag("dashboard", "default");
       return {
         success: true,
         message: "Pengambilan barang berhasil diverifikasi. Pesanan selesai!",
@@ -251,6 +255,8 @@ export async function assignPoolHostAction(
     if (res.success) {
       revalidatePath("/pesanan");
       revalidatePath(`/pesanan/${poolId}`);
+      revalidateTag("orders", "default");
+      revalidateTag("pools", "default");
       return {
         success: true,
         message: res.message || "Titik Host Hub berhasil diperbarui",
@@ -297,6 +303,8 @@ export async function shipSupplierPoAction(
     if (res.success) {
       revalidatePath("/pesanan");
       revalidatePath(`/pesanan/${poId}`);
+      revalidateTag("orders", "default");
+      revalidateTag("dashboard", "default");
       return {
         success: true,
         message: "Status PO berhasil diperbarui menjadi SHIPPED (Dalam Pengiriman)",
@@ -355,6 +363,8 @@ export async function updateSupplierPoStatusAction(
     if (res.success) {
       revalidatePath("/pesanan");
       revalidatePath(`/pesanan/${poId}`);
+      revalidateTag("orders", "default");
+      revalidateTag("dashboard", "default");
       return {
         success: true,
         message: res.message || `Status PO berhasil diperbarui menjadi ${status}`,

@@ -36,8 +36,9 @@ import { MapPicker } from "@/components/ui/map-picker";
 import { PoolParticipantsMap } from "@/components/ui/pool-participants-map";
 import { toast } from "@/components/ui/toast";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { joinPoolAction } from "@/actions/pooling";
+import { joinPoolAction, getCommodityPoolsAction } from "@/actions/pooling";
 import { checkPaymentStatusAction } from "@/actions/payment";
+import { useMoqRealtime } from "@/lib/supabase/realtime-hooks";
 
 interface CommodityRunningPoolsProps {
   commodity: SupplierCommodity;
@@ -91,6 +92,19 @@ export function CommodityRunningPools({
   onRequestCreatePool,
 }: CommodityRunningPoolsProps) {
   const [pools, setPools] = React.useState<BEProcurementPool[]>(initialPools);
+
+  const refreshPools = React.useCallback(async () => {
+    try {
+      const res = await getCommodityPoolsAction(commodity.id);
+      if (res.success && res.data) {
+        setPools(res.data);
+      }
+    } catch {
+      // silent refresh on realtime event
+    }
+  }, [commodity.id]);
+
+  useMoqRealtime(undefined, refreshPools);
   const [selectedPoolForDetail, setSelectedPoolForDetail] =
     React.useState<BEProcurementPool | null>(null);
   const [selectedPoolForJoin, setSelectedPoolForJoin] =
