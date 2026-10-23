@@ -16,6 +16,7 @@ import { ProfileBankAccountsCard } from "./profile-bank-accounts-card";
 import { ProfileStorageCard } from "./profile-storage-card";
 import { ProfileRolesCard } from "./profile-roles-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { extractCityFromAddress, formatRegistrationDate } from "@/lib/utils";
 
 interface ProfileViewProps {
   initialRole?: "supplier" | "umkm";
@@ -73,6 +74,10 @@ export function ProfileView({ initialRole = "umkm" }: ProfileViewProps) {
 
         const bank = ent.bank_account_info || {};
         const isSupplier = sessionRole === "supplier";
+        const dynamicCity =
+          (bank.city as string)?.trim() ||
+          extractCityFromAddress(ent.default_address);
+        const dynamicRegDate = formatRegistrationDate(ent.created_at);
 
         setProfileState({
           id: ent.id,
@@ -94,11 +99,11 @@ export function ProfileView({ initialRole = "umkm" }: ProfileViewProps) {
             (isSupplier ? "distribusi@agronusantara.co.id" : "kontak@warung.com"),
           npwpNib: ent.npwp_nib || "",
           address: ent.default_address || "",
-          city: (bank.city as string) || "Surabaya",
+          city: dynamicCity,
           sector: activeRole?.sector_type || (isSupplier ? "PERTANIAN" : "FNB_PENGOLAHAN"),
           sectorLabel: activeRole?.sector_type || (isSupplier ? "Pertanian" : "FnB & Pengolahan"),
           complianceStatus: "TERVERIFIKASI",
-          registrationDate: "Januari 2025",
+          registrationDate: dynamicRegDate,
           storageValue: activeRole?.storage_capacity || 0,
           storageUnit: "KG",
           storageType: "DRY",
@@ -150,7 +155,13 @@ export function ProfileView({ initialRole = "umkm" }: ProfileViewProps) {
   };
 
   const handleProfileUpdated = (updated: Partial<UnifiedProfileState>) => {
-    setProfileState((prev) => ({ ...prev, ...updated }));
+    setProfileState((prev) => ({
+      ...prev,
+      ...updated,
+      city:
+        updated.city ||
+        (updated.address ? extractCityFromAddress(updated.address) : prev.city),
+    }));
     if (entity) {
       setEntity({
         ...entity,

@@ -95,7 +95,7 @@ export function DialogContent({ className, children, ...props }: DialogContentPr
     >
       <div
         className={cn(
-          "relative w-full max-w-lg rounded-3xl bg-surface border border-border p-6 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto overscroll-contain custom-scrollbar",
+          "relative w-full max-w-lg rounded-2xl sm:rounded-3xl bg-surface border border-border p-5 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-150 max-h-[88dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain custom-scrollbar",
           className
         )}
         {...props}
@@ -103,7 +103,7 @@ export function DialogContent({ className, children, ...props }: DialogContentPr
         <button
           type="button"
           onClick={() => onOpenChange(false)}
-          className="absolute top-4.5 right-4.5 size-9 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-border/60 border border-border/80 transition-all shadow-xs z-30 cursor-pointer"
+          className="absolute top-3.5 right-3.5 sm:top-4.5 sm:right-4.5 size-9 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary bg-surface-subtle hover:bg-border/60 border border-border/80 transition-all shadow-xs z-30 cursor-pointer"
           aria-label="Tutup dialog"
           title="Tutup dialog (Esc)"
         >

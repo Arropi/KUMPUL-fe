@@ -200,20 +200,20 @@ export function UmkmDashboardView() {
           </h1>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-start">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={loadDashboard}
             disabled={isLoading}
-            className="rounded-xl font-bold gap-1.5 cursor-pointer text-xs"
+            className="rounded-xl font-bold gap-1.5 cursor-pointer text-xs min-h-[40px] flex-1 sm:flex-initial justify-center"
           >
             <RefreshCw className={cn("size-3.5", isLoading && "animate-spin")} />
             <span>Segarkan</span>
           </Button>
 
-          <Button asChild variant="primary" size="sm" className="rounded-xl font-bold gap-1.5 text-xs">
+          <Button asChild variant="primary" size="sm" className="rounded-xl font-bold gap-1.5 text-xs min-h-[40px] flex-1 sm:flex-initial justify-center">
             <Link href="/home">
               <ShoppingBag className="size-3.5" />
               <span>Beli Bahan Baku</span>

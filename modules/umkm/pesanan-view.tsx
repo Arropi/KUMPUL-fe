@@ -150,12 +150,11 @@ function DeptTab({
       onClick={onClick}
       aria-pressed={isActive}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all duration-200 outline-none cursor-pointer select-none",
+        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-semibold transition-all duration-200 outline-none cursor-pointer select-none whitespace-nowrap shrink-0 min-h-[36px]",
         isActive
           ? "bg-primary text-white shadow-xs"
           : "bg-surface-subtle text-text-secondary hover:bg-surface hover:text-text-primary border border-transparent hover:border-border"
-      )}
-    >
+      )}>
       <span>{label}</span>
       <span
         className={cn(
@@ -759,7 +758,7 @@ export function UmkmPesananView() {
 
           {/* Sub-filter Pills */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
-            <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
+            <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1.5 custom-scrollbar flex-nowrap sm:flex-wrap">
               <DeptTab
                 label="Semua"
                 isActive={purchaseFilter === "SEMUA"}
@@ -901,7 +900,7 @@ export function UmkmPesananView() {
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
-            <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
+            <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1.5 custom-scrollbar flex-nowrap sm:flex-wrap">
               <DeptTab
                 label="Semua Penjualan"
                 isActive={saleFilter === "SEMUA"}

@@ -268,12 +268,12 @@ export function HomeView({
           </div>
 
           {/* Filter Pills Tambahan */}
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
-            <span className="text-xs font-semibold text-text-muted mr-1">Sumber:</span>
+          <div className="flex items-center gap-2 pt-1 border-t border-border/50 overflow-x-auto max-w-full flex-nowrap sm:flex-wrap pb-1.5 sm:pb-0 custom-scrollbar">
+            <span className="text-xs font-semibold text-text-muted mr-1 whitespace-nowrap shrink-0">Sumber:</span>
             <button
               type="button"
               onClick={() => setSelectedSource("ALL")}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 selectedSource === "ALL"
                   ? "bg-text-primary text-white border-text-primary shadow-xs"
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
@@ -284,7 +284,7 @@ export function HomeView({
             <button
               type="button"
               onClick={() => setSelectedSource("SUPPLIER")}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 selectedSource === "SUPPLIER"
                   ? "bg-primary text-white border-primary shadow-xs"
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
@@ -295,7 +295,7 @@ export function HomeView({
             <button
               type="button"
               onClick={() => setSelectedSource("WASTE")}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 selectedSource === "WASTE"
                   ? "bg-circular-waste text-white border-circular-waste shadow-xs"
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
@@ -304,12 +304,12 @@ export function HomeView({
               Limbah Sirkular
             </button>
 
-            <span className="text-xs font-semibold text-text-muted mx-1 hidden sm:inline">&bull;</span>
-            <span className="text-xs font-semibold text-text-muted mr-1">Filter Cepat:</span>
+            <span className="text-xs font-semibold text-text-muted mx-1 hidden sm:inline shrink-0">&bull;</span>
+            <span className="text-xs font-semibold text-text-muted mr-1 whitespace-nowrap shrink-0">Filter Cepat:</span>
             <button
               type="button"
               onClick={() => setOnlyReadyStock(!onlyReadyStock)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 onlyReadyStock
                   ? "bg-primary text-white border-primary shadow-xs"
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
@@ -321,7 +321,7 @@ export function HomeView({
               <button
                 type="button"
                 onClick={() => setOnlyOpenPools(!onlyOpenPools)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                   onlyOpenPools
                     ? "bg-accent text-white border-accent shadow-xs"
                     : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"
@@ -333,7 +333,7 @@ export function HomeView({
             <button
               type="button"
               onClick={() => setOnlyVerified(!onlyVerified)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[34px] ${
                 onlyVerified
                   ? "bg-emerald-700 text-white border-emerald-700 shadow-xs"
                   : "bg-surface-subtle text-text-secondary border-border hover:bg-surface-subtle/80 hover:text-text-primary"

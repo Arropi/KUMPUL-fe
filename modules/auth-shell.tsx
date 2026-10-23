@@ -34,7 +34,7 @@ function MainContent({
         isNavigating && "opacity-65"
       )}
     >
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+      <div className="p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-5 sm:space-y-6">
         {children}
       </div>
     </main>

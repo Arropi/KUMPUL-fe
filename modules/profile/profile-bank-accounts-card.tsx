@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Trash2, CreditCard, Check, Star, AlertCircle } from "lucide-react";
+import { Plus, Trash2, CreditCard, Check, Star, AlertCircle, ChevronDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 import type { BEBankAccountItem, BEBankAccountInfo } from "@/lib/api/types";
 import { updateBusinessEntityProfileAction } from "@/actions/business-profile";
 
@@ -290,17 +297,29 @@ export function ProfileBankAccountsCard({
               <label className="text-xs font-bold text-text-primary block mb-1">
                 Pilih Bank *
               </label>
-              <select
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                className="w-full text-xs font-medium rounded-xl border border-border bg-surface px-3 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                {POPULAR_BANKS.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center justify-between gap-2 h-11 w-full px-3.5 rounded-xl border border-border bg-surface text-xs sm:text-sm font-medium text-text-primary shadow-xs outline-none cursor-pointer hover:border-primary/40 hover:bg-surface-subtle focus:ring-2 focus:ring-primary/20 transition-all text-left"
+                  >
+                    <span className="truncate">{bankName || "Pilih Bank"}</span>
+                    <ChevronDown className="size-4 text-text-muted shrink-0 ml-1" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="w-[calc(100vw-3rem)] sm:w-80 max-h-60 overflow-y-auto p-1 rounded-xl shadow-elevation-2 bg-surface border border-border custom-scrollbar z-50"
+                >
+                  <DropdownMenuRadioGroup value={bankName} onValueChange={setBankName}>
+                    {POPULAR_BANKS.map((b) => (
+                      <DropdownMenuRadioItem key={b} value={b}>
+                        {b}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div>
