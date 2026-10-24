@@ -15,10 +15,8 @@ interface PurchaseConfirmStepProps {
   pricePerUnit: number;
   deliveryDetails: DeliveryDetails;
   subtotalGoods: number;
-  underMoqSurcharge: number;
   shippingFee: number;
   totalAmount: number;
-  isUnderMoq: boolean;
   isSubmitting: boolean;
   onBack: () => void;
   onConfirm: () => void;
@@ -31,10 +29,8 @@ export function PurchaseConfirmStep({
   pricePerUnit,
   deliveryDetails,
   subtotalGoods,
-  underMoqSurcharge,
   shippingFee,
   totalAmount,
-  isUnderMoq,
   isSubmitting,
   onBack,
   onConfirm,
@@ -85,14 +81,6 @@ export function PurchaseConfirmStep({
               {formatCurrency(subtotalGoods)}
             </span>
           </div>
-          {isUnderMoq && (
-            <div className="flex items-center justify-between text-amber-800">
-              <span>Surcharge di Bawah MOQ:</span>
-              <span className="font-semibold tabular-nums">
-                +{formatCurrency(underMoqSurcharge)}
-              </span>
-            </div>
-          )}
           <div className="flex items-center justify-between text-text-secondary">
             <span>Ongkos Kirim:</span>
             <span className="font-semibold text-text-primary tabular-nums">

@@ -8,7 +8,6 @@ import {
   Minus,
   ArrowRight,
   X,
-  AlertTriangle,
   Info,
 } from "lucide-react";
 import { SupplierCommodity } from "@/constants/supplier";
@@ -35,16 +34,12 @@ export function UmkmPurchaseCard({ commodity, onClose }: UmkmPurchaseCardProps) 
   const router = useRouter();
 
   const baseMoq = commodity.baseMoq || 1;
-  const allowsUnderMoq = Boolean(commodity.allowsUnderMoq);
 
   // Step 1: form konfigurasi, Step 2: konfirmasi transaksi
   const [currentStep, setCurrentStep] = React.useState<"form" | "confirm">("form");
 
   // Default quantity: MOQ
   const [quantity, setQuantity] = React.useState<number>(baseMoq);
-
-  // State persetujuan biaya lebih jika under-MOQ
-  const [readyToPayExtra, setReadyToPayExtra] = React.useState<boolean>(false);
 
   // State rincian pengiriman & titik lokasi map
   const [deliveryDetails, setDeliveryDetails] = React.useState<DeliveryDetails>({
@@ -60,30 +55,7 @@ export function UmkmPurchaseCard({ commodity, onClose }: UmkmPurchaseCardProps) 
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // Apakah pesanan di bawah batas MOQ?
-  const isUnderMoq = allowsUnderMoq && quantity < baseMoq;
-
-  // Minimum kuota yang diizinkan untuk diinput
-  const minAllowedQty = allowsUnderMoq ? 1 : baseMoq;
-
-  // Surcharge penanganan jika kuota di bawah MOQ
-  const underMoqSurcharge = React.useMemo(() => {
-    if (!isUnderMoq) return 0;
-    if (commodity.underMoqPricePerKg && commodity.underMoqPricePerKg > 0) {
-      const weightKg = (commodity.unitWeightKg || 1) * quantity;
-      return weightKg * commodity.underMoqPricePerKg;
-    }
-    // Fallback surcharge penanganan kuota kecil
-    return 30000;
-  }, [isUnderMoq, commodity.underMoqPricePerKg, commodity.unitWeightKg, quantity]);
-
-  // Reset persetujuan biaya under-MOQ jika kuota naik kembali ke/melebihi MOQ
-  React.useEffect(() => {
-    if (!isUnderMoq) {
-      setReadyToPayExtra(false);
-    }
-  }, [isUnderMoq]);
-
+  const minAllowedQty = baseMoq;
   // Menentukan active price tier
   const activeTier = React.useMemo(() => {
     if (!commodity.priceTiers || commodity.priceTiers.length === 0) {
@@ -101,7 +73,7 @@ export function UmkmPurchaseCard({ commodity, onClose }: UmkmPurchaseCardProps) 
   const totalWeightKg = (commodity.unitWeightKg || 1) * quantity;
   const subtotalGoods = quantity * activeTier.pricePerUnit;
   const shippingFee = deliveryDetails.deliveryFee;
-  const totalAmount = subtotalGoods + underMoqSurcharge + shippingFee;
+  const totalAmount = subtotalGoods + shippingFee;
   const estimatedSavings = Math.max(0, Math.round(subtotalGoods * 0.1));
 
   const handleAdjustQty = (delta: number) => {
@@ -117,9 +89,7 @@ export function UmkmPurchaseCard({ commodity, onClose }: UmkmPurchaseCardProps) 
     }
   };
 
-  // Validasi apakah siap submit
-  const isSubmitDisabled = isUnderMoq && !readyToPayExtra;
-
+  const isSubmitDisabled = quantity < baseMoq;
   const handleConfirmOrder = () => {
     setIsSubmitting(true);
     setTimeout(() => {
@@ -147,15 +117,6 @@ export function UmkmPurchaseCard({ commodity, onClose }: UmkmPurchaseCardProps) 
             <span className="text-[11px] text-text-muted font-medium">
               Batas MOQ: {commodity.baseMoq} {commodity.wholesaleUnit}
             </span>
-            {allowsUnderMoq ? (
-              <Badge variant="success" className="text-[10px]">
-                Menerima di Bawah MOQ
-              </Badge>
-            ) : (
-              <Badge variant="neutral" className="text-[10px]">
-                MOQ Ketat
-              </Badge>
-            )}
           </div>
           <h2 className="font-heading font-bold text-base sm:text-lg text-text-primary">
             {commodity.name}
@@ -187,10 +148,8 @@ export function UmkmPurchaseCard({ commodity, onClose }: UmkmPurchaseCardProps) 
           pricePerUnit={activeTier.pricePerUnit}
           deliveryDetails={deliveryDetails}
           subtotalGoods={subtotalGoods}
-          underMoqSurcharge={underMoqSurcharge}
           shippingFee={shippingFee}
           totalAmount={totalAmount}
-          isUnderMoq={isUnderMoq}
           isSubmitting={isSubmitting}
           onBack={() => setCurrentStep("form")}
           onConfirm={handleConfirmOrder}
@@ -246,44 +205,11 @@ export function UmkmPurchaseCard({ commodity, onClose }: UmkmPurchaseCardProps) 
                 +5
               </Button>
             </div>
-
-            {!allowsUnderMoq && (
-              <p className="text-[11px] text-text-muted flex items-center gap-1.5 pt-0.5">
-                <Info className="w-3.5 h-3.5 text-text-muted shrink-0" />
-                <span>Pemasok mewajibkan pemesanan minimal sebesar {commodity.baseMoq} {commodity.wholesaleUnit}.</span>
-              </p>
-            )}
+            <p className="text-[11px] text-text-muted flex items-center gap-1.5 pt-0.5">
+              <Info className="w-3.5 h-3.5 text-text-muted shrink-0" />
+              <span>Pemasok mewajibkan pemesanan minimal sebesar {commodity.baseMoq} {commodity.wholesaleUnit}.</span>
+            </p>
           </div>
-
-          {/* Opsi Siap Menerima Biaya Lebih (Hanya muncul jika allowsUnderMoq === true && quantity < baseMoq) */}
-          {isUnderMoq && (
-            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/90 space-y-2 transition-all">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-amber-900 block">
-                    Pesanan di Bawah Batas MOQ ({quantity} dari {baseMoq} {commodity.wholesaleUnit})
-                  </span>
-                  <p className="text-[11px] text-amber-800 leading-relaxed">
-                    Pemasok mengizinkan pemesanan di bawah MOQ dengan penyesuaian biaya penanganan khusus kuota kecil sebesar{" "}
-                    <strong>+{formatCurrency(underMoqSurcharge)}</strong>.
-                  </p>
-                </div>
-              </div>
-
-              <label className="flex items-start gap-2.5 pt-2 border-t border-amber-200/60 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={readyToPayExtra}
-                  onChange={(e) => setReadyToPayExtra(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-amber-400 text-primary focus:ring-primary accent-emerald-600"
-                />
-                <span className="text-xs font-semibold text-amber-950 leading-tight">
-                  Saya siap menerima biaya lebih jika batas MOQ tidak tercapai
-                </span>
-              </label>
-            </div>
-          )}
 
           {/* Tier Harga Aktif */}
           <div className="p-3.5 rounded-xl bg-surface-subtle border border-border/80 space-y-1">
@@ -316,14 +242,6 @@ export function UmkmPurchaseCard({ commodity, onClose }: UmkmPurchaseCardProps) 
               </span>
             </div>
 
-            {isUnderMoq && (
-              <div className="flex items-center justify-between text-amber-800">
-                <span>Surcharge di Bawah MOQ:</span>
-                <span className="font-semibold tabular-nums">
-                  +{formatCurrency(underMoqSurcharge)}
-                </span>
-              </div>
-            )}
 
             <div className="flex items-center justify-between text-text-secondary">
               <span>
@@ -364,11 +282,6 @@ export function UmkmPurchaseCard({ commodity, onClose }: UmkmPurchaseCardProps) 
               <ArrowRight className="w-4 h-4" />
             </Button>
 
-            {isSubmitDisabled && (
-              <p className="text-[11px] text-amber-700 text-center font-medium">
-                Centang persetujuan biaya lebih di atas untuk melanjutkan pemesanan di bawah MOQ.
-              </p>
-            )}
           </div>
         </>
       )}

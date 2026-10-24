@@ -19,10 +19,6 @@ interface EceranDanHargaSectionProps {
   priceTiers: PriceTierRange[];
   setPriceTiers: React.Dispatch<React.SetStateAction<PriceTierRange[]>>;
   errors: KatalogFormErrors;
-  allowsUnderMoq?: boolean;
-  setAllowsUnderMoq?: (val: boolean) => void;
-  underMoqPricePerKg?: number | string;
-  setUnderMoqPricePerKg?: (val: string) => void;
 }
 
 export function EceranDanHargaSection({
@@ -34,10 +30,6 @@ export function EceranDanHargaSection({
   priceTiers,
   setPriceTiers,
   errors,
-  allowsUnderMoq = false,
-  setAllowsUnderMoq,
-  underMoqPricePerKg = "",
-  setUnderMoqPricePerKg,
 }: EceranDanHargaSectionProps) {
   // Pastikan rentang pertama selalu sinkron dengan MOQ, dan rentang berikutnya selalu batas atas sebelumnya + 1
   React.useEffect(() => {
@@ -181,55 +173,6 @@ export function EceranDanHargaSection({
         <p className="font-body text-xs text-text-secondary mt-0.5">
           Atur opsi penawaran harga grosir bertingkat berdasarkan kuota volume pembelian.
         </p>
-      </div>
-
-      {/* Bagian Opsi Pembelian di Bawah MOQ (Eceran Darurat) */}
-      <div className="rounded-xl border border-border/80 bg-background/60 p-4 transition-colors">
-        <label
-          htmlFor="allows-under-moq"
-          className="flex items-start gap-3 cursor-pointer select-none"
-        >
-          <div className="pt-0.5">
-            <Checkbox
-              id="allows-under-moq"
-              checked={allowsUnderMoq}
-              onCheckedChange={(checked) =>
-                setAllowsUnderMoq?.(Boolean(checked))
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs sm:text-sm font-semibold text-text-primary block">
-              Izinkan Pembelian di Bawah MOQ
-            </span>
-            <p className="text-xs text-text-secondary leading-relaxed">
-              Membuka opsi eceran darurat bagi UMKM yang memerlukan pasokan dalam kuota kecil tanpa menunggu kamar patungan (pooling) terpenuhi.
-            </p>
-          </div>
-        </label>
-
-        {allowsUnderMoq && (
-          <div className="mt-4 pt-4 border-t border-border/70 space-y-2">
-            <div className="max-w-xs">
-              <Input
-                id="under-moq-price"
-                type="number"
-                min={1}
-                label={`Harga Satuan di Bawah MOQ (Rp / ${unit})`}
-                placeholder="Contoh: 135000"
-                value={underMoqPricePerKg ? String(underMoqPricePerKg) : ""}
-                onChange={(e) => setUnderMoqPricePerKg?.(e.target.value)}
-                helperText={
-                  underMoqPricePerKg && Number(underMoqPricePerKg) > 0
-                    ? `Rp ${Number(underMoqPricePerKg).toLocaleString("id-ID")} / ${unit} (penyesuaian ecer)`
-                    : "Tarif penyesuaian ecer untuk pembelian di bawah batas MOQ"
-                }
-                className="min-h-[44px] tabular-nums font-semibold"
-                required={allowsUnderMoq}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Bagian Peningkatan Harga Bertingkat */}

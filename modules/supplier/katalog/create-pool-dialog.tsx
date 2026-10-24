@@ -97,8 +97,6 @@ export function CreatePoolDialog({
   >("DIRECT_DOOR_TO_DOOR");
   const [requiredDate, setRequiredDate] = React.useState<string>(defaultDateStr);
   const [isUrgentAsap, setIsUrgentAsap] = React.useState<boolean>(false);
-  // Opsi Eceran Darurat jika komoditas mengizinkan under-MOQ
-  const [isEmergencyRetail, setIsEmergencyRetail] = React.useState<boolean>(false);
 
   const [address, setAddress] = React.useState<string>(
     userProfile?.default_address || "Surabaya, Jawa Timur"
@@ -132,7 +130,7 @@ export function CreatePoolDialog({
   // Apakah pesanan di bawah batas MOQ?
   const isUnderMoq = orderQty < baseMoq;
   const isMoqReached = orderQty >= baseMoq;
-  const isDirectOrder = isMoqReached || (isUnderMoq && isEmergencyRetail);
+  const isDirectOrder = isMoqReached;
 
   // Jika pesanan telah memenuhi/mencapai MOQ:
   // 1. Hemat Hub tidak bisa dipilih (harus Direct Door to Door karena beli penuh sendiri)
@@ -145,18 +143,8 @@ export function CreatePoolDialog({
       if (isUrgentAsap) {
         setIsUrgentAsap(false);
       }
-      if (isEmergencyRetail) {
-        setIsEmergencyRetail(false);
-      }
-    } else if (isEmergencyRetail) {
-      if (deliveryMethod === "HEMAT_HUB") {
-        setDeliveryMethod("DIRECT_DOOR_TO_DOOR");
-      }
-      if (isUrgentAsap) {
-        setIsUrgentAsap(false);
-      }
     }
-  }, [isMoqReached, isEmergencyRetail, deliveryMethod, isUrgentAsap]);
+  }, [isMoqReached, deliveryMethod, isUrgentAsap]);
 
   // Active price tier
   const activeTier = React.useMemo(() => {
@@ -176,10 +164,7 @@ export function CreatePoolDialog({
   }, [commodity.priceTiers, orderQty]);
 
   const shippingFee = deliveryMethod === "HEMAT_HUB" ? 15000 : 35000;
-  const effectiveUnitPrice =
-    isUnderMoq && isEmergencyRetail && commodity.underMoqPricePerKg && commodity.underMoqPricePerKg > 0
-      ? commodity.underMoqPricePerKg
-      : activeTier?.pricePerUnit || 0;
+  const effectiveUnitPrice = activeTier?.pricePerUnit || 0;
 
   const subtotal = orderQty * effectiveUnitPrice;
   const grandTotal = subtotal + shippingFee;
@@ -238,9 +223,7 @@ export function CreatePoolDialog({
         }
 
         toast.success(
-          isEmergencyRetail
-            ? `Pesanan eceran darurat ${orderQty} ${commodity.wholesaleUnit} berhasil dibuat!`
-            : isDirectOrder
+          isDirectOrder
             ? `Pesanan langsung ${orderQty} ${commodity.wholesaleUnit} berhasil dibuat!`
             : `Kamar patungan (pool) baru untuk ${orderQty} ${commodity.wholesaleUnit} berhasil dibuka!`,
           "Pemesanan Berhasil"
@@ -308,7 +291,7 @@ export function CreatePoolDialog({
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <Badge variant="primary" className="text-[10px] font-bold">
                 <ShoppingCart className="size-3 mr-1" />
-                {isEmergencyRetail ? "Eceran Darurat Langsung" : isDirectOrder ? "Pesanan Langsung" : "Buka Kamar Pool Baru"}
+                {isDirectOrder ? "Pesanan Langsung" : "Buka Kamar Pool Baru"}
               </Badge>
               <span className="text-[11px] text-text-muted">
                 Batas MOQ: {baseMoq} {commodity.wholesaleUnit}
@@ -318,9 +301,7 @@ export function CreatePoolDialog({
               {commodity.name}
             </DialogTitle>
             <DialogDescription className="text-xs text-text-secondary">
-              {isEmergencyRetail
-                ? "Pembelian darurat di bawah batas MOQ diproses langsung tanpa menunggu patungan (pooling)."
-                : isDirectOrder
+              {isDirectOrder
                 ? "Pemesanan memenuhi kuota minimum MOQ dan akan langsung diproses tanpa menunggu UMKM lain."
                 : "Buka kamar patungan baru untuk mengumpulkan kuota bersama UMKM lain di bursa regional."}
             </DialogDescription>
@@ -330,70 +311,30 @@ export function CreatePoolDialog({
             {/* Indikator Status Langsung vs Pooling */}
             <div
               className={`p-3 rounded-xl border flex items-start gap-2.5 transition-all ${
-                isEmergencyRetail
-                  ? "bg-amber-50/80 border-amber-300 text-amber-950"
-                  : isDirectOrder
+                isDirectOrder
                   ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
                   : "bg-blue-50/70 border-blue-200 text-blue-900"
               }`}
             >
-              {isEmergencyRetail ? (
-                <Flame className="size-4 text-amber-600 shrink-0 mt-0.5" />
-              ) : isDirectOrder ? (
+              {isDirectOrder ? (
                 <CheckCircle2 className="size-4 text-emerald-600 shrink-0 mt-0.5" />
               ) : (
                 <Users className="size-4 text-blue-600 shrink-0 mt-0.5" />
               )}
               <div className="space-y-0.5">
                 <span className="font-bold text-xs block">
-                  {isEmergencyRetail
-                    ? `Beli Eceran Darurat (Rp ${(commodity.underMoqPricePerKg || effectiveUnitPrice).toLocaleString("id-ID")} / ${commodity.wholesaleUnit})`
-                    : isDirectOrder
+                  {isDirectOrder
                     ? "Beli Langsung (Memenuhi Batas MOQ)"
                     : `Buat Pool Baru (Patungan Menuju ${baseMoq} ${commodity.wholesaleUnit})`}
                 </span>
                 <p className="text-[11px] leading-relaxed opacity-90">
-                  {isEmergencyRetail
-                    ? "Pesanan Anda di bawah MOQ tetapi diproses langsung door-to-door dengan penyesuaian tarif eceran tanpa perlu menunggu UMKM lain."
-                    : isDirectOrder
+                  {isDirectOrder
                     ? "Kuantitas pesanan Anda telah mencapai batas minimum produsen. Pesanan akan langsung masuk ke Purchase Order pemasok."
                     : `Jumlah pesanan Anda (${orderQty} ${commodity.wholesaleUnit}) di bawah MOQ (${baseMoq} ${commodity.wholesaleUnit}). Anda akan menjadi inisiator kamar patungan ini.`}
                 </p>
               </div>
             </div>
 
-            {/* Opsi Centang Eceran Darurat jika Supplier Mengizinkan under-MOQ */}
-            {commodity.allowsUnderMoq && isUnderMoq && (
-              <div className="p-3 rounded-xl border border-border/80 bg-background/80 transition-colors">
-                <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isEmergencyRetail}
-                    onChange={(e) => {
-                      setIsEmergencyRetail(e.target.checked);
-                      if (e.target.checked) {
-                        setDeliveryMethod("DIRECT_DOOR_TO_DOOR");
-                        setIsUrgentAsap(false);
-                      }
-                    }}
-                    className="mt-0.5 size-4 rounded border-border text-amber-600 focus:ring-amber-500 accent-amber-600 cursor-pointer"
-                  />
-                  <div className="space-y-0.5">
-                    <span className="font-bold text-xs flex items-center gap-1.5 text-text-primary">
-                      <span>Pilih Opsi Eceran Darurat (Beli Langsung Tanpa Patungan)</span>
-                      {commodity.underMoqPricePerKg && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                          Rp {commodity.underMoqPricePerKg.toLocaleString("id-ID")} / {commodity.wholesaleUnit}
-                        </span>
-                      )}
-                    </span>
-                    <p className="text-[11px] text-text-muted leading-relaxed">
-                      Centang jika Anda membutuhkan barang dalam kuota kecil segera tanpa menunggu kuota patungan UMKM lain terpenuhi.
-                    </p>
-                  </div>
-                </label>
-              </div>
-            )}
 
             {/* 1. Input Kuantitas Kebutuhan */}
             <div className="space-y-1.5">
@@ -660,8 +601,6 @@ export function CreatePoolDialog({
                   <Loader2 className="size-3.5 mr-1.5 animate-spin" />
                   Memproses...
                 </>
-              ) : isEmergencyRetail ? (
-                "Beli Eceran Darurat Sekarang"
               ) : isDirectOrder ? (
                 "Beli Langsung Sekarang"
               ) : (

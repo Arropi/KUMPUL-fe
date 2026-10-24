@@ -245,8 +245,8 @@ export async function createSupplierCommodityAction(payload: CreateCommodityInpu
         production_date: payload.productionDate || null,
         closed_date: payload.closedDate || null,
         auto_activate_marketplace: Boolean(payload.autoActivateMarketplace),
-        allows_under_moq: Boolean(payload.allowsUnderMoq),
-        under_moq_price_per_kg: payload.allowsUnderMoq && payload.underMoqPricePerKg ? Number(payload.underMoqPricePerKg) : null,
+        allows_under_moq: false,
+        under_moq_price_per_kg: null,
         is_marketplace_active: payload.isMarketplaceActive !== undefined ? payload.isMarketplaceActive : false,
         price_tiers: payload.priceTiers || [],
       }),
@@ -293,13 +293,8 @@ export async function updateSupplierCommodityAction(
         production_date: payload.productionDate !== undefined ? (payload.productionDate || null) : undefined,
         closed_date: payload.closedDate !== undefined ? (payload.closedDate || null) : undefined,
         auto_activate_marketplace: payload.autoActivateMarketplace,
-        allows_under_moq: payload.allowsUnderMoq !== undefined ? Boolean(payload.allowsUnderMoq) : undefined,
-        under_moq_price_per_kg:
-          payload.underMoqPricePerKg !== undefined
-            ? (payload.underMoqPricePerKg ? Number(payload.underMoqPricePerKg) : null)
-            : payload.allowsUnderMoq === false
-            ? null
-            : undefined,
+        allows_under_moq: false,
+        under_moq_price_per_kg: null,
         is_marketplace_active: payload.isMarketplaceActive,
         price_tiers: payload.priceTiers,
       }),
